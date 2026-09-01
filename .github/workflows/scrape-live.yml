@@ -9,11 +9,16 @@
 name: scrape-airfares-live
 
 on:
-  schedule:
-    # Every 8 hours. GitHub queues scheduled runs rather than guaranteeing
-    # them, so a 15-minute cron is not honoured anyway; for a genuine fast
-    # heartbeat run `main.py --tier hot` on an always-on host.
-    - cron: "0 */8 * * *"
+  # DISABLED — Cleartrip answers GitHub's runners with HTTP 403 (even
+  # for /robots.txt); OTAs block datacenter IP ranges. Verified in CI
+  # run 33526308194 on 2026-09-01. Re-enable only with a self-hosted
+  # runner on a residential connection, or a residential proxy:
+  #   runs-on: [self-hosted, linux]
+  # schedule:
+  # # Every 8 hours. GitHub queues scheduled runs rather than guaranteeing
+  # # them, so a 15-minute cron is not honoured anyway; for a genuine fast
+  # # heartbeat run `main.py --tier hot` on an always-on host.
+  # - cron: "0 */8 * * *"
   workflow_dispatch:
     inputs:
       tier:

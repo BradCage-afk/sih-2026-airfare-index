@@ -1,0 +1,3 @@
+{"ts": "2026-09-01T15:35:34+00:00", "level": "info", "event": "run_start", "tier": "hot", "routes": 3, "windows": 1, "sources": ["cleartrip"], "pages": 3, "estimate_s": 60, "period_s": 600, "deadline_s": 510, "model": "meta/llama-3.2-11b-vision-instruct", "target": "supabase:ngywgselrypjcyagaast/fares", "rpm_limit": 40}
+{"ts": "2026-09-01T15:35:35+00:00", "level": "info", "event": "robots_check", "source": "cleartrip", "allowed": true, "crawl_delay": null, "reason": "robots.txt parsed (2 groups)"}
+{"ts": "2026-09-01T15:35:52+00:00", "level": "info", "event": "fetched", "route": "DEL-BOM", "window": "T+1", "source": "cleartrip", "rows_found": 61, "rows_used": 40, "chars": 3824, "depart": "2026-09-02", "ms": 16531}

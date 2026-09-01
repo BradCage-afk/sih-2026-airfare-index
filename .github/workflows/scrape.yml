@@ -4,12 +4,17 @@
 name: scrape-airfares
 
 on:
-  schedule:
-    # Once daily at 02:00 UTC (07:30 IST). A full-basket run is ~45 minutes,
-    # and a private repo gets 2,000 Actions minutes a month — 4-hourly would
-    # burn that in a week. Make the repo public (unlimited minutes) if you
-    # want the original */4 cadence back.
-    - cron: "0 2 * * *"
+  # DISABLED — Cleartrip answers GitHub's runners with HTTP 403 (even
+  # for /robots.txt); OTAs block datacenter IP ranges. Verified in CI
+  # run 33526308194 on 2026-09-01. Re-enable only with a self-hosted
+  # runner on a residential connection, or a residential proxy:
+  #   runs-on: [self-hosted, linux]
+  # schedule:
+  # # Once daily at 02:00 UTC (07:30 IST). A full-basket run is ~45 minutes,
+  # # and a private repo gets 2,000 Actions minutes a month — 4-hourly would
+  # # burn that in a week. Make the repo public (unlimited minutes) if you
+  # # want the original */4 cadence back.
+  # - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       model:
