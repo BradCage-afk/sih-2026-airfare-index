@@ -1,0 +1,5 @@
+# dev-only tooling — never part of the deployed site
+mock_supabase.py
+README.md
+*.png
+__pycache__/

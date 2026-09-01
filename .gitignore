@@ -1,0 +1,19 @@
+# secrets — never commit
+.env
+.env.local
+*.env
+!.env.example
+
+# generated / local
+fares.jsonl
+fares-runs.jsonl
+__pycache__/
+*.pyc
+.venv/
+.vercel/
+node_modules/
+
+# bulky source material, not part of the project
+*.pdf
+Screenshot*.png
+ss/

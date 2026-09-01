@@ -1,0 +1,1636 @@
+<title>Airfare Price Index Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --plane:#eceff3; --surface:#fbfcfd; --inset:#f4f6f9; --stripe:#f7f9fb;
+  --ink:#0d1117; --ink-2:#4a5560; --muted:#78838f;
+  --grid:#e3e8ed; --axis:#c4ccd4; --border:rgba(13,17,23,.11); --border-2:rgba(13,17,23,.06);
+  --accent:#2a78d6; --accent-soft:rgba(42,120,214,.10);
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-text:#006300;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --o1:#104281; --o2:#256abf; --o3:#5598e7; --o4:#86b6ef;
+  --o1-ink:#fff; --o2-ink:#fff; --o3-ink:#fff; --o4-ink:#0d1117;
+  --dv-neutral:#eceae6;
+  --dv-b2:#2a78d6; --dv-b1:#86b6ef;
+  --dv-r1:#f6cfce; --dv-r2:#eda3a2; --dv-r3:#e57371; --dv-r4:#e34948; --dv-r5:#b62b2a;
+  --dv-r1-ink:#0d1117; --dv-r2-ink:#0d1117; --dv-r3-ink:#fff; --dv-r4-ink:#fff; --dv-r5-ink:#fff;
+  --dv-b1-ink:#0d1117; --dv-b2-ink:#fff; --dv-n-ink:#4a5560;
+  --demote:#b9c2cb;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --plane:#0b0d0f; --surface:#17191c; --inset:#1d2024; --stripe:#1b1e21;
+    --ink:#ffffff; --ink-2:#c2c8ce; --muted:#8b939b;
+    --grid:#272b30; --axis:#3a4047; --border:rgba(255,255,255,.12); --border-2:rgba(255,255,255,.06);
+    --accent:#3987e5; --accent-soft:rgba(57,135,229,.16);
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-text:#0ca30c;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+    --o1:#b7d3f6; --o2:#6da7ec; --o3:#2a78d6; --o4:#184f95;
+    --o1-ink:#0d1117; --o2-ink:#0d1117; --o3-ink:#fff; --o4-ink:#fff;
+    --dv-neutral:#33363a;
+    --dv-b2:#3987e5; --dv-b1:#1c5cab;
+    --dv-r1:#5c2222; --dv-r2:#8a2f2e; --dv-r3:#c23e3d; --dv-r4:#e66767; --dv-r5:#f19b9b;
+    --dv-r1-ink:#fff; --dv-r2-ink:#fff; --dv-r3-ink:#fff; --dv-r4-ink:#0d1117; --dv-r5-ink:#0d1117;
+    --dv-b1-ink:#fff; --dv-b2-ink:#0d1117; --dv-n-ink:#c2c8ce;
+    --demote:#4b535b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0b0d0f; --surface:#17191c; --inset:#1d2024; --stripe:#1b1e21;
+  --ink:#ffffff; --ink-2:#c2c8ce; --muted:#8b939b;
+  --grid:#272b30; --axis:#3a4047; --border:rgba(255,255,255,.12); --border-2:rgba(255,255,255,.06);
+  --accent:#3987e5; --accent-soft:rgba(57,135,229,.16);
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b; --good-text:#0ca30c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+  --o1:#b7d3f6; --o2:#6da7ec; --o3:#2a78d6; --o4:#184f95;
+  --o1-ink:#0d1117; --o2-ink:#0d1117; --o3-ink:#fff; --o4-ink:#fff;
+  --dv-neutral:#33363a;
+  --dv-b2:#3987e5; --dv-b1:#1c5cab;
+  --dv-r1:#5c2222; --dv-r2:#8a2f2e; --dv-r3:#c23e3d; --dv-r4:#e66767; --dv-r5:#f19b9b;
+  --dv-r1-ink:#fff; --dv-r2-ink:#fff; --dv-r3-ink:#fff; --dv-r4-ink:#0d1117; --dv-r5-ink:#0d1117;
+  --dv-b1-ink:#fff; --dv-b2-ink:#0d1117; --dv-n-ink:#c2c8ce;
+  --demote:#4b535b;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--plane); color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.shell{max-width:1360px;margin:0 auto;padding:0 20px 64px}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40; background:var(--surface);
+  border-bottom:1px solid var(--border); padding:0 20px;
+}
+.topbar-in{max-width:1360px;margin:0 auto;display:flex;align-items:center;gap:20px;
+  min-height:60px;flex-wrap:wrap;padding:10px 0}
+.brand{display:flex;align-items:baseline;gap:12px;margin-right:auto}
+.brand-ps{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.10em;
+  color:var(--accent);background:var(--accent-soft);padding:3px 7px;border-radius:3px}
+.brand-t{font-size:17px;font-weight:600;letter-spacing:-.015em}
+.brand-s{font-size:12px;color:var(--muted)}
+.runmeta{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--ink-2)}
+.runmeta b{font-weight:600;color:var(--ink)}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--good);
+  margin-right:6px;vertical-align:1px}
+.dot.warn{background:var(--warn)} .dot.crit{background:var(--crit)}
+
+/* ---------- demo notice ---------- */
+.notice{
+  display:flex;gap:12px;align-items:flex-start;margin:16px 0 0;padding:11px 14px;
+  background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--warn);
+  border-radius:4px;font-size:12.5px;color:var(--ink-2);
+}
+.notice b{color:var(--ink);font-weight:600}
+.notice svg{flex:none;margin-top:1px}
+
+/* ---------- filter row ---------- */
+.filters{
+  display:flex;align-items:center;gap:10px 22px;flex-wrap:wrap;
+  padding:14px 0 16px;margin-top:14px;border-bottom:1px solid var(--border);
+}
+.fgroup{display:flex;align-items:center;gap:8px}
+.flabel{font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.seg{display:flex;background:var(--inset);border:1px solid var(--border);border-radius:5px;padding:2px;gap:2px}
+.seg button{
+  font:inherit;font-size:12px;font-weight:500;color:var(--ink-2);background:none;border:0;
+  padding:4px 10px;border-radius:3px;cursor:pointer;font-family:"IBM Plex Mono",monospace;
+}
+.seg button:hover{background:var(--surface);color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);
+  box-shadow:0 1px 2px rgba(0,0,0,.07);font-weight:600}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px;font-weight:500;padding:4px 9px;border-radius:20px;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);color:var(--muted);
+}
+.chip:hover{border-color:var(--axis);color:var(--ink-2)}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:var(--axis);background:var(--inset)}
+.chip .key{width:9px;height:9px;border-radius:2px;background:var(--demote);flex:none}
+.chip[aria-pressed="true"] .key{background:var(--ck)}
+.linkbtn{font:inherit;font-size:12px;color:var(--accent);background:none;border:0;cursor:pointer;
+  padding:4px 2px;text-decoration:underline;text-underline-offset:2px}
+:where(button,select,a,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:16px}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:16px 18px 14px;min-width:0;
+}
+.c12{grid-column:span 12} .c8{grid-column:span 8} .c7{grid-column:span 7}
+.c6{grid-column:span 6} .c5{grid-column:span 5} .c4{grid-column:span 4}
+@media(max-width:1080px){.c8,.c7,.c6,.c5,.c4{grid-column:span 12}}
+
+.chead{display:flex;align-items:flex-start;gap:14px;margin-bottom:2px}
+.chead h2{margin:0;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.chead p{margin:3px 0 0;font-size:12px;color:var(--muted);max-width:62ch}
+.chead .right{margin-left:auto;flex:none;display:flex;gap:10px;align-items:center}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted)}
+
+/* ---------- hero ---------- */
+.hero{display:grid;grid-template-columns:262px 1fr;gap:26px;align-items:stretch}
+@media(max-width:840px){.hero{grid-template-columns:1fr}}
+.hero-fig{display:flex;flex-direction:column;justify-content:center;
+  border-right:1px solid var(--border-2);padding-right:24px}
+@media(max-width:840px){.hero-fig{border-right:0;border-bottom:1px solid var(--border-2);padding:0 0 18px}}
+.hero-num{font-size:64px;line-height:.95;font-weight:600;letter-spacing:-.035em;margin:8px 0 0}
+.hero-delta{margin-top:10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:7px}
+.hero-base{margin-top:12px;font-size:11.5px;color:var(--muted);line-height:1.55}
+.up{color:var(--crit)} .down{color:var(--good-text)}
+
+/* ---------- stat tiles ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:13px 15px 12px}
+.kpi .lab{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.kpi .val{font-size:27px;font-weight:600;letter-spacing:-.025em;margin-top:5px;line-height:1.1}
+.kpi .sub{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.kpi .sub .mono{font-size:11px}
+
+/* ---------- legend ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:2px 0 10px;font-size:11.5px;color:var(--ink-2)}
+.legend .item{display:inline-flex;align-items:center;gap:6px;cursor:default}
+.legend .swatch{width:11px;height:11px;border-radius:2px;flex:none}
+.legend .line{width:14px;height:2px;border-radius:2px;flex:none}
+.scale{display:flex;align-items:center;gap:0;margin-left:auto}
+.scale i{width:26px;height:9px;display:block}
+.scale .cap{font-size:10.5px;color:var(--muted);padding:0 7px;font-family:"IBM Plex Mono",monospace}
+
+/* ---------- charts ---------- */
+.plot{position:relative;width:100%}
+.plot svg{display:block;width:100%;height:auto;overflow:visible}
+.plot svg text{pointer-events:none}
+.plot svg [tabindex]{cursor:default}
+.tick{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.axlabel{font-family:"Archivo",sans-serif;font-size:10.5px;fill:var(--muted)}
+.dlabel{font-family:"IBM Plex Mono",monospace;font-size:10.5px;fill:var(--ink-2);font-weight:500}
+.tip{
+  position:absolute;pointer-events:none;z-index:20;opacity:0;transition:opacity .09s;
+  background:var(--surface);border:1px solid var(--border);border-radius:5px;
+  box-shadow:0 6px 22px rgba(0,0,0,.16);padding:8px 10px;min-width:150px;
+}
+.tip.on{opacity:1}
+.tip h4{margin:0 0 6px;font-size:11px;font-weight:600;color:var(--ink-2);
+  letter-spacing:.02em;font-family:"IBM Plex Mono",monospace}
+.tip .row{display:flex;align-items:center;gap:8px;font-size:12px;padding:1.5px 0}
+.tip .row .k{width:13px;height:2px;border-radius:2px;flex:none}
+.tip .row .n{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-weight:600;
+  color:var(--ink);font-variant-numeric:tabular-nums}
+.tip .row .l{color:var(--muted);font-size:11.5px}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{
+  text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding:0 10px 7px 0;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+td{padding:7px 10px 7px 0;border-bottom:1px solid var(--border-2);white-space:nowrap;color:var(--ink-2)}
+tbody tr:hover td{background:var(--stripe)}
+td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  color:var(--ink)}
+td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
+.arrow{color:var(--muted);padding:0 2px}
+.datatable{display:none;margin-top:14px;border-top:1px solid var(--border-2);padding-top:12px}
+.datatable.on{display:block}
+.null{color:var(--muted);font-style:italic;font-family:"Archivo",sans-serif;font-size:11.5px}
+
+/* ---------- pills ---------- */
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+  padding:2px 8px;border-radius:20px;border:1px solid transparent;font-family:"IBM Plex Mono",monospace}
+.pill.ok{color:var(--good-text);background:rgba(12,163,12,.12);border-color:rgba(12,163,12,.28)}
+.pill.warn{color:var(--ink);background:rgba(250,178,25,.18);border-color:rgba(250,178,25,.45)}
+.pill.fail{color:var(--crit);background:rgba(208,59,59,.13);border-color:rgba(208,59,59,.32)}
+.pill.n{color:var(--ink-2);background:var(--inset);border-color:var(--border)}
+
+/* ---------- misc ---------- */
+.spark{display:block}
+.foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--border);
+  font-size:11.5px;color:var(--muted);display:flex;gap:28px;flex-wrap:wrap}
+.foot code{font-family:"IBM Plex Mono",monospace;color:var(--ink-2);background:var(--inset);
+  padding:1px 5px;border-radius:3px;font-size:11px}
+.stale{opacity:.45;transition:opacity .12s}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- audience tabs ---------- */
+.tabs{display:flex;gap:2px;margin-top:16px;border-bottom:1px solid var(--border)}
+.tabs button{
+  font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;
+  padding:9px 15px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.tabs button:hover{color:var(--ink-2)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs .who{font-weight:400;color:var(--muted);font-size:11.5px;margin-left:7px}
+
+/* ---------- traveller view ---------- */
+.tv{max-width:1000px;margin:0 auto}
+.tv-pick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:18px 0 14px}
+.tv-pick .flabel{margin-right:2px}
+.tv-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:22px 24px;display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:center;
+}
+@media(max-width:760px){.tv-card{grid-template-columns:1fr}}
+.tv-route{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.tv-route b{font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--ink);font-weight:600}
+.tv-price{font-size:46px;font-weight:600;letter-spacing:-.03em;line-height:1.05;margin:6px 0 0}
+.tv-price small{font-size:15px;font-weight:500;color:var(--muted);letter-spacing:0;margin-right:6px}
+.tv-verdict{display:inline-flex;align-items:center;gap:7px;margin-top:13px;
+  padding:6px 13px;border-radius:22px;font-size:14px;font-weight:600}
+.tv-verdict svg{flex:none}
+.tv-why{margin-top:12px;font-size:14px;color:var(--ink-2);line-height:1.55;max-width:52ch}
+.tv-why b{color:var(--ink);font-weight:600}
+.tv-spark{border-left:1px solid var(--border-2);padding-left:22px}
+@media(max-width:760px){.tv-spark{border-left:0;padding-left:0;border-top:1px solid var(--border-2);padding-top:16px}}
+.tv-spark .cap{font-size:11px;color:var(--muted);margin-bottom:6px}
+
+.tv-h{font-size:15px;font-weight:600;margin:30px 0 3px;letter-spacing:-.01em}
+.tv-sub{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+
+.tv-weather{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:820px){.tv-weather{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.tv-weather{grid-template-columns:1fr}}
+.tv-w{
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:13px 14px;
+  cursor:pointer;text-align:left;font:inherit;display:block;width:100%;
+  border-left:3px solid var(--demote);
+}
+.tv-w:hover{border-color:var(--axis)}
+.tv-w[aria-current="true"]{background:var(--inset);border-color:var(--axis)}
+.tv-w .r{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--ink)}
+.tv-w .p{font-size:20px;font-weight:600;margin-top:5px;letter-spacing:-.02em}
+.tv-w .s{font-size:11.5px;margin-top:3px;font-weight:600;display:flex;align-items:center;gap:5px}
+.tv-w .n{font-size:11px;color:var(--muted);margin-top:2px}
+
+.tv-wait{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.tv-row{display:grid;grid-template-columns:96px 1fr 150px;gap:14px;align-items:center;
+  padding:11px 16px;border-top:1px solid var(--border-2)}
+.tv-row:first-child{border-top:0}
+@media(max-width:640px){.tv-row{grid-template-columns:70px 1fr;gap:8px}
+  .tv-row .save{grid-column:2;text-align:left}}
+.tv-row .when{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink);font-weight:600}
+.tv-row .bar{height:20px;border-radius:0 4px 4px 0;background:var(--accent);position:relative}
+.tv-row .bar span{position:absolute;left:9px;top:1px;font-size:11.5px;font-weight:600;
+  color:#fff;font-family:"IBM Plex Mono",monospace;line-height:18px}
+.tv-row .bar.out span{left:auto;right:-64px;color:var(--ink)}
+.tv-row .save{font-size:12.5px;text-align:right;font-weight:600}
+.tv-row .save.none{color:var(--muted);font-weight:400}
+
+.tv-fine{margin-top:22px;padding:14px 16px;background:var(--inset);border-radius:6px;
+  font-size:12px;color:var(--ink-2);line-height:1.6}
+.tv-fine b{color:var(--ink)}
+</style>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="brand-ps">SIH26056</span>
+      <span class="brand-t">Airfare Price Index &middot; India</span>
+      <span class="brand-s">6-route basket &middot; 5 advance windows &middot; 2 sources</span>
+    </div>
+    <div class="runmeta mono">
+      <span><span class="dot" id="run-dot"></span>last run <b id="run-ts">—</b></span>
+      <span>next in <b id="run-next">—</b></span>
+      <span>model <b id="run-model">—</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+
+  <div class="notice">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M8 4.6v4.2M8 11.2v.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <div><b>Sample data.</b> The scraper has not run yet — every figure below is generated
+      to the exact shape of the <code class="mono">fares</code> table in the spec
+      (<span class="mono">origin, destination, carrier, source, advance_window_days, base_fare,
+      taxes, udf, convenience_fee, total_fare, model_used, scraped_at</span>).
+      Point the page at real Supabase rows and nothing else changes.</div>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Audience">
+    <button type="button" role="tab" id="tab-index" aria-selected="true"
+            aria-controls="view-index">Price index<span class="who">for MoSPI</span></button>
+    <button type="button" role="tab" id="tab-traveller" aria-selected="false"
+            aria-controls="view-traveller">Should I book?<span class="who">for travellers</span></button>
+  </div>
+
+  <div id="view-index" role="tabpanel" aria-labelledby="tab-index">
+
+  <div class="filters" role="group" aria-label="Dashboard filters">
+    <div class="fgroup">
+      <span class="flabel">Window</span>
+      <div class="seg" id="f-range" role="group" aria-label="Date range">
+        <button type="button" data-days="7">7d</button>
+        <button type="button" data-days="14">14d</button>
+        <button type="button" data-days="30" aria-pressed="true">30d</button>
+      </div>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Routes</span>
+      <div class="chips" id="f-routes"></div>
+      <button type="button" class="linkbtn" id="f-routes-all">all</button>
+    </div>
+    <div class="fgroup">
+      <span class="flabel">Source</span>
+      <div class="seg" id="f-source" role="group" aria-label="Source">
+        <button type="button" data-src="all" aria-pressed="true">all</button>
+        <button type="button" data-src="0">Cleartrip</button>
+        <button type="button" data-src="1">IndiGo</button>
+      </div>
+    </div>
+    <div class="fgroup" style="margin-left:auto">
+      <button type="button" class="linkbtn" id="f-tables" aria-pressed="false">show data tables</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="card c12">
+      <div class="hero">
+        <div class="hero-fig">
+          <div class="eyebrow">Basket fare index</div>
+          <div class="hero-num" id="idx-val">—</div>
+          <div class="hero-delta" id="idx-delta"></div>
+          <div class="hero-base" id="idx-base"></div>
+        </div>
+        <div style="min-width:0">
+          <div class="chead">
+            <div>
+              <h2>Index movement</h2>
+              <p>Mean total fare across every route &times; window &times; source in the current
+                 filter, rebased to the first day of the series.</p>
+            </div>
+            <div class="right eyebrow" id="idx-model-note"></div>
+          </div>
+          <div class="plot" id="p-index"><div class="tip" id="t-index"></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+
+    <section class="card c7">
+      <div class="chead">
+        <div>
+          <h2>Advance-booking fare curve</h2>
+          <p>Mean total fare at each booking lead time. The shape of this curve is the
+             product — it is what a price index for booking behaviour has to explain.</p>
+        </div>
+      </div>
+      <div class="legend" id="l-curve"></div>
+      <div class="plot" id="p-curve"><div class="tip" id="t-curve"></div></div>
+      <div class="datatable" id="d-curve"></div>
+    </section>
+
+    <section class="card c5">
+      <div class="chead">
+        <div>
+          <h2>What you actually pay</h2>
+          <p>Mean fare split into the four components the extractor pulls per flight.</p>
+        </div>
+      </div>
+      <div class="legend" id="l-comp"></div>
+      <div class="plot" id="p-comp"><div class="tip" id="t-comp"></div></div>
+      <div class="datatable" id="d-comp"></div>
+    </section>
+
+    <section class="card c7">
+      <div class="chead">
+        <div>
+          <h2>Late-booking premium</h2>
+          <p>Each cell is the mean fare at that lead time against the same route&rsquo;s
+             T+30 fare. Red is dearer than booking a month out, blue is cheaper.</p>
+        </div>
+      </div>
+      <div class="legend" id="l-matrix"></div>
+      <div class="plot" id="p-matrix"><div class="tip" id="t-matrix"></div></div>
+    </section>
+
+    <section class="card c5">
+      <div class="chead">
+        <div>
+          <h2>Extractor head-to-head</h2>
+          <p>60 identical fare pages replayed through both NIM models by
+             <code class="mono" style="font-size:11px">compare_models.py</code>. Not affected by the filters above.</p>
+        </div>
+      </div>
+      <div class="legend" id="l-models"></div>
+      <div class="plot" id="p-models"><div class="tip" id="t-models"></div></div>
+      <div class="datatable on" id="d-models"></div>
+    </section>
+
+    <section class="card c12">
+      <div class="chead">
+        <div>
+          <h2>Route basket</h2>
+          <p>One row per city pair, over the selected window. Sparkline shows the route&rsquo;s
+             own daily mean fare; this table is also the accessible twin of the fare curve above.</p>
+        </div>
+      </div>
+      <div class="tw"><table id="t-routes"></table></div>
+    </section>
+
+    <section class="card c5">
+      <div class="chead">
+        <div>
+          <h2>Pipeline runs</h2>
+          <p>Every 4 hours via GitHub Actions, one job per source.</p>
+        </div>
+      </div>
+      <div class="tw"><table id="t-runs"></table></div>
+    </section>
+
+    <section class="card c7">
+      <div class="chead">
+        <div>
+          <h2>Latest extractions</h2>
+          <p>Rows exactly as they land in Postgres — a null convenience fee is
+             the airline site, which does not charge one.</p>
+        </div>
+      </div>
+      <div class="tw"><table id="t-recent"></table></div>
+    </section>
+
+  </div>
+
+  </div><!-- /view-index -->
+
+  <div id="view-traveller" role="tabpanel" aria-labelledby="tab-traveller" class="tv" hidden>
+
+    <div class="tv-pick">
+      <span class="flabel">Where are you flying?</span>
+      <div class="chips" id="tv-routes"></div>
+    </div>
+
+    <div class="tv-card">
+      <div>
+        <div class="tv-route" id="tv-route"></div>
+        <div class="tv-price" id="tv-price"></div>
+        <div id="tv-verdict"></div>
+        <div class="tv-why" id="tv-why"></div>
+      </div>
+      <div class="tv-spark">
+        <div class="cap">Cheapest seat for tomorrow, last 30 days</div>
+        <div id="tv-spark"></div>
+      </div>
+    </div>
+
+    <h3 class="tv-h">Every route, right now</h3>
+    <p class="tv-sub">Cheapest seat for a departure tomorrow, against what that route
+      normally costs at one day's notice.</p>
+    <div class="tv-weather" id="tv-weather"></div>
+
+    <h3 class="tv-h">What booking earlier is worth</h3>
+    <p class="tv-sub" id="tv-wait-sub"></p>
+    <div class="tv-wait" id="tv-wait"></div>
+
+    <div class="tv-fine">
+      <b>What these numbers are.</b> Fares our scraper saw on travel portals, each stored
+      with the moment we saw it. &ldquo;Normal&rdquo; is what the same route cost at the same
+      notice over <span id="tv-span">the last 30 days</span>. <b>We do not sell tickets, and a price here is indicative
+      &mdash; an airline can move a fare between our last check and your booking.</b>
+      It is the same data as the price index on the other tab, asked the other way round.
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Basket: <code>DEL-BOM</code> <code>DEL-BLR</code> <code>BOM-BLR</code>
+      <code>DEL-CCU</code> <code>BLR-HYD</code> <code>MAA-DEL</code></span>
+    <span>Windows: <code>T+1</code> <code>T+7</code> <code>T+15</code> <code>T+30</code> <code>T+45</code></span>
+    <span>Sources: <code>cleartrip</code> (OTA) <code>indigo</code> (airline)</span>
+    <span>Fares in INR &middot; index base 100</span>
+  </div>
+</div>
+
+<script>
+const DATA = {"meta":{"today":"2026-08-31","start":"2026-08-02","days":30,"problem":"SIH26056","base_period":"2026-08-02"},"routes":[{"o":"DEL","d":"BOM","on":"Delhi","dn":"Mumbai"},{"o":"DEL","d":"BLR","on":"Delhi","dn":"Bengaluru"},{"o":"BOM","d":"BLR","on":"Mumbai","dn":"Bengaluru"},{"o":"DEL","d":"CCU","on":"Delhi","dn":"Kolkata"},{"o":"BLR","d":"HYD","on":"Bengaluru","dn":"Hyderabad"},{"o":"MAA","d":"DEL","on":"Chennai","dn":"Delhi"}],"windows":[1,7,15,30,45],"sources":[{"k":"cleartrip","n":"Cleartrip","t":"ota"},{"k":"indigo","n":"IndiGo","t":"airline"}],"models":["deepseek-ai/deepseek-v4-pro-0813","deepseek-ai/deepseek-v4-flash-0731"],"cols":["d","r","w","s","n","base","tax","udf","conv","tot","lo","hi","ok","att","ms","m"],"rows":[[0,0,0,0,9,8889,1191,312,399,10791,8180,14597,9,9,3870,0],[0,0,0,1,9,9176,1307,312,null,10795,8457,14177,8,9,4072,0],[0,0,1,0,4,6059,817,312,449,7636,6698,8940,4,4,4045,0],[0,0,1,1,5,6400,924,312,null,7636,6482,9288,5,5,5232,0],[0,0,2,0,6,4801,689,312,399,6201,5287,7463,6,6,4607,0],[0,0,2,1,7,5420,724,312,null,6456,5608,7537,7,7,4340,0],[0,0,3,0,6,4244,612,312,399,5567,4679,6462,6,6,3816,0],[0,0,3,1,4,4939,687,312,null,5938,5154,7248,3,4,4166,0],[0,0,4,0,9,4230,585,312,449,5576,4786,6689,9,9,3932,0],[0,0,4,1,6,4534,615,312,null,5461,4708,6660,5,6,4325,0],[0,1,0,0,4,9825,1314,428,399,11966,8956,15677,3,4,4626,0],[0,1,0,1,6,10563,1404,428,null,12395,10138,15603,6,6,4667,0],[0,1,1,0,7,6852,947,428,399,8625,7639,10258,6,7,4202,0],[0,1,1,1,6,7138,992,428,null,8558,7392,10425,6,6,4136,0],[0,1,2,0,6,5606,730,428,449,7213,6281,8536,6,6,4207,0],[0,1,2,1,9,6228,863,428,null,7519,6656,8789,8,9,4006,0],[0,1,3,0,4,5014,709,428,349,6500,5660,7915,3,4,4195,0],[0,1,3,1,7,5126,739,428,null,6293,5447,7417,7,7,3810,0],[0,1,4,0,7,4677,631,428,399,6135,5367,7283,7,7,4308,0],[0,1,4,1,5,5096,680,428,null,6204,5431,7340,5,5,4430,0],[0,2,0,0,7,7174,1024,312,349,8859,7005,11085,7,7,4660,0],[0,2,0,1,7,8072,1116,312,null,9499,7335,12829,7,7,3358,0],[0,2,1,0,9,5125,722,312,299,6458,5671,7477,9,9,4498,0],[0,2,1,1,6,5650,798,312,null,6760,5826,7911,6,6,5131,0],[0,2,2,0,7,4357,622,312,399,5690,4885,6683,7,7,3335,0],[0,2,2,1,4,4669,673,312,null,5654,4890,6826,4,4,3860,0],[0,2,3,0,9,3748,539,312,449,5048,4308,5822,8,9,3894,0],[0,2,3,1,4,4071,553,312,null,4936,4359,5868,4,4,4711,0],[0,2,4,0,6,3600,497,312,349,4758,4031,5682,6,6,4856,0],[0,2,4,1,4,3999,541,312,null,4851,4164,5731,4,4,4582,0],[0,3,0,0,6,9810,1376,428,449,12063,8956,15272,6,6,4705,0],[0,3,0,1,6,10493,1403,428,null,12324,9929,16724,5,6,3962,0],[0,3,1,0,7,6960,942,428,299,8629,7629,9967,7,7,3460,0],[0,3,1,1,8,7440,1015,428,null,8884,7565,10701,8,8,5096,0],[0,3,2,0,4,5676,758,428,299,7161,6103,8578,4,4,3780,0],[0,3,2,1,9,6367,926,428,null,7720,6577,8962,9,9,3933,0],[0,3,3,0,8,4936,682,428,299,6345,5339,7699,7,8,3116,0],[0,3,3,1,4,5594,802,428,null,6825,5841,8043,3,4,3790,0],[0,3,4,0,6,4828,641,428,449,6346,5397,7440,4,6,3583,0],[0,3,4,1,5,5197,731,428,null,6356,5490,7697,5,5,4236,0],[0,4,0,0,5,5530,781,236,449,6995,5376,8685,5,5,3951,0],[0,4,0,1,6,5842,836,236,null,6914,5553,9418,6,6,3842,0],[0,4,1,0,8,3933,549,236,349,5066,4270,5978,8,8,3251,0],[0,4,1,1,4,4299,593,236,null,5128,4341,6120,4,4,4579,0],[0,4,2,0,6,3164,414,236,349,4163,3568,4804,5,6,3657,0],[0,4,2,1,5,3437,496,236,null,4168,3572,4852,5,5,3636,0],[0,4,3,0,7,2646,359,236,449,3690,3178,4458,7,7,3696,0],[0,4,3,1,8,3050,439,236,null,3725,3298,4304,8,8,3144,0],[0,4,4,0,8,2674,356,236,349,3615,3128,4306,8,8,4715,0],[0,4,4,1,5,2925,394,236,null,3555,3025,4105,5,5,4177,0],[0,5,0,0,7,10807,1475,428,299,13009,9633,16298,5,7,4469,0],[0,5,0,1,6,11490,1627,428,null,13545,10427,18453,6,6,4612,0],[0,5,1,0,6,7969,1045,428,449,9892,8714,11997,4,6,3823,0],[0,5,1,1,8,8284,1146,428,null,9858,8345,11775,6,8,4060,0],[0,5,2,0,7,6602,957,428,299,8286,7148,10096,7,7,4075,0],[0,5,2,1,4,6986,951,428,null,8366,7361,9963,4,4,4447,0],[0,5,3,0,5,5460,776,428,449,7113,6024,8179,5,5,4219,0],[0,5,3,1,8,6164,801,428,null,7393,6331,8516,8,8,4953,0],[0,5,4,0,6,5351,775,428,399,6953,6151,8029,6,6,4355,0],[0,5,4,1,4,5759,837,428,null,7024,6042,8588,4,4,3904,0],[1,0,0,0,5,8549,1123,312,399,10383,8254,13808,5,5,3835,0],[1,0,0,1,4,9169,1308,312,null,10789,8783,14438,4,4,5012,0],[1,0,1,0,5,5852,828,312,299,7291,6459,8678,5,5,3963,0],[1,0,1,1,6,6463,931,312,null,7707,6514,9040,6,6,4001,0],[1,0,2,0,4,4617,669,312,399,5997,5210,7088,4,4,5120,0],[1,0,2,1,8,5492,740,312,null,6544,5631,7586,8,8,4746,0],[1,0,3,0,4,4106,538,312,449,5405,4690,6517,4,4,4143,0],[1,0,3,1,8,4728,678,312,null,5718,4866,6551,8,8,3893,0],[1,0,4,0,8,4125,568,312,299,5304,4687,6363,8,8,4066,0],[1,0,4,1,4,4537,612,312,null,5461,4822,6368,4,4,3942,0],[1,1,0,0,5,9332,1223,428,349,11333,8856,14467,4,5,4765,0],[1,1,0,1,6,10082,1400,428,null,11910,9471,15512,6,6,3836,0],[1,1,1,0,8,6509,910,428,299,8145,7203,9729,7,8,5012,0],[1,1,1,1,4,6827,955,428,null,8210,6905,9768,3,4,3485,0],[1,1,2,0,7,5418,716,428,449,7011,6033,8438,7,7,4323,0],[1,1,2,1,7,5977,831,428,null,7236,6201,8512,6,7,4644,0],[1,1,3,0,8,4746,665,428,399,6238,5457,7447,8,8,4071,0],[1,1,3,1,8,5092,736,428,null,6256,5425,7630,8,8,4789,0],[1,1,4,0,6,4506,620,428,349,5903,5158,7026,6,6,3602,0],[1,1,4,1,8,4877,672,428,null,5978,5097,7273,8,8,4356,0],[1,2,0,0,5,6997,971,312,449,8730,6963,11808,4,5,4073,0],[1,2,0,1,7,7773,1044,312,null,9129,7370,12418,6,7,3953,0],[1,2,1,0,8,4908,670,312,449,6339,5434,7416,8,8,4150,0],[1,2,1,1,9,5313,750,312,null,6375,5513,7503,8,9,4106,0],[1,2,2,0,4,4076,588,312,299,5275,4458,6040,3,4,4070,0],[1,2,2,1,4,4571,611,312,null,5494,4672,6562,4,4,3983,0],[1,2,3,0,9,3718,522,312,299,4851,4152,5607,7,9,4078,0],[1,2,3,1,7,3842,547,312,null,4701,4032,5587,6,7,4067,0],[1,2,4,0,6,3167,441,312,449,4369,3717,5231,5,6,3951,0],[1,2,4,1,9,3895,562,312,null,4769,4066,5828,9,9,4348,0],[1,3,0,0,4,9837,1361,428,299,11926,9167,15095,4,4,4480,0],[1,3,0,1,7,10250,1395,428,null,12073,9380,15437,7,7,4612,0],[1,3,1,0,7,6409,896,428,449,8182,7178,9399,6,7,4927,0],[1,3,1,1,8,7406,968,428,null,8803,7790,10183,8,8,4670,0],[1,3,2,0,5,5468,741,428,449,7086,6073,8261,5,5,3211,0],[1,3,2,1,5,6237,881,428,null,7546,6458,8888,5,5,4228,0],[1,3,3,0,7,4656,656,428,449,6189,5430,7345,6,7,4195,0],[1,3,3,1,7,5410,771,428,null,6608,5761,7666,6,7,5010,0],[1,3,4,0,9,4469,617,428,449,5963,5030,7203,9,9,4550,0],[1,3,4,1,7,5172,725,428,null,6325,5596,7657,6,7,3733,0],[1,4,0,0,6,5444,763,236,299,6742,5269,8444,5,6,3781,0],[1,4,0,1,5,5787,774,236,null,6797,5529,8814,5,5,3415,0],[1,4,1,0,7,3602,519,236,399,4756,4054,5623,7,7,3817,0],[1,4,1,1,8,4127,581,236,null,4944,4352,5685,8,8,3454,0],[1,4,2,0,6,3160,431,236,299,4127,3471,4923,6,6,4276,0],[1,4,2,1,5,3417,474,236,null,4127,3516,4948,5,5,3389,0],[1,4,3,0,8,2591,347,236,349,3523,3083,4056,8,8,3883,0],[1,4,3,1,9,3111,437,236,null,3784,3309,4619,9,9,4993,0],[1,4,4,0,8,2441,330,236,399,3406,2959,4004,7,8,4456,0],[1,4,4,1,9,2838,376,236,null,3450,2923,4160,9,9,3180,0],[1,5,0,0,8,11021,1476,428,399,13324,10549,16908,8,8,4859,0],[1,5,0,1,7,11200,1495,428,null,13123,10054,16481,7,7,4716,0],[1,5,1,0,7,7463,1020,428,449,9361,8049,10889,6,7,4214,0],[1,5,1,1,6,7955,1117,428,null,9500,8259,10963,6,6,4545,0],[1,5,2,0,8,6167,868,428,399,7862,6647,9115,8,8,4901,0],[1,5,2,1,7,6691,886,428,null,8005,6899,9646,7,7,4267,0],[1,5,3,0,8,5403,706,428,399,6936,6028,8486,8,8,4249,0],[1,5,3,1,8,5863,814,428,null,7104,6189,8618,7,8,4481,0],[1,5,4,0,6,5345,714,428,349,6835,5977,8290,6,6,4547,0],[1,5,4,1,8,5645,763,428,null,6836,5765,8004,8,8,4683,0],[2,0,0,0,8,8327,1088,312,349,10077,8090,13364,7,8,3898,0],[2,0,0,1,4,8840,1159,312,null,10310,8252,13918,2,4,3642,0],[2,0,1,0,5,5910,796,312,299,7317,6180,8929,5,5,4868,0],[2,0,1,1,7,6275,829,312,null,7416,6343,8643,6,7,4928,0],[2,0,2,0,4,4558,633,312,449,5953,5004,6912,4,4,3277,0],[2,0,2,1,7,5316,724,312,null,6353,5339,7374,6,7,4573,0],[2,0,3,0,4,4097,544,312,299,5252,4640,6372,2,4,4629,0],[2,0,3,1,9,4370,607,312,null,5289,4605,6448,9,9,3890,0],[2,0,4,0,7,3910,551,312,349,5123,4362,6158,5,7,4225,0],[2,0,4,1,9,4140,579,312,null,5031,4420,5937,9,9,4564,0],[2,1,0,0,9,8984,1209,428,299,10920,8862,14273,7,9,2986,0],[2,1,0,1,8,9405,1274,428,null,11107,9040,14226,7,8,4628,0],[2,1,1,0,9,6278,861,428,299,7866,6967,9506,9,9,3616,0],[2,1,1,1,5,6890,973,428,null,8291,7283,9849,5,5,4195,0],[2,1,2,0,7,5333,768,428,349,6878,6066,8075,6,7,3206,0],[2,1,2,1,9,5489,739,428,null,6657,5612,8036,9,9,4271,0],[2,1,3,0,9,4458,647,428,399,5932,5032,7109,8,9,4551,0],[2,1,3,1,6,4851,692,428,null,5971,5097,7027,4,6,4654,0],[2,1,4,0,8,4483,620,428,299,5830,4985,7077,8,8,4414,0],[2,1,4,1,6,4670,659,428,null,5757,4918,7006,6,6,3891,0],[2,2,0,0,7,6993,986,312,299,8590,6746,11597,6,7,4233,0],[2,2,0,1,9,7513,1056,312,null,8881,6835,11144,8,9,4326,0],[2,2,1,0,5,4937,693,312,399,6341,5602,7640,4,5,4051,0],[2,2,1,1,9,5397,709,312,null,6418,5411,7503,9,9,3467,0],[2,2,2,0,5,3902,541,312,299,5054,4474,6127,5,5,3930,0],[2,2,2,1,6,4468,620,312,null,5400,4565,6487,6,6,4544,0],[2,2,3,0,9,3546,511,312,349,4718,4141,5659,8,9,3004,0],[2,2,3,1,5,3802,542,312,null,4655,4108,5515,5,5,3167,0],[2,2,4,0,8,3243,460,312,449,4464,3813,5361,7,8,4168,0],[2,2,4,1,7,3670,521,312,null,4504,3924,5511,7,7,4429,0],[2,3,0,0,9,9628,1304,428,299,11659,8938,14853,9,9,3697,0],[2,3,0,1,4,9717,1343,428,null,11488,9125,15318,4,4,4510,0],[2,3,1,0,6,6351,891,428,399,8069,6910,9296,6,6,3571,0],[2,3,1,1,8,6975,941,428,null,8344,7120,10182,8,8,3264,0],[2,3,2,0,6,5591,742,428,399,7160,6152,8718,6,6,3799,0],[2,3,2,1,8,5776,821,428,null,7026,6020,8368,7,8,4220,0],[2,3,3,0,6,4779,639,428,299,6146,5201,7152,6,6,4227,0],[2,3,3,1,5,5230,701,428,null,6359,5463,7609,5,5,2800,0],[2,3,4,0,7,4370,586,428,299,5684,4904,6841,7,7,4227,0],[2,3,4,1,5,4841,685,428,null,5954,5127,7060,4,5,3670,0],[2,4,0,0,8,4957,694,236,399,6286,4685,8506,7,8,4462,0],[2,4,0,1,8,5557,734,236,null,6526,5238,8651,8,8,3739,0],[2,4,1,0,6,3578,470,236,449,4732,4030,5714,5,6,3695,0],[2,4,1,1,4,3855,560,236,null,4651,4028,5453,4,4,3855,0],[2,4,2,0,5,2839,376,236,349,3800,3303,4625,4,5,4602,0],[2,4,2,1,7,3415,485,236,null,4136,3602,4868,7,7,3844,0],[2,4,3,0,7,2401,342,236,449,3428,2899,4168,7,7,3956,0],[2,4,3,1,9,2900,406,236,null,3541,3023,4227,9,9,4499,0],[2,4,4,0,5,2337,324,236,399,3296,2919,3867,5,5,3953,0],[2,4,4,1,8,2808,403,236,null,3447,3053,4152,8,8,5068,0],[2,5,0,0,8,10544,1512,428,449,12932,10332,17110,5,8,4749,0],[2,5,0,1,7,10776,1404,428,null,12608,9609,15633,6,7,3930,0],[2,5,1,0,5,7412,1024,428,399,9262,7801,10713,4,5,5328,0],[2,5,1,1,7,7516,1046,428,null,8990,7591,10413,7,7,4271,0],[2,5,2,0,8,5885,832,428,349,7495,6417,9064,7,8,3471,0],[2,5,2,1,4,6316,883,428,null,7628,6429,9308,4,4,3654,0],[2,5,3,0,9,5251,687,428,349,6715,5807,7776,9,9,4168,0],[2,5,3,1,9,5896,796,428,null,7120,6273,8286,8,9,4424,0],[2,5,4,0,5,4943,693,428,349,6412,5558,7483,5,5,3709,0],[2,5,4,1,8,5562,801,428,null,6792,5967,8216,8,8,3652,0],[3,0,0,0,8,8249,1197,312,349,10107,8010,13187,8,8,4314,0],[3,0,0,1,5,8310,1137,312,null,9759,7970,12667,5,5,3808,0],[3,0,1,0,9,5333,741,312,449,6836,5836,8252,7,9,4404,0],[3,0,1,1,4,6072,820,312,null,7204,6335,8475,4,4,4066,0],[3,0,2,0,7,4749,655,312,349,6065,5246,7421,7,7,4858,0],[3,0,2,1,6,5177,676,312,null,6164,5243,7295,5,6,3590,0],[3,0,3,0,4,4247,570,312,299,5428,4672,6621,4,4,5013,0],[3,0,3,1,8,4506,619,312,null,5437,4699,6299,8,8,5154,0],[3,0,4,0,4,3739,505,312,399,4955,4190,5739,3,4,4682,0],[3,0,4,1,9,4125,595,312,null,5032,4461,6032,9,9,4289,0],[3,1,0,0,5,8642,1137,428,399,10607,8479,13147,5,5,3477,0],[3,1,0,1,9,9738,1363,428,null,11529,9053,14745,7,9,4283,0],[3,1,1,0,4,6433,870,428,349,8080,6980,9666,4,4,4502,0],[3,1,1,1,5,6928,916,428,null,8273,7018,9643,4,5,4177,0],[3,1,2,0,8,5187,712,428,449,6776,5821,8286,7,8,5024,0],[3,1,2,1,4,5640,786,428,null,6854,5862,8363,3,4,4174,0],[3,1,3,0,9,4470,619,428,299,5817,5150,7093,6,9,3998,0],[3,1,3,1,4,5004,709,428,null,6140,5444,7287,4,4,3350,0],[3,1,4,0,9,4189,553,428,399,5569,4945,6764,9,9,4322,0],[3,1,4,1,4,4667,656,428,null,5751,4929,6695,4,4,4509,0],[3,2,0,0,8,6920,949,312,449,8629,6517,11555,7,8,4814,0],[3,2,0,1,9,7504,1049,312,null,8865,7150,10955,9,9,3047,0],[3,2,1,0,4,4993,685,312,349,6339,5447,7570,4,4,4322,0],[3,2,1,1,6,5127,693,312,null,6131,5197,7290,6,6,4500,0],[3,2,2,0,5,3979,556,312,399,5246,4477,6116,5,5,5326,0],[3,2,2,1,7,4350,572,312,null,5234,4554,6404,5,7,3751,0],[3,2,3,0,5,3419,466,312,399,4596,3895,5391,4,5,5085,0],[3,2,3,1,7,3774,542,312,null,4628,3956,5600,7,7,4088,0],[3,2,4,0,6,3160,440,312,449,4361,3807,5331,5,6,3881,0],[3,2,4,1,7,3688,511,312,null,4511,3847,5298,6,7,4209,0],[3,3,0,0,7,9517,1318,428,449,11712,9186,14755,7,7,3819,0],[3,3,0,1,4,9859,1341,428,null,11629,9152,14694,4,4,3850,0],[3,3,1,0,4,6582,893,428,399,8302,7053,10049,4,4,3907,0],[3,3,1,1,5,7202,964,428,null,8594,7367,10210,5,5,3292,0],[3,3,2,0,8,5307,736,428,449,6920,5863,8074,8,8,4018,0],[3,3,2,1,4,5783,816,428,null,7027,5933,8447,4,4,4676,0],[3,3,3,0,8,4604,648,428,299,5979,5097,7252,8,8,3687,0],[3,3,3,1,6,5114,705,428,null,6248,5338,7247,6,6,4968,0],[3,3,4,0,6,4435,589,428,349,5801,4960,6723,6,6,4787,0],[3,3,4,1,9,4779,651,428,null,5858,4945,7117,8,9,3853,0],[3,4,0,0,7,5091,719,236,349,6395,4852,7921,7,7,2854,0],[3,4,0,1,4,5770,781,236,null,6788,5226,8499,4,4,4041,0],[3,4,1,0,9,3532,513,236,449,4731,4108,5707,8,9,4740,0],[3,4,1,1,4,4044,559,236,null,4839,4105,5879,4,4,3890,0],[3,4,2,0,4,2974,395,236,349,3954,3414,4703,4,4,4450,0],[3,4,2,1,5,3188,438,236,null,3862,3289,4647,5,5,3764,0],[3,4,3,0,6,2531,357,236,399,3524,3021,4173,5,6,4189,0],[3,4,3,1,9,2847,380,236,null,3464,2990,4076,9,9,4540,0],[3,4,4,0,6,2328,310,236,399,3273,2849,3806,5,6,4940,0],[3,4,4,1,9,2797,379,236,null,3412,2918,4152,8,9,4307,0],[3,5,0,0,6,10166,1471,428,299,12364,9398,15460,5,6,3950,0],[3,5,0,1,7,11010,1455,428,null,12893,10203,16389,6,7,4100,0],[3,5,1,0,5,7195,944,428,449,9016,7952,10494,5,5,4108,0],[3,5,1,1,9,7854,1059,428,null,9341,8232,11177,9,9,4326,0],[3,5,2,0,8,6074,796,428,299,7597,6432,9168,7,8,3238,0],[3,5,2,1,4,6306,839,428,null,7573,6388,9108,4,4,3075,0],[3,5,3,0,4,5278,729,428,399,6834,5871,8121,4,4,4703,0],[3,5,3,1,4,5605,795,428,null,6828,5929,8277,4,4,4737,0],[3,5,4,0,6,5064,682,428,299,6473,5508,7472,5,6,4307,0],[3,5,4,1,9,5366,748,428,null,6542,5591,7520,8,9,3615,0],[4,0,0,0,4,8453,1165,312,349,10279,8219,13138,4,4,4003,0],[4,0,0,1,9,8769,1153,312,null,10234,7982,13791,9,9,3810,0],[4,0,1,0,8,5595,787,312,399,7093,6028,8253,8,8,4066,0],[4,0,1,1,4,6451,888,312,null,7651,6746,8937,4,4,4968,0],[4,0,2,0,6,4844,659,312,349,6163,5320,7491,6,6,4645,0],[4,0,2,1,5,5378,751,312,null,6441,5464,7738,5,5,4344,0],[4,0,3,0,9,4206,609,312,399,5526,4893,6563,7,9,4819,0],[4,0,3,1,8,4592,626,312,null,5529,4715,6510,8,8,4402,0],[4,0,4,0,7,4109,563,312,349,5332,4657,6221,7,7,4657,0],[4,0,4,1,7,4322,574,312,null,5208,4588,6078,5,7,4510,0],[4,1,0,0,6,8803,1251,428,449,10931,8603,14106,5,6,4518,0],[4,1,0,1,9,9699,1266,428,null,11392,9267,15052,8,9,3025,0],[4,1,1,0,4,6469,861,428,349,8107,6987,9690,4,4,4542,0],[4,1,1,1,4,6730,950,428,null,8108,6931,9853,4,4,4534,0],[4,1,2,0,5,5525,797,428,349,7099,6289,8377,5,5,4151,0],[4,1,2,1,8,5838,799,428,null,7065,6273,8335,7,8,3475,0],[4,1,3,0,8,4512,597,428,449,5987,5074,6869,8,8,4547,0],[4,1,3,1,6,5134,743,428,null,6305,5327,7612,6,6,4035,0],[4,1,4,0,8,4457,620,428,299,5804,5042,6919,8,8,4431,0],[4,1,4,1,6,4852,656,428,null,5936,5223,7067,6,6,4448,0],[4,2,0,0,7,6896,910,312,399,8516,6413,11429,4,7,4243,0],[4,2,0,1,7,7649,1019,312,null,8980,7027,11210,7,7,2998,0],[4,2,1,0,5,5014,664,312,399,6389,5442,7673,4,5,4309,0],[4,2,1,1,7,5568,789,312,null,6668,5709,7875,7,7,3938,0],[4,2,2,0,4,4064,582,312,349,5307,4474,6303,3,4,4810,0],[4,2,2,1,8,4606,651,312,null,5569,4835,6667,8,8,4130,0],[4,2,3,0,7,3519,503,312,349,4683,4145,5424,7,7,3849,0],[4,2,3,1,9,3903,551,312,null,4766,4117,5779,9,9,4301,0],[4,2,4,0,8,3387,461,312,399,4559,3988,5488,7,8,5682,0],[4,2,4,1,8,3707,520,312,null,4540,3946,5506,7,8,3912,0],[4,3,0,0,9,9653,1360,428,349,11790,8945,15888,9,9,4958,0],[4,3,0,1,5,10623,1403,428,null,12454,10176,16212,5,5,4176,0],[4,3,1,0,6,6760,955,428,399,8542,7542,10376,6,6,3924,0],[4,3,1,1,9,7414,1018,428,null,8860,7607,10454,8,9,4348,0],[4,3,2,0,4,5453,783,428,349,7013,6196,8291,4,4,3890,0],[4,3,2,1,5,5950,793,428,null,7171,6277,8600,5,5,4515,0],[4,3,3,0,8,4630,639,428,449,6146,5296,7470,8,8,3993,0],[4,3,3,1,7,5455,715,428,null,6598,5756,7658,7,7,4492,0],[4,3,4,0,5,4592,627,428,449,6097,5259,7446,5,5,4465,0],[4,3,4,1,4,5192,722,428,null,6342,5608,7277,4,4,4374,0],[4,4,0,0,7,5202,710,236,299,6447,5172,8291,5,7,4217,0],[4,4,0,1,7,5837,839,236,null,6912,5575,8591,7,7,4281,0],[4,4,1,0,6,3502,466,236,449,4653,3930,5661,6,6,3559,0],[4,4,1,1,8,4003,537,236,null,4777,4194,5781,8,8,4529,0],[4,4,2,0,4,2975,421,236,349,3981,3522,4804,4,4,4718,0],[4,4,2,1,9,3316,460,236,null,4012,3398,4707,9,9,3456,0],[4,4,3,0,7,2660,379,236,299,3574,3056,4120,7,7,3960,0],[4,4,3,1,6,3079,405,236,null,3721,3132,4411,6,6,3886,0],[4,4,4,0,6,2384,336,236,449,3405,2870,4145,5,6,4577,0],[4,4,4,1,8,2844,412,236,null,3492,3062,4192,7,8,5105,0],[4,5,0,0,8,10501,1508,428,399,12836,10431,15871,5,8,5003,0],[4,5,0,1,5,11578,1541,428,null,13547,10093,16800,5,5,4406,0],[4,5,1,0,6,7511,1082,428,449,9470,8258,11182,6,6,5168,0],[4,5,1,1,9,8177,1116,428,null,9720,8470,11413,9,9,3836,0],[4,5,2,0,7,6041,837,428,449,7755,6568,9207,5,7,4709,0],[4,5,2,1,6,6531,902,428,null,7861,6906,9043,5,6,3966,0],[4,5,3,0,8,5399,751,428,299,6877,5876,7978,8,8,3669,0],[4,5,3,1,8,5674,812,428,null,6913,5917,8059,8,8,3275,0],[4,5,4,0,6,4968,668,428,449,6513,5498,7702,6,6,5336,0],[4,5,4,1,6,5446,715,428,null,6589,5720,7848,6,6,3719,0],[5,0,0,0,4,8691,1225,312,349,10577,8586,13550,4,4,4066,0],[5,0,0,1,9,9580,1357,312,null,11250,9195,14515,9,9,3510,0],[5,0,1,0,8,6096,805,312,399,7612,6621,8720,8,8,3942,0],[5,0,1,1,6,6649,885,312,null,7846,6863,9487,6,6,4166,0],[5,0,2,0,8,5294,736,312,299,6641,5845,8076,6,8,5247,0],[5,0,2,1,8,5664,784,312,null,6760,5846,8109,8,8,4014,0],[5,0,3,0,8,4351,621,312,449,5733,4949,6999,7,8,3404,0],[5,0,3,1,4,4764,685,312,null,5761,4941,6731,3,4,3580,0],[5,0,4,0,6,4114,586,312,399,5411,4738,6292,5,6,4509,0],[5,0,4,1,5,4560,622,312,null,5494,4776,6696,5,5,4751,0],[5,1,0,0,6,10114,1379,428,349,12270,9784,16146,6,6,4108,0],[5,1,0,1,5,10457,1500,428,null,12384,9293,16843,4,5,3664,0],[5,1,1,0,5,7091,983,428,299,8800,7551,10304,5,5,3059,0],[5,1,1,1,8,7373,992,428,null,8793,7443,10688,8,8,3785,0],[5,1,2,0,5,5910,780,428,349,7467,6518,9103,5,5,4479,0],[5,1,2,1,9,6217,904,428,null,7549,6461,9041,8,9,4395,0],[5,1,3,0,6,4920,663,428,399,6410,5481,7598,5,6,4214,0],[5,1,3,1,7,5460,774,428,null,6662,5799,8146,7,7,3896,0],[5,1,4,0,5,4736,649,428,299,6112,5375,7474,4,5,4476,0],[5,1,4,1,8,5046,723,428,null,6197,5500,7117,8,8,3688,0],[5,2,0,0,9,7593,1049,312,449,9404,7404,12424,8,9,3573,0],[5,2,0,1,4,8313,1090,312,null,9715,7200,12375,4,4,3341,0],[5,2,1,0,8,5279,692,312,399,6682,5715,7846,8,8,4684,0],[5,2,1,1,6,5879,837,312,null,7028,6057,8213,6,6,4454,0],[5,2,2,0,7,4500,637,312,349,5798,5031,6881,6,7,3953,0],[5,2,2,1,7,4789,664,312,null,5764,5075,6962,6,7,5144,0],[5,2,3,0,5,3818,550,312,349,5029,4296,5973,4,5,4280,0],[5,2,3,1,6,4332,589,312,null,5232,4499,6075,6,6,4692,0],[5,2,4,0,8,3722,499,312,299,4833,4121,5754,8,8,4466,0],[5,2,4,1,4,4077,584,312,null,4974,4350,5911,4,4,4166,0],[5,3,0,0,6,10185,1391,428,299,12303,9582,15672,6,6,4483,0],[5,3,0,1,8,10743,1509,428,null,12680,9647,16538,8,8,3336,0],[5,3,1,0,8,7262,978,428,299,8967,7748,10373,8,8,4536,0],[5,3,1,1,9,7735,1029,428,null,9191,8135,11249,6,9,4454,0],[5,3,2,0,9,5798,812,428,349,7386,6388,8453,9,9,4200,0],[5,3,2,1,8,6398,867,428,null,7693,6465,9333,7,8,4433,0],[5,3,3,0,6,4987,692,428,399,6506,5536,7745,5,6,3904,0],[5,3,3,1,5,5746,771,428,null,6945,6069,8352,4,5,4472,0],[5,3,4,0,4,4911,662,428,399,6400,5500,7473,4,4,3854,0],[5,3,4,1,7,5298,698,428,null,6424,5442,7672,7,7,4077,0],[5,4,0,0,5,5512,741,236,349,6838,5350,8620,5,5,4392,0],[5,4,0,1,4,5928,824,236,null,6988,5225,9343,3,4,3343,0],[5,4,1,0,6,4017,557,236,349,5159,4375,6031,5,6,3933,0],[5,4,1,1,6,4416,625,236,null,5277,4527,6170,5,6,4097,0],[5,4,2,0,6,3369,483,236,299,4387,3816,5038,5,6,3990,0],[5,4,2,1,6,3563,480,236,null,4279,3616,5049,6,6,5165,0],[5,4,3,0,4,2791,383,236,299,3709,3175,4463,4,4,4325,0],[5,4,3,1,4,3126,426,236,null,3788,3342,4632,4,4,3235,0],[5,4,4,0,8,2699,377,236,349,3661,3208,4390,7,8,4050,0],[5,4,4,1,9,2933,425,236,null,3594,3067,4122,9,9,3962,0],[5,5,0,0,5,11066,1568,428,449,13511,10333,17350,4,5,4261,0],[5,5,0,1,5,12336,1790,428,null,14554,11493,18611,5,5,4520,0],[5,5,1,0,7,8141,1108,428,349,10026,8522,11704,5,7,4897,0],[5,5,1,1,7,8504,1115,428,null,10047,8817,11980,6,7,3358,0],[5,5,2,0,7,6658,924,428,399,8409,7397,9931,5,7,3806,0],[5,5,2,1,5,7210,952,428,null,8589,7418,10493,5,5,4058,0],[5,5,3,0,6,5995,823,428,299,7545,6408,8684,6,6,3969,0],[5,5,3,1,6,6316,902,428,null,7646,6432,8988,6,6,3165,0],[5,5,4,0,5,5324,772,428,399,6923,6046,8050,4,5,3658,0],[5,5,4,1,5,5909,780,428,null,7117,6097,8566,5,5,4122,0],[6,0,0,0,5,8799,1210,312,299,10620,8069,14254,5,5,4459,0],[6,0,0,1,6,9445,1317,312,null,11074,8230,14058,6,6,4525,0],[6,0,1,0,7,6122,840,312,299,7573,6694,9126,7,7,3821,0],[6,0,1,1,9,6768,968,312,null,8048,6981,9303,9,9,5618,0],[6,0,2,0,8,5250,684,312,299,6544,5803,7794,7,8,3683,0],[6,0,2,1,6,5413,783,312,null,6508,5746,7650,5,6,4133,0],[6,0,3,0,6,4527,594,312,349,5782,5114,6650,6,6,4020,0],[6,0,3,1,5,4726,629,312,null,5667,4780,6650,4,5,4647,0],[6,0,4,0,8,4150,575,312,399,5437,4678,6509,8,8,4311,0],[6,0,4,1,5,4489,612,312,null,5413,4781,6537,4,5,3538,0],[6,1,0,0,5,9488,1314,428,449,11680,9232,15926,5,5,3671,0],[6,1,0,1,6,9982,1346,428,null,11756,8886,15812,6,6,4183,0],[6,1,1,0,4,6701,939,428,399,8467,7407,10031,4,4,4567,0],[6,1,1,1,5,7151,997,428,null,8576,7498,9912,4,5,4383,0],[6,1,2,0,6,5824,777,428,349,7378,6385,8560,6,6,5172,0],[6,1,2,1,7,6161,830,428,null,7419,6397,8650,7,7,3641,0],[6,1,3,0,5,5020,698,428,399,6545,5791,7784,5,5,4529,0],[6,1,3,1,8,5376,721,428,null,6525,5696,7915,8,8,3810,0],[6,1,4,0,6,4515,601,428,399,5943,5115,7246,6,6,4765,0],[6,1,4,1,4,5080,703,428,null,6211,5352,7241,3,4,4056,0],[6,2,0,0,9,7358,1013,312,349,9032,7064,11297,9,9,4052,0],[6,2,0,1,7,8007,1150,312,null,9468,7683,12329,7,7,5464,0],[6,2,1,0,5,5121,680,312,449,6561,5770,7618,5,5,4670,0],[6,2,1,1,5,5599,756,312,null,6666,5762,7908,4,5,3902,0],[6,2,2,0,7,4219,584,312,399,5514,4727,6595,5,7,3680,0],[6,2,2,1,7,4663,675,312,null,5649,4758,6701,7,7,4104,0],[6,2,3,0,9,3613,486,312,449,4860,4258,5622,7,9,3999,0],[6,2,3,1,7,4257,618,312,null,5187,4547,6177,7,7,3632,0],[6,2,4,0,5,3612,500,312,299,4723,4100,5652,4,5,3969,0],[6,2,4,1,9,3937,560,312,null,4809,4183,5694,9,9,4707,0],[6,3,0,0,4,9739,1385,428,299,11852,9459,15472,4,4,4460,0],[6,3,0,1,5,10376,1447,428,null,12251,9292,15187,5,5,3835,0],[6,3,1,0,8,6792,948,428,349,8517,7548,9756,6,8,3917,0],[6,3,1,1,5,7687,1112,428,null,9227,8126,11039,5,5,3772,0],[6,3,2,0,9,5955,789,428,399,7571,6603,9036,8,9,3548,0],[6,3,2,1,6,6560,923,428,null,7910,6689,9065,6,6,4687,0],[6,3,3,0,8,5022,689,428,449,6588,5594,7762,7,8,3765,0],[6,3,3,1,9,5748,749,428,null,6925,5863,8014,9,9,5019,0],[6,3,4,0,4,4841,632,428,349,6250,5456,7352,3,4,3807,0],[6,3,4,1,4,5460,725,428,null,6612,5734,7986,4,4,4015,0],[6,4,0,0,6,5548,780,236,299,6863,5207,8704,6,6,2824,0],[6,4,0,1,9,6220,848,236,null,7303,5544,9518,9,9,4550,0],[6,4,1,0,4,3698,534,236,349,4818,4076,5514,3,4,4441,0],[6,4,1,1,4,4212,555,236,null,5003,4347,6095,4,4,4303,0],[6,4,2,0,4,3223,454,236,399,4312,3626,5119,4,4,5194,0],[6,4,2,1,5,3614,502,236,null,4352,3847,5189,5,5,4156,0],[6,4,3,0,6,2625,357,236,399,3617,3075,4202,6,6,2857,0],[6,4,3,1,8,3239,468,236,null,3944,3362,4683,8,8,3681,0],[6,4,4,0,4,2551,362,236,299,3448,3035,4024,4,4,4251,0],[6,4,4,1,4,2970,406,236,null,3612,3092,4295,4,4,4523,0],[6,5,0,0,6,11046,1436,428,399,13309,10796,17825,5,6,3317,0],[6,5,0,1,4,12077,1694,428,null,14198,10674,18837,4,4,4625,0],[6,5,1,0,5,8072,1109,428,349,9958,8617,11541,5,5,3626,0],[6,5,1,1,8,8142,1135,428,null,9704,8611,11643,8,8,3789,0],[6,5,2,0,4,6208,855,428,449,7939,6746,9323,4,4,5045,0],[6,5,2,1,5,7009,969,428,null,8406,7424,10103,4,5,3710,0],[6,5,3,0,4,5733,788,428,449,7399,6458,8894,4,4,3498,0],[6,5,3,1,5,6346,849,428,null,7622,6581,9244,5,5,4444,0],[6,5,4,0,7,5447,792,428,349,7016,6170,8325,7,7,4286,0],[6,5,4,1,6,5743,755,428,null,6926,5836,7986,5,6,3642,0],[7,0,0,0,9,8693,1255,312,299,10558,8379,14139,9,9,3184,0],[7,0,0,1,6,9621,1337,312,null,11271,9199,14865,6,6,4286,0],[7,0,1,0,6,6174,860,312,449,7794,6553,8983,6,6,4304,0],[7,0,1,1,4,6724,954,312,null,7991,6976,9397,4,4,5108,0],[7,0,2,0,7,4881,697,312,449,6339,5564,7375,6,7,3933,0],[7,0,2,1,6,5736,784,312,null,6832,5750,8067,5,6,3841,0],[7,0,3,0,4,4362,612,312,399,5685,4890,6705,4,4,4216,0],[7,0,3,1,9,4952,712,312,null,5976,5126,7207,9,9,4658,0],[7,0,4,0,9,4470,594,312,299,5675,4971,6939,8,9,3871,0],[7,0,4,1,4,4693,614,312,null,5619,4811,6431,4,4,4349,0],[7,1,0,0,9,9840,1327,428,299,11894,9450,14968,8,9,3294,0],[7,1,0,1,6,10697,1523,428,null,12648,9806,16618,5,6,4314,0],[7,1,1,0,9,6795,987,428,399,8609,7347,10296,8,9,5091,0],[7,1,1,1,8,7182,972,428,null,8582,7581,10365,8,8,3772,0],[7,1,2,0,4,5460,761,428,449,7098,6167,8443,4,4,4633,0],[7,1,2,1,7,6185,881,428,null,7494,6613,9172,7,7,3350,0],[7,1,3,0,6,4934,709,428,349,6419,5657,7428,5,6,4410,0],[7,1,3,1,6,5417,757,428,null,6602,5813,7920,6,6,4727,0],[7,1,4,0,5,4647,615,428,299,5989,5188,7058,5,5,4631,0],[7,1,4,1,9,5306,756,428,null,6490,5637,7729,8,9,4152,0],[7,2,0,0,6,7564,1069,312,349,9295,6973,12352,6,6,4337,0],[7,2,0,1,6,8345,1127,312,null,9784,7244,12446,6,6,4469,0],[7,2,1,0,7,5389,759,312,299,6759,5705,7790,7,7,3761,0],[7,2,1,1,7,5720,779,312,null,6811,5809,8325,7,7,4673,0],[7,2,2,0,7,4252,557,312,399,5520,4693,6749,7,7,3928,0],[7,2,2,1,7,4769,621,312,null,5702,4814,6553,7,7,4735,0],[7,2,3,0,6,3781,492,312,449,5034,4415,5878,6,6,3738,0],[7,2,3,1,7,4175,547,312,null,5034,4302,5797,7,7,4798,0],[7,2,4,0,8,3426,462,312,449,4649,4044,5486,6,8,3202,0],[7,2,4,1,4,3974,535,312,null,4821,4245,5898,4,4,4284,0],[7,3,0,0,6,10298,1469,428,349,12543,10019,16770,6,6,5142,0],[7,3,0,1,6,10788,1447,428,null,12663,10240,17268,6,6,3998,0],[7,3,1,0,7,7099,1033,428,399,8958,7894,10811,6,7,3946,0],[7,3,1,1,8,7932,1123,428,null,9483,8180,11533,8,8,4652,0],[7,3,2,0,8,5871,813,428,399,7510,6309,9126,6,8,4146,0],[7,3,2,1,7,6212,863,428,null,7503,6413,9053,7,7,3893,0],[7,3,3,0,9,5363,727,428,299,6817,6048,8258,7,9,4724,0],[7,3,3,1,6,5564,725,428,null,6717,5820,8024,5,6,4663,0],[7,3,4,0,9,4926,681,428,449,6484,5564,7689,7,9,5077,0],[7,3,4,1,5,5231,751,428,null,6410,5674,7472,3,5,5202,0],[7,4,0,0,6,5573,750,236,299,6858,5548,8859,5,6,4049,0],[7,4,0,1,7,5920,831,236,null,6988,5432,8950,7,7,4686,0],[7,4,1,0,6,3842,517,236,449,5044,4364,5943,5,6,4071,0],[7,4,1,1,9,4497,632,236,null,5366,4590,6239,9,9,4078,0],[7,4,2,0,8,3090,411,236,399,4136,3584,4842,8,8,4017,0],[7,4,2,1,8,3576,499,236,null,4311,3622,5107,8,8,4018,0],[7,4,3,0,8,2856,411,236,349,3851,3274,4469,8,8,3647,0],[7,4,3,1,9,3294,451,236,null,3981,3419,4631,9,9,3331,0],[7,4,4,0,7,2536,353,236,399,3524,3108,4097,7,7,4282,0],[7,4,4,1,4,2995,399,236,null,3630,3107,4315,4,4,4771,0],[7,5,0,0,4,10973,1479,428,349,13229,9908,16680,4,4,3774,0],[7,5,0,1,9,11829,1706,428,null,13962,10384,18310,8,9,4202,0],[7,5,1,0,6,8097,1118,428,299,9943,8373,11507,6,6,4918,0],[7,5,1,1,5,8543,1162,428,null,10133,8794,12182,4,5,3252,0],[7,5,2,0,8,6663,872,428,349,8312,7290,9882,8,8,5113,0],[7,5,2,1,9,6986,981,428,null,8395,7106,9865,9,9,3500,0],[7,5,3,0,5,5783,763,428,449,7423,6451,8770,5,5,5048,0],[7,5,3,1,7,6139,833,428,null,7400,6570,8914,7,7,3449,0],[7,5,4,0,9,5267,700,428,399,6794,5846,8046,8,9,4232,0],[7,5,4,1,6,6010,809,428,null,7247,6419,8768,4,6,3826,0],[8,0,0,0,6,8619,1215,312,299,10446,8497,13622,4,6,4983,0],[8,0,0,1,6,9114,1201,312,null,10627,8220,14490,5,6,4496,0],[8,0,1,0,6,5822,797,312,349,7281,6375,8544,6,6,3596,0],[8,0,1,1,5,6233,875,312,null,7420,6491,8716,5,5,4135,0],[8,0,2,0,5,4725,634,312,399,6070,5265,7130,5,5,3802,0],[8,0,2,1,6,5456,727,312,null,6495,5593,7519,6,6,4216,0],[8,0,3,0,5,4141,540,312,449,5441,4827,6388,4,5,4463,0],[8,0,3,1,4,4703,625,312,null,5640,4956,6620,4,4,3769,0],[8,0,4,0,9,3937,562,312,399,5210,4446,6351,9,9,4118,0],[8,0,4,1,5,4452,603,312,null,5367,4526,6542,4,5,2806,0],[8,1,0,0,6,9391,1350,428,299,11467,8627,14263,5,6,3969,0],[8,1,0,1,4,10442,1388,428,null,12258,9600,15922,4,4,4624,0],[8,1,1,0,5,6702,892,428,299,8322,7173,9660,4,5,3297,0],[8,1,1,1,9,7209,955,428,null,8592,7390,10375,9,9,4102,0],[8,1,2,0,9,5646,734,428,399,7207,6240,8564,8,9,3793,0],[8,1,2,1,8,5953,784,428,null,7165,6021,8231,8,8,4336,0],[8,1,3,0,9,4735,666,428,349,6177,5260,7401,9,9,4103,0],[8,1,3,1,6,5279,704,428,null,6411,5610,7554,6,6,4231,0],[8,1,4,0,8,4276,604,428,449,5757,4970,6685,8,8,4043,0],[8,1,4,1,9,5032,681,428,null,6141,5180,7327,9,9,3402,0],[8,2,0,0,7,7411,1019,312,349,9091,6757,11312,6,7,4660,0],[8,2,0,1,8,8061,1051,312,null,9424,7218,11634,7,8,4622,0],[8,2,1,0,6,5043,670,312,449,6474,5613,7864,6,6,4841,0],[8,2,1,1,6,5390,767,312,null,6469,5605,7830,6,6,4266,0],[8,2,2,0,6,4014,538,312,449,5313,4552,6231,6,6,3441,0],[8,2,2,1,4,4556,638,312,null,5507,4650,6344,4,4,4076,0],[8,2,3,0,6,3586,500,312,399,4797,4198,5575,6,6,5030,0],[8,2,3,1,4,4151,574,312,null,5037,4468,5793,4,4,3994,0],[8,2,4,0,4,3541,475,312,399,4727,4003,5571,4,4,4072,0],[8,2,4,1,9,3766,541,312,null,4619,4075,5461,9,9,4369,0],[8,3,0,0,6,9555,1350,428,399,11732,9146,15940,6,6,4569,0],[8,3,0,1,6,10334,1463,428,null,12225,9656,15619,6,6,4701,0],[8,3,1,0,9,6826,930,428,449,8633,7463,10363,9,9,4003,0],[8,3,1,1,7,7392,1048,428,null,8868,7665,10253,7,7,4530,0],[8,3,2,0,5,5625,804,428,349,7206,6197,8471,4,5,4461,0],[8,3,2,1,9,6079,826,428,null,7334,6163,8950,8,9,3867,0],[8,3,3,0,4,4808,688,428,349,6272,5415,7197,3,4,4364,0],[8,3,3,1,6,5437,749,428,null,6615,5737,8008,6,6,4698,0],[8,3,4,0,4,4633,611,428,299,5971,5150,6961,3,4,4328,0],[8,3,4,1,8,5265,687,428,null,6379,5490,7311,8,8,3990,0],[8,4,0,0,8,5604,739,236,399,6978,5650,8632,8,8,3940,0],[8,4,0,1,6,5970,808,236,null,7014,5602,9274,6,6,2810,0],[8,4,1,0,8,3732,500,236,449,4917,4221,5942,8,8,4001,0],[8,4,1,1,8,4132,576,236,null,4945,4164,5726,7,8,3698,0],[8,4,2,0,8,3236,433,236,299,4204,3665,4859,7,8,4696,0],[8,4,2,1,9,3576,509,236,null,4321,3672,4979,9,9,4017,0],[8,4,3,0,5,2614,362,236,449,3661,3128,4478,5,5,3187,0],[8,4,3,1,6,3118,450,236,null,3804,3295,4620,6,6,3966,0],[8,4,4,0,4,2644,376,236,299,3556,3021,4217,4,4,3984,0],[8,4,4,1,5,2867,396,236,null,3498,3021,4030,5,5,4269,0],[8,5,0,0,8,10937,1450,428,399,13213,10402,16583,6,8,4173,0],[8,5,0,1,8,11077,1561,428,null,13066,10109,16524,8,8,4038,0],[8,5,1,0,6,7752,1010,428,349,9539,8356,11647,4,6,4603,0],[8,5,1,1,9,8024,1098,428,null,9550,8251,11485,8,9,4310,0],[8,5,2,0,4,6144,845,428,349,7766,6809,9028,4,4,3409,0],[8,5,2,1,5,6733,977,428,null,8138,7020,9614,5,5,4886,0],[8,5,3,0,6,5487,789,428,299,7004,6033,8258,6,6,5116,0],[8,5,3,1,6,6020,818,428,null,7266,6357,8735,6,6,4575,0],[8,5,4,0,6,5052,668,428,399,6547,5514,7830,6,6,3775,0],[8,5,4,1,6,5619,772,428,null,6819,5913,8038,5,6,3622,0],[9,0,0,0,5,8525,1115,312,399,10351,8292,12907,5,5,4664,0],[9,0,0,1,7,8521,1189,312,null,10022,8195,12418,7,7,3948,0],[9,0,1,0,6,5738,787,312,449,7286,6392,8577,5,6,4508,0],[9,0,1,1,4,6040,862,312,null,7214,6231,8320,4,4,4136,0],[9,0,2,0,5,4850,651,312,299,6112,5153,7394,5,5,4655,0],[9,0,2,1,4,5068,685,312,null,6065,5274,6994,3,4,4490,0],[9,0,3,0,4,4091,552,312,449,5404,4608,6445,4,4,4222,0],[9,0,3,1,6,4495,645,312,null,5452,4744,6507,6,6,4404,0],[9,0,4,0,4,4000,554,312,399,5266,4656,6318,3,4,4321,0],[9,0,4,1,5,4277,560,312,null,5149,4516,6216,5,5,4429,0],[9,1,0,0,5,9301,1227,428,299,11254,9179,15338,5,5,4780,0],[9,1,0,1,4,9642,1393,428,null,11463,8627,15054,3,4,3288,0],[9,1,1,0,5,6649,891,428,349,8316,7124,9732,4,5,4061,0],[9,1,1,1,7,7140,939,428,null,8507,7336,9806,7,7,3715,0],[9,1,2,0,8,5422,755,428,349,6954,5845,8328,8,8,4118,0],[9,1,2,1,4,5838,798,428,null,7063,6143,8247,4,4,4832,0],[9,1,3,0,5,4496,621,428,399,5944,5077,7112,5,5,4193,0],[9,1,3,1,6,5127,737,428,null,6292,5313,7400,6,6,4464,0],[9,1,4,0,7,4255,582,428,399,5663,4814,6890,7,7,2917,0],[9,1,4,1,4,4844,693,428,null,5965,5225,7008,4,4,3815,0],[9,2,0,0,4,7183,964,312,449,8908,6899,11955,4,4,3112,0],[9,2,0,1,4,7711,1109,312,null,9132,6941,11907,4,4,3710,0],[9,2,1,0,8,4743,633,312,399,6086,5171,7312,7,8,5010,0],[9,2,1,1,6,5426,785,312,null,6523,5648,7820,6,6,4387,0],[9,2,2,0,4,3964,518,312,399,5193,4457,6279,3,4,3600,0],[9,2,2,1,5,4513,651,312,null,5476,4826,6688,5,5,4378,0],[9,2,3,0,9,3354,440,312,449,4555,3948,5454,9,9,4592,0],[9,2,3,1,7,4072,545,312,null,4929,4230,5724,7,7,4444,0],[9,2,4,0,4,3481,479,312,299,4571,3950,5279,4,4,4303,0],[9,2,4,1,5,3837,539,312,null,4687,3959,5433,5,5,4167,0],[9,3,0,0,5,9790,1353,428,449,12020,9626,15511,5,5,4676,0],[9,3,0,1,4,9939,1348,428,null,11715,8720,14599,4,4,4528,0],[9,3,1,0,4,6561,917,428,399,8305,7033,9731,4,4,4202,0],[9,3,1,1,5,7228,972,428,null,8628,7466,10365,5,5,4286,0],[9,3,2,0,7,5546,747,428,299,7020,6059,8335,5,7,3316,0],[9,3,2,1,9,6104,825,428,null,7357,6362,8554,9,9,3990,0],[9,3,3,0,8,4837,660,428,349,6274,5324,7588,7,8,4769,0],[9,3,3,1,9,5408,731,428,null,6567,5770,7676,9,9,4010,0],[9,3,4,0,4,4568,634,428,449,6079,5347,7330,3,4,3733,0],[9,3,4,1,4,5126,722,428,null,6276,5373,7572,4,4,3595,0],[9,4,0,0,4,5402,759,236,299,6696,4962,8629,4,4,4392,0],[9,4,0,1,6,5849,783,236,null,6868,5298,9321,6,6,4728,0],[9,4,1,0,6,3601,472,236,399,4708,4138,5547,5,6,3841,0],[9,4,1,1,9,4120,570,236,null,4926,4316,5672,9,9,4569,0],[9,4,2,0,4,2966,394,236,399,3995,3498,4647,3,4,3384,0],[9,4,2,1,8,3387,475,236,null,4098,3629,4934,8,8,3705,0],[9,4,3,0,9,2557,350,236,449,3593,3189,4204,9,9,4414,0],[9,4,3,1,4,3101,418,236,null,3755,3330,4317,3,4,3903,0],[9,4,4,0,5,2464,335,236,349,3384,2851,3919,5,5,4557,0],[9,4,4,1,6,2888,381,236,null,3505,3105,4063,6,6,3947,0],[9,5,0,0,9,10355,1347,428,399,12529,10058,16124,8,9,5207,0],[9,5,0,1,5,10926,1574,428,null,12928,9979,17107,5,5,4138,0],[9,5,1,0,4,7370,961,428,449,9207,7962,10579,4,4,4176,0],[9,5,1,1,4,7710,1049,428,null,9187,7975,10847,4,4,4143,0],[9,5,2,0,5,5806,840,428,449,7523,6644,9181,5,5,4093,0],[9,5,2,1,7,6779,931,428,null,8138,7001,9341,7,7,4165,0],[9,5,3,0,5,5385,726,428,349,6888,6116,7913,5,5,4542,0],[9,5,3,1,9,5750,785,428,null,6963,6105,8481,9,9,3391,0],[9,5,4,0,7,5131,693,428,349,6601,5758,7875,6,7,3895,0],[9,5,4,1,9,5771,755,428,null,6954,6087,8198,9,9,3718,0],[10,0,0,0,5,8435,1105,312,299,10151,7921,13217,4,5,4520,0],[10,0,0,1,6,8693,1223,312,null,10228,7930,13327,6,6,5213,0],[10,0,1,0,7,5924,828,312,349,7413,6313,9024,6,7,4721,0],[10,0,1,1,5,6169,827,312,null,7308,6478,8560,5,5,3983,0],[10,0,2,0,5,4776,622,312,449,6159,5316,7512,5,5,4081,0],[10,0,2,1,4,5319,758,312,null,6389,5430,7347,4,4,3254,0],[10,0,3,0,5,4187,606,312,349,5455,4701,6371,4,5,4230,0],[10,0,3,1,8,4673,680,312,null,5665,4865,6776,8,8,3032,0],[10,0,4,0,9,4031,536,312,399,5279,4492,6361,7,9,4666,0],[10,0,4,1,7,4307,614,312,null,5234,4465,6258,6,7,4045,0],[10,1,0,0,6,9456,1237,428,399,11521,8705,15358,5,6,3583,0],[10,1,0,1,5,9611,1361,428,null,11399,9323,14097,4,5,3811,0],[10,1,1,0,5,6334,834,428,349,7945,6754,9120,5,5,3685,0],[10,1,1,1,9,6999,921,428,null,8348,7240,9859,9,9,3904,0],[10,1,2,0,9,5177,732,428,449,6786,5948,7979,9,9,4333,0],[10,1,2,1,7,5578,762,428,null,6768,5925,7885,7,7,4148,0],[10,1,3,0,4,4699,675,428,349,6151,5208,7401,4,4,3738,0],[10,1,3,1,4,5120,677,428,null,6225,5471,7335,3,4,4115,0],[10,1,4,0,5,4265,597,428,299,5589,4840,6762,4,5,5109,0],[10,1,4,1,4,4811,665,428,null,5905,5005,6934,3,4,4014,0],[10,2,0,0,9,7075,940,312,449,8776,6625,11695,9,9,4232,0],[10,2,0,1,9,7703,1056,312,null,9071,6771,11460,9,9,4855,0],[10,2,1,0,6,4741,617,312,449,6119,5293,7407,6,6,4002,0],[10,2,1,1,8,5293,754,312,null,6359,5494,7346,8,8,3587,0],[10,2,2,0,8,4095,567,312,349,5323,4547,6184,8,8,4455,0],[10,2,2,1,4,4658,619,312,null,5589,4842,6639,4,4,4016,0],[10,2,3,0,8,3522,484,312,299,4616,4014,5448,8,8,4806,0],[10,2,3,1,4,3913,513,312,null,4739,4144,5569,4,4,4733,0],[10,2,4,0,5,3368,488,312,349,4517,3949,5423,5,5,4453,0],[10,2,4,1,7,3769,492,312,null,4573,3906,5256,7,7,3980,0],[10,3,0,0,8,9338,1291,428,399,11456,8638,14770,5,8,4038,0],[10,3,0,1,5,10277,1368,428,null,12073,9519,16140,5,5,3970,0],[10,3,1,0,4,6429,871,428,349,8077,6988,9270,3,4,5273,0],[10,3,1,1,4,7014,933,428,null,8375,7172,9842,4,4,4337,0],[10,3,2,0,6,5199,751,428,399,6777,5730,7947,6,6,3637,0],[10,3,2,1,5,5773,839,428,null,7041,6083,8218,4,5,4548,0],[10,3,3,0,5,4691,631,428,449,6200,5384,7162,3,5,4658,0],[10,3,3,1,8,5346,755,428,null,6529,5754,7764,8,8,3891,0],[10,3,4,0,8,4622,630,428,399,6078,5146,7160,8,8,4381,0],[10,3,4,1,8,5025,721,428,null,6174,5387,7479,7,8,4095,0],[10,4,0,0,9,5030,722,236,349,6337,4815,7999,8,9,4950,0],[10,4,0,1,5,5802,789,236,null,6827,5187,8933,5,5,4058,0],[10,4,1,0,7,3519,511,236,299,4565,4033,5384,6,7,3968,0],[10,4,1,1,9,3916,569,236,null,4721,3993,5481,9,9,4678,0],[10,4,2,0,4,2989,400,236,299,3924,3355,4758,4,4,3418,0],[10,4,2,1,4,3516,457,236,null,4209,3724,5116,3,4,3650,0],[10,4,3,0,7,2525,335,236,349,3445,2914,4014,7,7,3458,0],[10,4,3,1,7,3056,412,236,null,3704,3255,4317,6,7,3940,0],[10,4,4,0,4,2471,347,236,299,3353,2856,3948,4,4,3757,0],[10,4,4,1,9,2803,403,236,null,3442,2995,4178,8,9,4787,0],[10,5,0,0,9,10855,1464,428,399,13146,9911,17467,9,9,3431,0],[10,5,0,1,9,10902,1430,428,null,12760,9766,17340,9,9,4479,0],[10,5,1,0,5,7282,1059,428,299,9068,7626,10640,4,5,4341,0],[10,5,1,1,4,8057,1134,428,null,9619,8199,11372,4,4,5433,0],[10,5,2,0,7,5896,803,428,399,7526,6328,8837,7,7,4127,0],[10,5,2,1,4,6834,940,428,null,8202,7139,9691,4,4,5131,0],[10,5,3,0,7,5108,692,428,449,6677,5665,7935,7,7,4475,0],[10,5,3,1,7,5796,828,428,null,7052,6083,8163,7,7,4216,0],[10,5,4,0,6,5069,702,428,349,6548,5614,7935,6,6,4114,0],[10,5,4,1,9,5379,781,428,null,6587,5774,7620,9,9,3413,0],[11,0,0,0,7,8362,1199,312,399,10272,7878,13767,7,7,3975,0],[11,0,0,1,4,9325,1214,312,null,10850,8864,13756,4,4,4511,0],[11,0,1,0,6,5612,800,312,449,7173,6187,8520,6,6,4593,0],[11,0,1,1,9,6375,838,312,null,7525,6480,8668,9,9,4213,0],[11,0,2,0,8,4747,663,312,399,6121,5158,7092,7,8,4409,0],[11,0,2,1,8,5313,698,312,null,6323,5492,7691,8,8,3417,0],[11,0,3,0,8,4143,579,312,449,5482,4790,6294,8,8,4313,0],[11,0,3,1,4,4574,646,312,null,5532,4751,6739,4,4,3304,0],[11,0,4,0,6,4063,530,312,399,5305,4567,6085,5,6,4866,0],[11,0,4,1,7,4482,613,312,null,5407,4659,6246,7,7,4329,0],[11,1,0,0,4,9417,1258,428,299,11402,8704,14148,4,4,3728,0],[11,1,0,1,8,10313,1366,428,null,12107,9363,15165,8,8,4617,0],[11,1,1,0,4,6712,933,428,449,8522,7169,10075,4,4,3739,0],[11,1,1,1,4,7130,1033,428,null,8591,7387,9873,4,4,4784,0],[11,1,2,0,7,5332,732,428,299,6790,6015,8187,6,7,4469,0],[11,1,2,1,5,6064,829,428,null,7320,6319,8730,5,5,4127,0],[11,1,3,0,7,4598,661,428,399,6086,5366,7376,6,7,4901,0],[11,1,3,1,5,5341,723,428,null,6492,5752,7520,5,5,3497,0],[11,1,4,0,4,4355,579,428,349,5711,4974,6783,4,4,4849,0],[11,1,4,1,8,5137,708,428,null,6273,5519,7373,7,8,4500,0],[11,2,0,0,6,7364,1020,312,399,9095,7131,11490,6,6,4305,0],[11,2,0,1,7,7994,1098,312,null,9403,7450,12628,7,7,3655,0],[11,2,1,0,6,4989,650,312,349,6300,5508,7563,6,6,4210,0],[11,2,1,1,5,5475,790,312,null,6577,5548,7851,5,5,5362,0],[11,2,2,0,9,4111,582,312,349,5354,4672,6496,8,9,4667,0],[11,2,2,1,6,4766,638,312,null,5716,5007,6704,6,6,4356,0],[11,2,3,0,8,3656,477,312,299,4744,4178,5781,8,8,4651,0],[11,2,3,1,8,4102,592,312,null,5006,4284,5946,8,8,4359,0],[11,2,4,0,8,3364,475,312,399,4550,3929,5443,7,8,4698,0],[11,2,4,1,4,3898,529,312,null,4739,4171,5466,4,4,4176,0],[11,3,0,0,5,9923,1340,428,349,12040,9738,16379,5,5,4372,0],[11,3,0,1,6,10745,1516,428,null,12689,10061,15862,4,6,4195,0],[11,3,1,0,7,6832,925,428,299,8483,7336,10225,6,7,3384,0],[11,3,1,1,9,7614,1075,428,null,9117,8025,10966,8,9,4229,0],[11,3,2,0,9,5588,799,428,349,7163,6111,8500,8,9,4305,0],[11,3,2,1,7,6259,888,428,null,7575,6571,9044,7,7,4218,0],[11,3,3,0,7,4986,649,428,299,6362,5484,7599,7,7,4235,0],[11,3,3,1,5,5488,753,428,null,6670,5891,7655,5,5,3874,0],[11,3,4,0,9,4670,634,428,299,6031,5075,7190,9,9,4296,0],[11,3,4,1,9,5295,736,428,null,6460,5717,7819,9,9,3750,0],[11,4,0,0,7,5158,722,236,449,6565,4918,8295,5,7,4819,0],[11,4,0,1,4,5751,776,236,null,6763,5307,8507,4,4,4416,0],[11,4,1,0,5,3707,516,236,449,4908,4166,5881,4,5,4162,0],[11,4,1,1,6,4072,531,236,null,4840,4155,5663,6,6,4716,0],[11,4,2,0,4,3064,418,236,399,4117,3608,4988,4,4,2855,0],[11,4,2,1,7,3463,466,236,null,4165,3666,4907,7,7,3877,0],[11,4,3,0,7,2643,344,236,399,3622,3082,4257,7,7,4133,0],[11,4,3,1,8,2987,424,236,null,3646,3116,4277,8,8,3265,0],[11,4,4,0,6,2490,357,236,349,3433,2970,4179,6,6,3701,0],[11,4,4,1,5,2864,380,236,null,3481,2947,4202,5,5,4331,0],[11,5,0,0,5,11263,1464,428,399,13553,10317,17651,3,5,4655,0],[11,5,0,1,7,11351,1648,428,null,13427,10845,18228,7,7,3841,0],[11,5,1,0,6,7317,1052,428,449,9245,7930,10596,6,6,2736,0],[11,5,1,1,9,8424,1118,428,null,9970,8509,11422,9,9,3994,0],[11,5,2,0,6,6377,873,428,349,8028,6970,9652,4,6,4091,0],[11,5,2,1,8,6757,953,428,null,8138,6927,9685,8,8,4435,0],[11,5,3,0,6,5444,720,428,299,6891,6102,7960,6,6,3994,0],[11,5,3,1,6,5939,797,428,null,7164,6183,8548,5,6,4855,0],[11,5,4,0,5,5094,719,428,399,6640,5587,7940,5,5,4339,0],[11,5,4,1,6,5624,741,428,null,6793,5899,7897,5,6,4027,0],[12,0,0,0,4,8879,1154,312,349,10694,8641,14175,3,4,4699,0],[12,0,0,1,5,9736,1391,312,null,11439,8551,14159,5,5,3752,0],[12,0,1,0,9,6278,836,312,399,7825,6661,9557,8,9,4341,0],[12,0,1,1,4,6661,932,312,null,7905,6687,9429,4,4,4383,0],[12,0,2,0,4,5347,749,312,449,6856,6028,8252,4,4,3859,0],[12,0,2,1,5,5891,819,312,null,7022,6019,8474,5,5,3516,0],[12,0,3,0,5,4554,619,312,349,5834,4961,7055,5,5,3849,0],[12,0,3,1,9,5092,682,312,null,6086,5209,7117,9,9,3818,0],[12,0,4,0,6,4430,577,312,399,5718,4965,6951,6,6,4346,0],[12,0,4,1,9,4665,610,312,null,5586,4829,6823,9,9,4341,0],[12,1,0,0,7,10344,1422,428,449,12643,9752,16687,7,7,5593,0],[12,1,0,1,8,10742,1396,428,null,12566,9603,16493,8,8,5319,0],[12,1,1,0,6,6813,980,428,349,8570,7452,10331,4,6,4843,0],[12,1,1,1,8,7515,1018,428,null,8961,7599,10711,8,8,4490,0],[12,1,2,0,6,5627,782,428,399,7236,6160,8449,5,6,4659,0],[12,1,2,1,8,6328,872,428,null,7628,6769,9156,8,8,3828,0],[12,1,3,0,5,4948,691,428,399,6466,5508,7499,5,5,4307,0],[12,1,3,1,5,5637,740,428,null,6805,5724,8065,5,5,4244,0],[12,1,4,0,4,4859,695,428,299,6281,5551,7286,4,4,4335,0],[12,1,4,1,9,5298,730,428,null,6456,5627,7471,9,9,4574,0],[12,2,0,0,9,7742,1053,312,299,9406,7383,11763,8,9,3929,0],[12,2,0,1,5,8185,1185,312,null,9683,7865,12235,4,5,3814,0],[12,2,1,0,6,5654,773,312,299,7038,5936,8334,4,6,4535,0],[12,2,1,1,5,5862,805,312,null,6980,6009,8138,5,5,3971,0],[12,2,2,0,6,4438,633,312,449,5832,5172,6906,5,6,3860,0],[12,2,2,1,8,5006,723,312,null,6042,5254,7314,8,8,3962,0],[12,2,3,0,5,3935,557,312,349,5153,4430,5997,5,5,4764,0],[12,2,3,1,6,4285,579,312,null,5176,4448,6064,5,6,4211,0],[12,2,4,0,5,3832,506,312,299,4949,4214,5904,4,5,3476,0],[12,2,4,1,4,4155,594,312,null,5060,4423,5945,4,4,3542,0],[12,3,0,0,8,10500,1374,428,299,12601,10052,17043,7,8,3624,0],[12,3,0,1,4,10954,1590,428,null,12972,9757,17071,4,4,3641,0],[12,3,1,0,9,7413,965,428,299,9105,7769,11095,7,9,4884,0],[12,3,1,1,7,7556,1099,428,null,9083,7867,10813,7,7,3380,0],[12,3,2,0,8,5908,846,428,349,7531,6679,8642,8,8,4693,0],[12,3,2,1,5,6430,887,428,null,7745,6765,8917,5,5,3539,0],[12,3,3,0,4,5322,731,428,349,6830,5936,8172,3,4,4421,0],[12,3,3,1,7,5888,844,428,null,7160,6177,8288,7,7,3449,0],[12,3,4,0,6,4866,681,428,349,6323,5319,7672,6,6,3541,0],[12,3,4,1,5,5349,754,428,null,6531,5553,7866,5,5,4368,0],[12,4,0,0,7,5885,844,236,399,7364,5836,9117,7,7,4430,0],[12,4,0,1,5,6088,852,236,null,7176,5638,9698,5,5,3824,0],[12,4,1,0,7,3935,570,236,449,5190,4426,6049,7,7,4718,0],[12,4,1,1,4,4334,573,236,null,5144,4407,6244,4,4,4202,0],[12,4,2,0,9,3199,433,236,399,4267,3759,5086,9,9,3683,0],[12,4,2,1,4,3635,489,236,null,4360,3804,5203,4,4,5150,0],[12,4,3,0,9,2848,393,236,399,3876,3295,4438,9,9,4197,0],[12,4,3,1,8,3186,430,236,null,3852,3317,4687,8,8,5094,0],[12,4,4,0,7,2638,367,236,349,3589,3113,4330,6,7,3913,0],[12,4,4,1,9,3025,399,236,null,3660,3227,4382,9,9,4239,0],[12,5,0,0,5,11665,1520,428,299,13912,10921,17344,4,5,3772,0],[12,5,0,1,4,11805,1646,428,null,13879,11104,17753,4,4,3632,0],[12,5,1,0,6,8137,1113,428,349,10028,8776,11607,6,6,4262,0],[12,5,1,1,8,8387,1192,428,null,10007,8674,12243,7,8,4216,0],[12,5,2,0,4,6724,911,428,399,8462,7274,10109,4,4,5158,0],[12,5,2,1,9,7023,983,428,null,8434,7288,9883,9,9,4369,0],[12,5,3,0,9,5803,798,428,399,7427,6522,8540,9,9,3679,0],[12,5,3,1,4,6435,882,428,null,7745,6779,8990,4,4,4420,0],[12,5,4,0,4,5430,782,428,299,6939,6078,8050,4,4,5004,0],[12,5,4,1,9,5981,814,428,null,7223,6284,8359,9,9,3847,0],[13,0,0,0,5,8757,1255,312,349,10673,8540,13663,5,5,4737,0],[13,0,0,1,6,9513,1352,312,null,11177,8988,14842,6,6,4702,0],[13,0,1,0,9,6241,822,312,449,7824,6707,9029,9,9,3816,0],[13,0,1,1,6,6549,888,312,null,7749,6625,9175,6,6,3390,0],[13,0,2,0,7,5247,684,312,349,6592,5626,7827,7,7,3597,0],[13,0,2,1,9,5573,806,312,null,6691,5754,8155,7,9,4209,0],[13,0,3,0,5,4520,614,312,399,5845,5080,7099,5,5,4658,0],[13,0,3,1,9,4888,701,312,null,5901,5023,7114,9,9,4884,0],[13,0,4,0,8,4342,565,312,349,5568,4841,6688,6,8,5232,0],[13,0,4,1,5,4796,651,312,null,5759,5104,6939,4,5,3926,0],[13,1,0,0,9,10165,1356,428,449,12398,10085,15398,9,9,4471,0],[13,1,0,1,6,10270,1339,428,null,12037,9490,14993,5,6,4164,0],[13,1,1,0,8,6919,957,428,299,8603,7521,10131,7,8,4519,0],[13,1,1,1,6,7218,992,428,null,8638,7414,9917,6,6,4734,0],[13,1,2,0,5,5803,826,428,399,7456,6554,8836,5,5,3812,0],[13,1,2,1,8,6064,832,428,null,7324,6417,8877,7,8,4055,0],[13,1,3,0,4,5159,737,428,299,6623,5781,7873,4,4,4059,0],[13,1,3,1,9,5248,763,428,null,6439,5423,7457,9,9,4319,0],[13,1,4,0,8,4619,620,428,449,6116,5211,7069,6,8,3603,0],[13,1,4,1,8,5349,714,428,null,6491,5480,7869,8,8,3493,0],[13,2,0,0,5,7350,1063,312,349,9074,7210,11212,4,5,4675,0],[13,2,0,1,8,8012,1126,312,null,9450,7456,12233,8,8,4517,0],[13,2,1,0,6,5426,783,312,349,6870,5946,8210,4,6,3716,0],[13,2,1,1,5,5842,786,312,null,6941,5917,8149,5,5,4648,0],[13,2,2,0,7,4372,575,312,449,5708,5020,6935,6,7,4499,0],[13,2,2,1,4,5036,702,312,null,6050,5225,7213,4,4,5262,0],[13,2,3,0,6,3821,530,312,299,4962,4210,5995,5,6,4608,0],[13,2,3,1,9,4294,570,312,null,5176,4552,6217,9,9,4092,0],[13,2,4,0,6,3632,486,312,299,4729,4113,5749,3,6,3918,0],[13,2,4,1,5,4186,565,312,null,5063,4305,5851,5,5,4225,0],[13,3,0,0,6,10499,1462,428,299,12687,9741,15918,5,6,4943,0],[13,3,0,1,4,11173,1483,428,null,13084,10333,16275,4,4,4705,0],[13,3,1,0,6,6874,996,428,399,8697,7448,10608,6,6,3478,0],[13,3,1,1,5,7847,1073,428,null,9349,7896,11109,5,5,3471,0],[13,3,2,0,9,6193,850,428,349,7821,6857,9399,9,9,3944,0],[13,3,2,1,9,6474,931,428,null,7834,6731,9118,8,9,5073,0],[13,3,3,0,7,5302,721,428,299,6750,5904,7734,7,7,3561,0],[13,3,3,1,6,5663,748,428,null,6838,5940,8181,6,6,3863,0],[13,3,4,0,8,4958,695,428,449,6530,5678,7628,6,8,4332,0],[13,3,4,1,7,5442,790,428,null,6660,5777,7837,7,7,3620,0],[13,4,0,0,5,5824,829,236,299,7189,5622,8917,5,5,4413,0],[13,4,0,1,8,5967,797,236,null,7000,5692,8706,7,8,4357,0],[13,4,1,0,4,4050,564,236,299,5149,4391,6035,4,4,4760,0],[13,4,1,1,7,4380,614,236,null,5230,4420,6113,7,7,4368,0],[13,4,2,0,4,3303,431,236,449,4419,3794,5406,4,4,3486,0],[13,4,2,1,9,3637,479,236,null,4352,3736,5272,9,9,4073,0],[13,4,3,0,7,2785,397,236,299,3717,3254,4491,6,7,4266,0],[13,4,3,1,5,3184,442,236,null,3862,3324,4604,5,5,4250,0],[13,4,4,0,6,2772,381,236,349,3738,3233,4574,4,6,3112,0],[13,4,4,1,6,2980,411,236,null,3627,3152,4292,4,6,4090,0],[13,5,0,0,9,11377,1521,428,349,13675,10297,18057,8,9,3634,0],[13,5,0,1,5,11829,1639,428,null,13896,11215,18819,5,5,4157,0],[13,5,1,0,6,7851,1087,428,299,9665,8208,11265,6,6,4497,0],[13,5,1,1,9,8475,1181,428,null,10084,8908,11813,8,9,3989,0],[13,5,2,0,7,6657,918,428,399,8402,7436,9930,7,7,4351,0],[13,5,2,1,9,6936,922,428,null,8285,7296,9902,8,9,4601,0],[13,5,3,0,8,6017,782,428,349,7577,6379,8979,8,8,3387,0],[13,5,3,1,7,6412,900,428,null,7739,6811,9019,6,7,4323,0],[13,5,4,0,7,5370,702,428,349,6849,6028,8346,7,7,3235,0],[13,5,4,1,7,6222,851,428,null,7501,6640,8643,7,7,4409,0],[14,0,0,0,4,9161,1331,312,299,11103,8907,14597,4,4,3938,0],[14,0,0,1,6,9741,1343,312,null,11396,9195,14491,6,6,4446,0],[14,0,1,0,7,6148,894,312,349,7703,6652,9105,7,7,3938,0],[14,0,1,1,9,6889,929,312,null,8130,6955,9667,9,9,4946,0],[14,0,2,0,5,5069,662,312,449,6492,5625,7488,5,5,4184,0],[14,0,2,1,5,5790,756,312,null,6858,5917,7861,5,5,4614,0],[14,0,3,0,9,4690,617,312,399,6018,5079,6993,9,9,4463,0],[14,0,3,1,7,4994,676,312,null,5981,5097,7238,7,7,4647,0],[14,0,4,0,7,4327,595,312,299,5532,4675,6768,6,7,3941,0],[14,0,4,1,6,4944,688,312,null,5944,5231,6865,6,6,4884,0],[14,1,0,0,5,9632,1380,428,349,11790,8937,15142,3,5,4078,0],[14,1,0,1,9,10699,1454,428,null,12581,9482,15571,9,9,3990,0],[14,1,1,0,6,6894,987,428,299,8608,7352,10160,6,6,3785,0],[14,1,1,1,5,7434,1063,428,null,8925,7797,10481,5,5,5270,0],[14,1,2,0,5,5701,799,428,299,7227,6236,8560,5,5,4707,0],[14,1,2,1,7,6381,893,428,null,7702,6824,9077,7,7,4419,0],[14,1,3,0,4,5045,667,428,399,6539,5519,7506,2,4,4161,0],[14,1,3,1,9,5600,791,428,null,6820,5736,7991,8,9,4718,0],[14,1,4,0,7,4649,660,428,399,6135,5295,7456,7,7,4979,0],[14,1,4,1,5,5371,723,428,null,6522,5642,7953,5,5,4226,0],[14,2,0,0,9,7530,993,312,349,9184,7343,11687,8,9,3906,0],[14,2,0,1,4,8082,1084,312,null,9478,7561,11748,4,4,4052,0],[14,2,1,0,4,5276,720,312,449,6757,5802,7966,4,4,4377,0],[14,2,1,1,5,5745,784,312,null,6841,5790,8234,4,5,4200,0],[14,2,2,0,4,4388,634,312,399,5733,5036,6609,4,4,4663,0],[14,2,2,1,9,4890,665,312,null,5867,5120,6882,9,9,4052,0],[14,2,3,0,4,3839,539,312,299,4989,4350,5785,4,4,3877,0],[14,2,3,1,7,4203,570,312,null,5086,4418,5830,7,7,5393,0],[14,2,4,0,9,3612,512,312,299,4735,3999,5519,9,9,3921,0],[14,2,4,1,8,4249,594,312,null,5155,4454,5938,7,8,4449,0],[14,3,0,0,8,10177,1353,428,299,12257,9568,16644,8,8,3620,0],[14,3,0,1,4,11166,1553,428,null,13147,10257,16430,4,4,4616,0],[14,3,1,0,7,7472,985,428,349,9234,7792,11293,6,7,3546,0],[14,3,1,1,5,8025,1148,428,null,9601,8276,11488,5,5,4211,0],[14,3,2,0,8,5867,791,428,449,7535,6530,8946,7,8,3593,0],[14,3,2,1,4,6588,940,428,null,7956,7022,9400,4,4,4435,0],[14,3,3,0,7,5167,700,428,349,6644,5848,8097,7,7,4045,0],[14,3,3,1,8,5671,774,428,null,6874,6049,8379,8,8,3673,0],[14,3,4,0,5,5007,660,428,299,6394,5495,7818,5,5,3296,0],[14,3,4,1,7,5412,765,428,null,6605,5603,7793,7,7,4774,0],[14,4,0,0,7,5902,841,236,349,7328,5707,9491,6,7,3579,0],[14,4,0,1,7,6173,812,236,null,7222,5829,9080,7,7,3652,0],[14,4,1,0,8,3914,522,236,349,5021,4394,6033,8,8,3504,0],[14,4,1,1,6,4403,630,236,null,5269,4502,6284,6,6,4024,0],[14,4,2,0,7,3295,429,236,449,4409,3838,5197,7,7,4537,0],[14,4,2,1,8,3700,507,236,null,4443,3739,5231,8,8,3587,0],[14,4,3,0,7,2859,395,236,399,3889,3330,4491,7,7,3095,0],[14,4,3,1,8,3192,427,236,null,3855,3394,4579,7,8,4150,0],[14,4,4,0,7,2634,375,236,399,3644,3187,4344,5,7,3735,0],[14,4,4,1,9,3016,436,236,null,3688,3170,4229,9,9,4207,0],[14,5,0,0,9,11332,1628,428,399,13787,10328,17406,8,9,4860,0],[14,5,0,1,4,11852,1664,428,null,13944,10793,18298,4,4,4180,0],[14,5,1,0,4,8215,1194,428,449,10285,8684,12141,4,4,3703,0],[14,5,1,1,4,8877,1252,428,null,10556,9338,12335,4,4,4437,0],[14,5,2,0,9,6429,868,428,449,8174,7063,9389,8,9,4084,0],[14,5,2,1,8,7327,1000,428,null,8755,7659,10207,8,8,4018,0],[14,5,3,0,8,5791,779,428,299,7298,6273,8725,5,8,4095,0],[14,5,3,1,7,6443,928,428,null,7798,6634,9255,7,7,3453,0],[14,5,4,0,9,5650,740,428,399,7217,6218,8498,9,9,3777,0],[14,5,4,1,6,6174,858,428,null,7460,6403,8663,6,6,3982,0],[15,0,0,0,8,8426,1177,312,399,10315,7664,13128,7,8,4149,0],[15,0,0,1,8,8928,1273,312,null,10513,8487,13308,8,8,4509,0],[15,0,1,0,5,5980,851,312,399,7541,6428,8893,5,5,4830,0],[15,0,1,1,9,6323,897,312,null,7532,6645,9214,9,9,4731,0],[15,0,2,0,5,4998,685,312,399,6394,5494,7562,4,5,3432,0],[15,0,2,1,7,5530,796,312,null,6638,5737,7998,7,7,4329,0],[15,0,3,0,9,4372,603,312,399,5686,4937,6628,7,9,3955,0],[15,0,3,1,7,4759,630,312,null,5701,5022,6529,6,7,3487,0],[15,0,4,0,5,4149,585,312,449,5495,4857,6421,5,5,4969,0],[15,0,4,1,9,4590,648,312,null,5550,4921,6782,9,9,4142,0],[15,1,0,0,4,9281,1312,428,349,11370,8996,15398,4,4,3344,0],[15,1,0,1,5,10504,1449,428,null,12381,9584,15521,5,5,4089,0],[15,1,1,0,5,6813,976,428,449,8667,7573,10606,5,5,3728,0],[15,1,1,1,9,7319,1002,428,null,8749,7616,10101,9,9,3533,0],[15,1,2,0,6,5587,771,428,349,7135,6183,8710,4,6,3779,0],[15,1,2,1,4,5954,791,428,null,7173,6361,8668,4,4,5050,0],[15,1,3,0,5,4698,630,428,399,6155,5427,7454,4,5,3736,0],[15,1,3,1,8,5309,772,428,null,6510,5652,7697,8,8,3989,0],[15,1,4,0,7,4579,630,428,449,6087,5372,7067,6,7,3824,0],[15,1,4,1,7,5134,712,428,null,6274,5557,7394,6,7,3829,0],[15,2,0,0,4,7439,1059,312,449,9258,7476,11702,4,4,3688,0],[15,2,0,1,4,8076,1095,312,null,9483,7392,12380,4,4,4733,0],[15,2,1,0,8,5318,756,312,299,6685,5686,8011,8,8,3953,0],[15,2,1,1,7,5546,778,312,null,6635,5619,7649,7,7,4343,0],[15,2,2,0,8,4182,551,312,399,5444,4799,6387,7,8,3997,0],[15,2,2,1,7,4562,657,312,null,5531,4889,6444,7,7,3854,0],[15,2,3,0,9,3833,533,312,349,5027,4340,6137,8,9,3926,0],[15,2,3,1,8,4066,578,312,null,4956,4217,5806,8,8,4261,0],[15,2,4,0,6,3695,527,312,299,4834,4218,5709,6,6,4364,0],[15,2,4,1,4,4031,551,312,null,4894,4196,5626,4,4,3922,0],[15,3,0,0,8,9613,1385,428,399,11825,9150,14858,8,8,3754,0],[15,3,0,1,9,10751,1513,428,null,12692,9969,17178,8,9,4167,0],[15,3,1,0,6,7032,938,428,449,8847,7745,10602,5,6,4233,0],[15,3,1,1,9,7344,990,428,null,8763,7474,10725,9,9,4589,0],[15,3,2,0,8,5791,772,428,399,7390,6285,8753,7,8,3664,0],[15,3,2,1,6,6251,872,428,null,7552,6545,9231,6,6,3869,0],[15,3,3,0,5,5013,721,428,399,6560,5769,7670,5,5,4406,0],[15,3,3,1,8,5536,782,428,null,6745,5982,7936,8,8,3859,0],[15,3,4,0,5,4888,670,428,449,6436,5432,7571,5,5,4303,0],[15,3,4,1,4,5190,707,428,null,6325,5572,7586,4,4,4693,0],[15,4,0,0,8,5537,775,236,399,6946,5496,9104,8,8,4863,0],[15,4,0,1,8,6043,873,236,null,7152,5637,9652,8,8,3414,0],[15,4,1,0,8,3912,508,236,449,5106,4527,6187,8,8,4658,0],[15,4,1,1,7,4237,609,236,null,5083,4288,6136,7,7,4065,0],[15,4,2,0,4,3119,413,236,349,4117,3640,5012,4,4,4345,0],[15,4,2,1,6,3524,501,236,null,4261,3675,5193,5,6,4402,0],[15,4,3,0,4,2691,362,236,299,3588,3149,4127,4,4,3579,0],[15,4,3,1,8,3235,421,236,null,3892,3302,4494,8,8,2700,0],[15,4,4,0,8,2640,362,236,399,3637,3075,4266,7,8,4316,0],[15,4,4,1,8,2931,398,236,null,3565,3082,4272,8,8,4637,0],[15,5,0,0,9,11142,1469,428,449,13489,10106,18321,8,9,5222,0],[15,5,0,1,4,11973,1575,428,null,13976,11294,18582,4,4,4441,0],[15,5,1,0,9,8074,1081,428,299,9882,8478,11346,9,9,3680,0],[15,5,1,1,4,8351,1091,428,null,9870,8502,11588,4,4,4663,0],[15,5,2,0,5,6631,918,428,299,8275,7089,9854,5,5,3959,0],[15,5,2,1,6,7114,1003,428,null,8545,7385,10391,6,6,4906,0],[15,5,3,0,7,5892,766,428,349,7435,6288,8647,6,7,5405,0],[15,5,3,1,5,6228,862,428,null,7518,6331,8964,4,5,3683,0],[15,5,4,0,6,5327,748,428,299,6802,5910,7898,6,6,4345,0],[15,5,4,1,4,5687,814,428,null,6929,5997,8422,4,4,4667,0],[16,0,0,0,5,8284,1135,312,349,10080,7607,12974,5,5,4811,0],[16,0,0,1,7,8779,1265,312,null,10356,8035,14093,7,7,4682,0],[16,0,1,0,7,5975,803,312,349,7439,6346,8624,7,7,3975,0],[16,0,1,1,8,6375,886,312,null,7573,6421,8893,7,8,3905,0],[16,0,2,0,9,5006,652,312,399,6369,5425,7329,9,9,3936,0],[16,0,2,1,6,5278,692,312,null,6282,5542,7240,5,6,3878,0],[16,0,3,0,4,4378,588,312,399,5678,5027,6611,3,4,4017,0],[16,0,3,1,7,4669,669,312,null,5651,4941,6829,6,7,3764,0],[16,0,4,0,7,3882,540,312,399,5133,4523,5950,6,7,3422,0],[16,0,4,1,9,4370,578,312,null,5260,4524,6216,8,9,5061,0],[16,1,0,0,9,9367,1221,428,299,11315,8499,15169,8,9,4658,0],[16,1,0,1,6,9655,1367,428,null,11449,8832,14203,6,6,3750,0],[16,1,1,0,4,6500,874,428,349,8150,7089,9753,4,4,4902,0],[16,1,1,1,9,6938,971,428,null,8337,7089,9783,8,9,4680,0],[16,1,2,0,5,5637,771,428,349,7184,6060,8701,5,5,4200,0],[16,1,2,1,4,5911,830,428,null,7168,6043,8255,4,4,4089,0],[16,1,3,0,8,4689,680,428,399,6195,5227,7108,7,8,4071,0],[16,1,3,1,4,5342,733,428,null,6503,5465,7910,4,4,4693,0],[16,1,4,0,6,4396,627,428,449,5901,5021,6791,6,6,3774,0],[16,1,4,1,6,4900,669,428,null,5997,5039,7337,6,6,4286,0],[16,2,0,0,4,7064,1026,312,349,8750,7014,11873,4,4,4401,0],[16,2,0,1,4,7993,1143,312,null,9448,7343,12373,4,4,3501,0],[16,2,1,0,4,4971,668,312,299,6250,5507,7356,4,4,3792,0],[16,2,1,1,9,5611,792,312,null,6715,5784,8188,8,9,4515,0],[16,2,2,0,7,4286,567,312,349,5514,4651,6381,6,7,3890,0],[16,2,2,1,9,4723,677,312,null,5712,4959,6908,9,9,3601,0],[16,2,3,0,7,3471,477,312,399,4659,4046,5397,7,7,3732,0],[16,2,3,1,9,4082,544,312,null,4938,4190,5909,9,9,4359,0],[16,2,4,0,7,3369,457,312,299,4437,3843,5178,7,7,4244,0],[16,2,4,1,8,3847,555,312,null,4714,4138,5562,8,8,4368,0],[16,3,0,0,9,9830,1403,428,449,12109,9638,15021,9,9,3569,0],[16,3,0,1,7,10580,1445,428,null,12452,9541,16658,7,7,3494,0],[16,3,1,0,4,6536,934,428,449,8347,7344,9684,4,4,4715,0],[16,3,1,1,9,7472,980,428,null,8881,7722,10320,8,9,4463,0],[16,3,2,0,6,5656,778,428,349,7211,6284,8610,5,6,5123,0],[16,3,2,1,7,6296,897,428,null,7621,6619,8990,7,7,4831,0],[16,3,3,0,8,4787,673,428,449,6337,5370,7343,7,8,4389,0],[16,3,3,1,6,5343,705,428,null,6475,5706,7541,4,6,4705,0],[16,3,4,0,8,4433,632,428,399,5892,5130,6896,8,8,3015,0],[16,3,4,1,7,5181,743,428,null,6351,5398,7349,7,7,4143,0],[16,4,0,0,8,5181,676,236,399,6492,4812,8070,8,8,3596,0],[16,4,0,1,4,5618,795,236,null,6649,5004,8452,4,4,4894,0],[16,4,1,0,6,3623,516,236,349,4724,4181,5620,6,6,4671,0],[16,4,1,1,5,4083,591,236,null,4911,4295,5648,5,5,4738,0],[16,4,2,0,8,3010,418,236,349,4014,3424,4873,6,8,4267,0],[16,4,2,1,6,3407,455,236,null,4098,3504,4940,6,6,3389,0],[16,4,3,0,9,2656,378,236,449,3719,3249,4314,9,9,5361,0],[16,4,3,1,9,3119,425,236,null,3780,3288,4549,8,9,4494,0],[16,4,4,0,8,2459,343,236,299,3336,2853,3825,5,8,3924,0],[16,4,4,1,5,2842,400,236,null,3478,3028,4063,4,5,3580,0],[16,5,0,0,8,10929,1556,428,449,13362,10675,17450,7,8,3712,0],[16,5,0,1,6,11109,1508,428,null,13045,10402,16471,6,6,3523,0],[16,5,1,0,9,7914,1063,428,299,9704,8307,11313,9,9,4596,0],[16,5,1,1,9,8213,1124,428,null,9765,8386,11443,9,9,4573,0],[16,5,2,0,8,6402,856,428,349,8035,6894,9524,8,8,3342,0],[16,5,2,1,5,6939,952,428,null,8319,7056,9804,5,5,4040,0],[16,5,3,0,5,5599,732,428,349,7108,6214,8158,5,5,3801,0],[16,5,3,1,6,5973,856,428,null,7257,6244,8439,5,6,3297,0],[16,5,4,0,6,5155,738,428,349,6670,5882,7975,6,6,4291,0],[16,5,4,1,7,5826,784,428,null,7038,5942,8189,7,7,2780,0],[17,0,0,0,7,8489,1205,312,349,10355,8174,13334,7,7,3838,0],[17,0,0,1,6,9161,1220,312,null,10693,7938,13325,6,6,4609,0],[17,0,1,0,8,5652,791,312,449,7204,6318,8729,8,8,4477,0],[17,0,1,1,8,6525,914,312,null,7750,6825,9385,8,8,4474,0],[17,0,2,0,4,4646,671,312,399,6027,5252,6944,4,4,3446,0],[17,0,2,1,7,5430,762,312,null,6504,5729,7801,7,7,4144,0],[17,0,3,0,8,4419,621,312,299,5651,4924,6693,8,8,4766,0],[17,0,3,1,4,4534,654,312,null,5500,4787,6361,4,4,3929,0],[17,0,4,0,8,4071,564,312,299,5246,4642,6111,8,8,4180,0],[17,0,4,1,5,4538,619,312,null,5469,4685,6319,5,5,4496,0],[17,1,0,0,7,9271,1205,428,349,11253,8540,14633,7,7,3572,0],[17,1,0,1,4,10003,1412,428,null,11843,8793,15982,4,4,4022,0],[17,1,1,0,5,6282,906,428,299,7915,6707,9212,4,5,4331,0],[17,1,1,1,6,7032,970,428,null,8430,7266,10171,5,6,5356,0],[17,1,2,0,6,5352,715,428,349,6844,5848,8157,6,6,4557,0],[17,1,2,1,7,5720,751,428,null,6898,6004,8349,5,7,3122,0],[17,1,3,0,5,4569,618,428,399,6014,5250,7326,2,5,3416,0],[17,1,3,1,4,5194,678,428,null,6299,5533,7486,4,4,4708,0],[17,1,4,0,7,4276,575,428,449,5728,4897,6630,5,7,4083,0],[17,1,4,1,9,4966,659,428,null,6053,5279,6940,9,9,4472,0],[17,2,0,0,8,7427,1076,312,299,9114,6830,12124,8,8,3640,0],[17,2,0,1,7,7763,1023,312,null,9098,7001,11823,7,7,4384,0],[17,2,1,0,8,4776,683,312,399,6170,5430,7226,8,8,4565,0],[17,2,1,1,4,5617,790,312,null,6719,5815,8152,4,4,4603,0],[17,2,2,0,8,4246,595,312,399,5552,4887,6449,8,8,3745,0],[17,2,2,1,4,4495,624,312,null,5431,4572,6291,3,4,4773,0],[17,2,3,0,9,3466,490,312,449,4717,4125,5546,8,9,4815,0],[17,2,3,1,4,4081,575,312,null,4969,4361,5810,4,4,4357,0],[17,2,4,0,9,3408,481,312,349,4551,3948,5567,8,9,3011,0],[17,2,4,1,9,3941,513,312,null,4767,4220,5830,9,9,4585,0],[17,3,0,0,8,9338,1299,428,449,11514,8642,15694,8,8,4274,0],[17,3,0,1,9,10086,1392,428,null,11906,9639,15864,9,9,3735,0],[17,3,1,0,5,6677,897,428,399,8401,7265,9769,5,5,3629,0],[17,3,1,1,8,7259,1053,428,null,8740,7530,10552,8,8,3785,0],[17,3,2,0,8,5575,754,428,299,7056,6155,8117,8,8,3737,0],[17,3,2,1,6,5961,782,428,null,7170,6158,8521,6,6,4208,0],[17,3,3,0,7,4808,650,428,299,6185,5360,7305,6,7,3826,0],[17,3,3,1,5,5300,731,428,null,6459,5599,7573,5,5,4201,0],[17,3,4,0,4,4864,657,428,299,6248,5476,7150,4,4,4277,0],[17,3,4,1,5,4983,679,428,null,6090,5345,7408,5,5,3592,0],[17,4,0,0,7,5130,725,236,349,6440,5152,8333,6,7,4481,0],[17,4,0,1,6,6019,791,236,null,7047,5422,9578,6,6,4983,0],[17,4,1,0,5,3562,472,236,399,4669,4131,5520,5,5,3743,0],[17,4,1,1,6,3974,573,236,null,4782,4126,5624,6,6,4265,0],[17,4,2,0,7,3032,412,236,349,4029,3537,4836,6,7,3935,0],[17,4,2,1,6,3447,497,236,null,4180,3701,4875,6,6,4441,0],[17,4,3,0,8,2569,335,236,349,3489,2935,4069,6,8,4380,0],[17,4,3,1,6,3004,425,236,null,3666,3174,4317,6,6,3027,0],[17,4,4,0,7,2394,338,236,349,3318,2915,4060,7,7,4175,0],[17,4,4,1,8,2808,390,236,null,3433,2963,4094,8,8,3521,0],[17,5,0,0,4,10421,1483,428,449,12781,10108,16436,4,4,3394,0],[17,5,0,1,7,11650,1536,428,null,13614,10791,16956,7,7,4602,0],[17,5,1,0,4,7458,1063,428,399,9348,8128,10726,4,4,4922,0],[17,5,1,1,7,8333,1145,428,null,9906,8624,11617,6,7,3857,0],[17,5,2,0,5,6406,841,428,399,8074,6865,9412,5,5,4985,0],[17,5,2,1,4,6516,915,428,null,7859,6824,9254,4,4,4171,0],[17,5,3,0,5,5297,727,428,449,6901,5887,8106,4,5,4603,0],[17,5,3,1,4,5697,815,428,null,6940,6061,8489,4,4,3855,0],[17,5,4,0,7,5157,745,428,299,6629,5760,7917,7,7,3618,0],[17,5,4,1,4,5681,768,428,null,6877,6074,8332,4,4,4202,0],[18,0,0,0,9,8457,1104,312,399,10271,7782,13345,9,9,6681,1],[18,0,0,1,9,9284,1305,312,null,10901,8663,13986,9,9,6310,1],[18,0,1,0,8,6064,824,312,449,7649,6705,8820,8,8,6540,1],[18,0,1,1,7,6452,894,312,null,7658,6581,8954,7,7,6801,1],[18,0,2,0,7,5066,721,312,299,6397,5389,7677,7,7,7763,1],[18,0,2,1,8,5591,777,312,null,6679,5728,7687,8,8,7026,1],[18,0,3,0,6,4179,585,312,399,5475,4604,6511,6,6,5945,1],[18,0,3,1,6,4841,636,312,null,5788,4889,6735,6,6,6428,1],[18,0,4,0,6,4240,575,312,449,5576,4854,6574,6,6,6268,1],[18,0,4,1,8,4704,684,312,null,5700,4903,6850,7,8,6684,1],[18,1,0,0,4,9635,1310,428,349,11722,9579,15656,4,4,5989,1],[18,1,0,1,9,10410,1458,428,null,12295,9978,16431,9,9,6930,1],[18,1,1,0,4,6674,887,428,399,8388,7051,10219,4,4,5759,1],[18,1,1,1,5,7323,1019,428,null,8770,7394,10232,4,5,5847,1],[18,1,2,0,4,5565,809,428,299,7100,6103,8573,4,4,6979,1],[18,1,2,1,9,6052,824,428,null,7303,6141,8580,9,9,6627,1],[18,1,3,0,6,4728,664,428,449,6269,5464,7631,6,6,7870,1],[18,1,3,1,9,5477,713,428,null,6618,5777,7878,9,9,7570,1],[18,1,4,0,6,4441,630,428,399,5898,5039,6798,6,6,6221,1],[18,1,4,1,6,5185,711,428,null,6324,5375,7626,6,6,7964,1],[18,2,0,0,7,7723,1045,312,349,9428,7373,12309,7,7,7626,1],[18,2,0,1,6,7870,1126,312,null,9308,7164,12252,6,6,6227,1],[18,2,1,0,6,5187,743,312,299,6541,5561,7514,4,6,7115,1],[18,2,1,1,5,5504,786,312,null,6602,5833,7652,5,5,7209,1],[18,2,2,0,9,4477,595,312,299,5682,4975,6773,9,9,6124,1],[18,2,2,1,5,4789,636,312,null,5737,4825,6784,5,5,6586,1],[18,2,3,0,8,3705,491,312,349,4857,4143,5573,8,8,6294,1],[18,2,3,1,4,4287,576,312,null,5175,4421,5944,4,4,6011,1],[18,2,4,0,6,3415,475,312,399,4601,4057,5592,6,6,7027,1],[18,2,4,1,5,3884,559,312,null,4755,4011,5713,5,5,7491,1],[18,3,0,0,5,9895,1361,428,299,11983,9402,15981,5,5,7856,1],[18,3,0,1,9,10815,1528,428,null,12771,10287,15815,8,9,6117,1],[18,3,1,0,4,6928,1006,428,349,8711,7379,10032,4,4,7782,1],[18,3,1,1,7,7323,975,428,null,8726,7629,10614,6,7,5695,1],[18,3,2,0,4,5881,838,428,399,7545,6529,9161,4,4,6917,1],[18,3,2,1,4,6275,875,428,null,7578,6438,9114,4,4,6644,1],[18,3,3,0,8,4974,696,428,399,6497,5563,7864,8,8,7209,1],[18,3,3,1,5,5710,807,428,null,6944,6097,8221,5,5,7157,1],[18,3,4,0,9,4758,630,428,299,6115,5254,7101,9,9,7369,1],[18,3,4,1,5,5396,758,428,null,6582,5626,7820,5,5,6566,1],[18,4,0,0,4,5617,801,236,299,6952,5355,9283,3,4,6784,1],[18,4,0,1,7,5903,836,236,null,6975,5557,9402,7,7,7146,1],[18,4,1,0,5,3951,525,236,299,5011,4215,5922,5,5,7097,1],[18,4,1,1,8,4338,614,236,null,5187,4489,5995,7,8,5937,1],[18,4,2,0,5,3087,417,236,449,4188,3607,4863,5,5,6185,1],[18,4,2,1,4,3651,493,236,null,4380,3771,5180,4,4,6811,1],[18,4,3,0,4,2681,376,236,399,3692,3245,4312,4,4,6707,1],[18,4,3,1,7,3056,430,236,null,3722,3188,4504,7,7,6097,1],[18,4,4,0,5,2584,350,236,299,3469,3043,3990,4,5,6617,1],[18,4,4,1,7,2999,415,236,null,3650,3228,4238,7,7,6783,1],[18,5,0,0,4,10772,1407,428,399,13006,10093,17441,4,4,7136,1],[18,5,0,1,6,12127,1672,428,null,14227,10996,18254,6,6,7033,1],[18,5,1,0,4,7801,1021,428,449,9699,8257,11852,4,4,6747,1],[18,5,1,1,4,8156,1078,428,null,9662,8340,11411,4,4,6776,1],[18,5,2,0,4,6500,866,428,349,8143,7138,9830,4,4,7133,1],[18,5,2,1,7,7006,958,428,null,8392,7355,10114,7,7,6324,1],[18,5,3,0,7,5639,754,428,299,7119,6295,8466,7,7,5972,1],[18,5,3,1,7,6353,891,428,null,7672,6554,9189,7,7,6150,1],[18,5,4,0,6,5358,752,428,399,6936,5836,8003,6,6,6760,1],[18,5,4,1,5,5929,787,428,null,7145,6217,8335,5,5,6390,1],[19,0,0,0,9,9247,1209,312,449,11217,9063,15074,9,9,7309,1],[19,0,0,1,9,10100,1458,312,null,11870,9040,15037,9,9,7473,1],[19,0,1,0,4,6418,850,312,299,7879,6900,9453,4,4,6766,1],[19,0,1,1,6,6878,916,312,null,8107,7154,9663,6,6,6218,1],[19,0,2,0,9,5122,724,312,449,6607,5558,7607,8,9,6139,1],[19,0,2,1,7,6125,818,312,null,7255,6311,8614,7,7,6260,1],[19,0,3,0,8,4844,637,312,349,6142,5408,7405,8,8,5673,1],[19,0,3,1,4,5171,730,312,null,6212,5450,7113,4,4,6785,1],[19,0,4,0,7,4328,613,312,449,5702,5026,6870,7,7,6821,1],[19,0,4,1,6,5087,676,312,null,6075,5363,7065,6,6,6733,1],[19,1,0,0,9,10649,1429,428,349,12856,9986,17267,9,9,6623,1],[19,1,0,1,9,11331,1561,428,null,13320,9951,17716,9,9,6065,1],[19,1,1,0,4,7358,976,428,299,9061,7944,10438,4,4,7289,1],[19,1,1,1,4,7601,1094,428,null,9123,7808,10746,4,4,6750,1],[19,1,2,0,9,6086,824,428,449,7787,6859,9055,9,9,6852,1],[19,1,2,1,4,6658,909,428,null,7995,7067,9643,4,4,6873,1],[19,1,3,0,6,5006,717,428,399,6550,5653,7633,6,6,6603,1],[19,1,3,1,4,5497,790,428,null,6715,5667,8117,3,4,7183,1],[19,1,4,0,8,5129,711,428,299,6568,5769,7627,8,8,7057,1],[19,1,4,1,4,5463,784,428,null,6675,5728,7643,4,4,7312,1],[19,2,0,0,8,8260,1082,312,399,10053,7463,12988,8,8,7727,1],[19,2,0,1,9,8767,1251,312,null,10330,7688,12792,9,9,7377,1],[19,2,1,0,5,5498,794,312,399,7003,5976,8068,5,5,6666,1],[19,2,1,1,4,5886,788,312,null,6987,5932,8337,4,4,7201,1],[19,2,2,0,5,4644,640,312,399,5995,5109,7140,4,5,6703,1],[19,2,2,1,7,5248,738,312,null,6298,5558,7571,7,7,7129,1],[19,2,3,0,7,4064,537,312,299,5212,4387,6331,7,7,6758,1],[19,2,3,1,5,4328,620,312,null,5260,4456,6319,5,5,6517,1],[19,2,4,0,5,3856,535,312,399,5103,4297,5936,3,5,7082,1],[19,2,4,1,4,4434,587,312,null,5333,4482,6402,4,4,6996,1],[19,3,0,0,5,10577,1457,428,399,12861,10376,17014,5,5,6833,1],[19,3,0,1,6,11751,1534,428,null,13713,11151,18516,6,6,6927,1],[19,3,1,0,6,7425,1036,428,449,9337,8047,11396,6,6,6915,1],[19,3,1,1,8,8145,1137,428,null,9710,8399,11224,7,8,7026,1],[19,3,2,0,6,6148,847,428,349,7772,6782,8949,5,6,6892,1],[19,3,2,1,9,6954,971,428,null,8353,7042,9723,9,9,7154,1],[19,3,3,0,4,5333,715,428,299,6775,5848,7806,4,4,6583,1],[19,3,3,1,7,6053,835,428,null,7316,6155,8536,7,7,7015,1],[19,3,4,0,6,5180,702,428,299,6609,5816,7816,6,6,6311,1],[19,3,4,1,8,5441,767,428,null,6636,5608,7683,8,8,7075,1],[19,4,0,0,6,5835,813,236,299,7182,5341,9489,6,6,6592,1],[19,4,0,1,4,6254,891,236,null,7381,5999,9171,4,4,6963,1],[19,4,1,0,9,4219,599,236,349,5404,4771,6569,9,9,7904,1],[19,4,1,1,5,4596,652,236,null,5484,4800,6532,5,5,6672,1],[19,4,2,0,7,3428,466,236,299,4429,3789,5308,7,7,6793,1],[19,4,2,1,9,3871,544,236,null,4650,4105,5580,9,9,5671,1],[19,4,3,0,8,3012,434,236,399,4081,3494,4936,8,8,7046,1],[19,4,3,1,5,3429,484,236,null,4149,3626,4841,5,5,7224,1],[19,4,4,0,4,2802,382,236,449,3868,3260,4564,4,4,6686,1],[19,4,4,1,8,3158,423,236,null,3817,3326,4413,7,8,7472,1],[19,5,0,0,9,12025,1691,428,299,14443,11469,19511,9,9,6311,1],[19,5,0,1,7,12220,1728,428,null,14376,10753,18044,7,7,6425,1],[19,5,1,0,8,8449,1203,428,399,10479,9081,12530,8,8,6850,1],[19,5,1,1,6,8789,1192,428,null,10409,9011,12588,6,6,7006,1],[19,5,2,0,4,7179,951,428,299,8856,7693,10778,4,4,7179,1],[19,5,2,1,5,7459,977,428,null,8864,7593,10364,5,5,6790,1],[19,5,3,0,9,6317,824,428,349,7918,6997,9516,9,9,6990,1],[19,5,3,1,7,6432,850,428,null,7710,6744,9112,6,7,6587,1],[19,5,4,0,9,5620,817,428,399,7263,6271,8556,9,9,6549,1],[19,5,4,1,9,6378,843,428,null,7649,6596,8916,9,9,6277,1],[20,0,0,0,7,9399,1337,312,299,11347,8669,14842,6,7,6854,1],[20,0,0,1,7,9937,1307,312,null,11556,9078,15581,7,7,7055,1],[20,0,1,0,4,6654,939,312,349,8254,7024,9696,4,4,6268,1],[20,0,1,1,5,6906,970,312,null,8188,7123,9699,5,5,6437,1],[20,0,2,0,9,5172,678,312,449,6610,5737,7697,9,9,7421,1],[20,0,2,1,5,6007,871,312,null,7190,6373,8508,5,5,6932,1],[20,0,3,0,8,4694,631,312,399,6036,5234,7295,8,8,7065,1],[20,0,3,1,6,5276,701,312,null,6289,5354,7582,6,6,6722,1],[20,0,4,0,5,4405,633,312,299,5649,4900,6508,5,5,6680,1],[20,0,4,1,5,4978,712,312,null,6002,5283,7222,5,5,8089,1],[20,1,0,0,9,9970,1406,428,299,12103,9606,15445,9,9,7004,1],[20,1,0,1,6,10939,1454,428,null,12821,9495,15999,6,6,6382,1],[20,1,1,0,6,7024,1000,428,449,8901,7837,10788,6,6,6787,1],[20,1,1,1,4,7782,1071,428,null,9281,8140,10726,4,4,6699,1],[20,1,2,0,7,5935,789,428,299,7451,6539,8945,7,7,7472,1],[20,1,2,1,6,6458,933,428,null,7819,6747,9128,6,6,7106,1],[20,1,3,0,5,5059,685,428,349,6521,5532,7875,5,5,7255,1],[20,1,3,1,7,5846,812,428,null,7086,6036,8248,7,7,6993,1],[20,1,4,0,6,4938,691,428,349,6406,5427,7392,6,6,6819,1],[20,1,4,1,9,5359,717,428,null,6504,5503,7741,9,9,7785,1],[20,2,0,0,8,8099,1160,312,299,9870,7317,12614,8,8,8075,1],[20,2,0,1,6,8511,1112,312,null,9936,7759,12900,6,6,6663,1],[20,2,1,0,5,5518,798,312,299,6927,6096,8139,5,5,6807,1],[20,2,1,1,4,6128,868,312,null,7308,6260,8505,4,4,7743,1],[20,2,2,0,7,4443,622,312,449,5826,5162,6951,7,7,7196,1],[20,2,2,1,7,5112,743,312,null,6167,5371,7167,7,7,7272,1],[20,2,3,0,8,4226,564,312,299,5401,4626,6489,8,8,6782,1],[20,2,3,1,6,4410,575,312,null,5297,4506,6275,6,6,7028,1],[20,2,4,0,5,3861,515,312,399,5088,4288,5871,4,5,7014,1],[20,2,4,1,5,4375,572,312,null,5258,4533,6319,5,5,5942,1],[20,3,0,0,5,10880,1439,428,399,13146,10013,17635,5,5,6844,1],[20,3,0,1,8,11328,1481,428,null,13237,10388,17470,8,8,6890,1],[20,3,1,0,4,7503,1091,428,399,9421,7955,11207,4,4,6268,1],[20,3,1,1,6,7818,1085,428,null,9332,8232,11090,6,6,6514,1],[20,3,2,0,8,6077,813,428,399,7717,6751,9233,8,8,7293,1],[20,3,2,1,9,7013,931,428,null,8372,7416,9723,9,9,6061,1],[20,3,3,0,8,5356,741,428,299,6823,5844,7829,8,8,6389,1],[20,3,3,1,6,5849,848,428,null,7125,6230,8462,6,6,5928,1],[20,3,4,0,7,5100,671,428,299,6499,5757,7653,7,7,6445,1],[20,3,4,1,7,5827,775,428,null,7030,6007,8291,7,7,6787,1],[20,4,0,0,9,5874,825,236,349,7284,5746,9763,9,9,6456,1],[20,4,0,1,6,6527,901,236,null,7665,6033,9780,6,6,6933,1],[20,4,1,0,5,4076,585,236,399,5296,4625,6476,5,5,6742,1],[20,4,1,1,7,4665,676,236,null,5576,4924,6820,7,7,5942,1],[20,4,2,0,9,3388,456,236,349,4429,3771,5231,8,9,6567,1],[20,4,2,1,5,3773,505,236,null,4515,3943,5383,5,5,6849,1],[20,4,3,0,9,2961,386,236,299,3881,3288,4696,9,9,6710,1],[20,4,3,1,5,3307,453,236,null,3995,3390,4807,5,5,6550,1],[20,4,4,0,8,2660,387,236,399,3682,3210,4453,8,8,6767,1],[20,4,4,1,9,3216,420,236,null,3872,3360,4717,9,9,5862,1],[20,5,0,0,4,11708,1568,428,449,14153,11041,17610,4,4,6878,1],[20,5,0,1,6,12785,1808,428,null,15021,11401,19867,6,6,7406,1],[20,5,1,0,5,8443,1161,428,349,10380,9176,12180,5,5,6042,1],[20,5,1,1,5,8808,1235,428,null,10471,9196,12744,4,5,6335,1],[20,5,2,0,8,7009,943,428,399,8778,7457,10647,6,8,6925,1],[20,5,2,1,5,7463,994,428,null,8885,7590,10175,5,5,7331,1],[20,5,3,0,6,5833,775,428,399,7435,6525,8667,6,6,6296,1],[20,5,3,1,8,6650,953,428,null,8030,6902,9786,8,8,6819,1],[20,5,4,0,4,5661,737,428,399,7225,6381,8811,4,4,7105,1],[20,5,4,1,6,6458,873,428,null,7759,6762,9043,6,6,5923,1],[21,0,0,0,4,9733,1292,312,399,11736,8827,15278,4,4,6913,1],[21,0,0,1,8,10013,1419,312,null,11744,8711,14589,8,8,5917,1],[21,0,1,0,9,6539,941,312,299,8092,6818,9887,9,9,7011,1],[21,0,1,1,9,7272,949,312,null,8533,7472,10191,9,9,6619,1],[21,0,2,0,7,5748,764,312,299,7123,6315,8177,7,7,5654,1],[21,0,2,1,6,6172,814,312,null,7297,6376,8392,6,6,6693,1],[21,0,3,0,6,4711,622,312,449,6094,5146,7339,6,6,5512,1],[21,0,3,1,7,5301,755,312,null,6368,5350,7732,7,7,5825,1],[21,0,4,0,9,4744,686,312,349,6091,5202,6974,9,9,7078,1],[21,0,4,1,4,5087,717,312,null,6116,5283,7005,4,4,6937,1],[21,1,0,0,8,10722,1511,428,299,12961,10213,16894,8,8,6436,1],[21,1,0,1,5,11016,1559,428,null,13003,9813,17657,5,5,7638,1],[21,1,1,0,5,7683,1065,428,299,9475,8167,11217,5,5,6498,1],[21,1,1,1,5,8159,1066,428,null,9653,8314,11458,5,5,7007,1],[21,1,2,0,5,5965,806,428,449,7648,6756,9270,5,5,7123,1],[21,1,2,1,6,6719,889,428,null,8036,7130,9378,6,6,7005,1],[21,1,3,0,6,5231,748,428,299,6706,5715,7773,6,6,8052,1],[21,1,3,1,4,5884,792,428,null,7104,6165,8560,4,4,6807,1],[21,1,4,0,7,5313,766,428,299,6807,5879,7975,6,7,6882,1],[21,1,4,1,4,5396,773,428,null,6597,5790,7667,4,4,6801,1],[21,2,0,0,4,8144,1068,312,399,9922,7580,13501,4,4,6212,1],[21,2,0,1,6,8695,1234,312,null,10241,8265,12944,6,6,6227,1],[21,2,1,0,6,5823,841,312,449,7425,6335,8542,6,6,6882,1],[21,2,1,1,6,6422,925,312,null,7659,6794,8839,6,6,6719,1],[21,2,2,0,5,4796,694,312,449,6251,5480,7415,5,5,7395,1],[21,2,2,1,7,5116,684,312,null,6111,5196,7288,7,7,7264,1],[21,2,3,0,8,3993,537,312,399,5241,4528,6128,8,8,7191,1],[21,2,3,1,7,4723,654,312,null,5689,4799,6949,6,7,6284,1],[21,2,4,0,4,3895,560,312,299,5066,4271,5954,4,4,5866,1],[21,2,4,1,9,4527,596,312,null,5434,4567,6625,9,9,7177,1],[21,3,0,0,7,10625,1417,428,449,12919,10120,16796,7,7,6166,1],[21,3,0,1,4,12179,1601,428,null,14208,10992,19141,4,4,6739,1],[21,3,1,0,8,7712,1067,428,349,9556,8066,11307,8,8,7286,1],[21,3,1,1,8,8244,1153,428,null,9825,8654,11636,8,8,7051,1],[21,3,2,0,8,6627,914,428,299,8269,7272,9858,7,8,5975,1],[21,3,2,1,7,6915,969,428,null,8312,7108,10161,7,7,7168,1],[21,3,3,0,6,5663,807,428,349,7248,6344,8416,6,6,7637,1],[21,3,3,1,9,6292,868,428,null,7588,6455,8717,9,9,6710,1],[21,3,4,0,6,5134,707,428,449,6719,5648,7802,6,6,6133,1],[21,3,4,1,9,5808,838,428,null,7074,6085,8224,9,9,6602,1],[21,4,0,0,5,6332,828,236,299,7695,6086,10300,5,5,7032,1],[21,4,0,1,5,6731,972,236,null,7939,6285,10222,5,5,6985,1],[21,4,1,0,8,4156,598,236,399,5389,4596,6583,8,8,6821,1],[21,4,1,1,8,4657,625,236,null,5518,4640,6490,8,8,7454,1],[21,4,2,0,4,3503,475,236,299,4513,3856,5314,4,4,6875,1],[21,4,2,1,5,4046,549,236,null,4830,4284,5526,5,5,7061,1],[21,4,3,0,4,2991,424,236,299,3950,3397,4830,4,4,6589,1],[21,4,3,1,4,3551,477,236,null,4264,3644,4904,4,4,6237,1],[21,4,4,0,8,2837,378,236,449,3901,3422,4603,8,8,6662,1],[21,4,4,1,4,3326,439,236,null,4001,3375,4885,4,4,7441,1],[21,5,0,0,4,12138,1626,428,299,14491,11508,18086,3,4,6131,1],[21,5,0,1,4,12555,1714,428,null,14697,11788,18524,4,4,5804,1],[21,5,1,0,4,8576,1192,428,399,10595,9366,12914,4,4,6712,1],[21,5,1,1,7,9479,1368,428,null,11275,9518,13093,7,7,6644,1],[21,5,2,0,7,7009,978,428,449,8864,7673,10462,7,7,6149,1],[21,5,2,1,5,7952,1038,428,null,9418,7975,11094,5,5,6063,1],[21,5,3,0,5,6378,830,428,449,8084,7033,9498,5,5,7016,1],[21,5,3,1,7,6946,904,428,null,8277,7292,10047,7,7,6914,1],[21,5,4,0,8,5753,830,428,399,7411,6306,8875,8,8,6349,1],[21,5,4,1,5,6286,883,428,null,7596,6572,8819,5,5,7050,1],[22,0,0,0,4,9337,1340,312,399,11387,8622,14597,4,4,5964,1],[22,0,0,1,5,10424,1452,312,null,12188,9196,15422,5,5,6954,1],[22,0,1,0,4,6812,918,312,349,8391,7142,10226,4,4,7050,1],[22,0,1,1,4,7109,929,312,null,8350,7296,9911,4,4,6437,1],[22,0,2,0,7,5495,735,312,399,6941,5958,8265,7,7,6842,1],[22,0,2,1,5,6059,827,312,null,7198,6096,8327,5,5,7195,1],[22,0,3,0,4,4886,655,312,299,6152,5182,7433,4,4,6653,1],[22,0,3,1,7,5135,698,312,null,6145,5211,7458,7,7,7078,1],[22,0,4,0,7,4399,608,312,449,5768,5023,6680,7,7,6548,1],[22,0,4,1,5,4882,679,312,null,5872,5001,6826,5,5,6530,1],[22,1,0,0,5,10687,1462,428,399,12977,9953,17415,3,5,7210,1],[22,1,0,1,4,11550,1555,428,null,13534,10149,17469,4,4,6443,1],[22,1,1,0,9,7403,962,428,399,9193,7922,10842,9,9,6242,1],[22,1,1,1,5,7897,1083,428,null,9408,7933,11011,5,5,5979,1],[22,1,2,0,7,6145,835,428,399,7806,6721,9449,7,7,6159,1],[22,1,2,1,6,6434,916,428,null,7777,6730,9459,6,6,6621,1],[22,1,3,0,9,5433,755,428,449,7065,6194,8637,9,9,6818,1],[22,1,3,1,7,5769,807,428,null,7004,5916,8529,7,7,7278,1],[22,1,4,0,9,5171,674,428,299,6571,5817,8000,9,9,7058,1],[22,1,4,1,7,5775,755,428,null,6957,5891,8506,6,7,7382,1],[22,2,0,0,7,7779,1105,312,449,9645,7837,12525,7,7,6349,1],[22,2,0,1,9,8915,1231,312,null,10458,8235,13769,8,9,6290,1],[22,2,1,0,6,5850,761,312,449,7373,6418,8658,6,6,6880,1],[22,2,1,1,5,6433,898,312,null,7644,6758,8753,5,5,7860,1],[22,2,2,0,7,4816,644,312,349,6122,5255,7100,7,7,6135,1],[22,2,2,1,6,5268,685,312,null,6265,5503,7185,6,6,6574,1],[22,2,3,0,5,4245,594,312,349,5501,4836,6416,5,5,6815,1],[22,2,3,1,6,4713,649,312,null,5674,4942,6560,6,6,7442,1],[22,2,4,0,7,3967,541,312,399,5219,4538,6049,6,7,7130,1],[22,2,4,1,9,4253,604,312,null,5168,4495,5937,8,9,6617,1],[22,3,0,0,5,11020,1502,428,399,13349,10013,17478,5,5,6335,1],[22,3,0,1,4,11531,1538,428,null,13497,10694,17116,4,4,6460,1],[22,3,1,0,7,7649,1083,428,449,9609,8480,11536,6,7,6680,1],[22,3,1,1,4,8538,1187,428,null,10153,8652,12063,4,4,8077,1],[22,3,2,0,5,6439,906,428,449,8222,7098,9994,5,5,6949,1],[22,3,2,1,4,6818,986,428,null,8232,7008,9987,4,4,6109,1],[22,3,3,0,7,5606,780,428,349,7163,6340,8572,6,7,6678,1],[22,3,3,1,6,6016,834,428,null,7279,6259,8605,6,6,6369,1],[22,3,4,0,5,5564,737,428,299,7028,5933,8084,5,5,7655,1],[22,3,4,1,6,5699,793,428,null,6921,6003,8446,6,6,6158,1],[22,4,0,0,8,5901,841,236,399,7377,5949,9426,8,8,6541,1],[22,4,0,1,9,6763,964,236,null,7963,6498,9998,9,9,6617,1],[22,4,1,0,8,4227,612,236,299,5375,4580,6243,8,8,6666,1],[22,4,1,1,8,4561,657,236,null,5454,4609,6633,8,8,7076,1],[22,4,2,0,5,3439,461,236,399,4535,3918,5344,5,5,5753,1],[22,4,2,1,9,3879,539,236,null,4654,3960,5383,9,9,7209,1],[22,4,3,0,6,3028,428,236,299,3990,3422,4649,6,6,6722,1],[22,4,3,1,7,3379,478,236,null,4092,3517,4891,7,7,7116,1],[22,4,4,0,6,2787,397,236,299,3719,3246,4275,6,6,6029,1],[22,4,4,1,6,3283,476,236,null,3994,3460,4864,5,6,6527,1],[22,5,0,0,5,12295,1718,428,349,14790,11256,19385,5,5,6007,1],[22,5,0,1,4,12633,1735,428,null,14797,12051,19754,4,4,6718,1],[22,5,1,0,7,8338,1151,428,399,10316,8812,12106,7,7,6914,1],[22,5,1,1,5,9480,1255,428,null,11163,9495,13655,5,5,6622,1],[22,5,2,0,9,7329,960,428,399,9116,7747,10745,9,9,6873,1],[22,5,2,1,7,7833,1077,428,null,9338,7856,10740,6,7,6057,1],[22,5,3,0,7,6151,885,428,299,7762,6671,9167,7,7,7140,1],[22,5,3,1,8,6955,991,428,null,8374,7070,10166,8,8,6618,1],[22,5,4,0,4,5835,796,428,349,7408,6414,9055,4,4,6877,1],[22,5,4,1,9,6594,892,428,null,7914,7021,9444,9,9,6686,1],[23,0,0,0,8,9820,1308,312,299,11739,8917,15335,8,8,7591,1],[23,0,0,1,4,9965,1405,312,null,11682,8985,15423,4,4,6934,1],[23,0,1,0,4,6512,939,312,449,8212,6941,9677,4,4,6913,1],[23,0,1,1,4,7124,1035,312,null,8471,7193,10243,4,4,6988,1],[23,0,2,0,8,5546,777,312,399,7034,6195,8358,7,8,6599,1],[23,0,2,1,4,6145,837,312,null,7294,6453,8495,4,4,7590,1],[23,0,3,0,9,4586,667,312,449,6015,5326,6979,9,9,6157,1],[23,0,3,1,9,5487,729,312,null,6528,5491,7542,9,9,7033,1],[23,0,4,0,5,4692,627,312,299,5930,5038,6960,5,5,6265,1],[23,0,4,1,8,5121,672,312,null,6104,5322,7323,8,8,6551,1],[23,1,0,0,8,10820,1486,428,299,13033,10207,16995,8,8,7160,1],[23,1,0,1,9,11400,1600,428,null,13429,10472,18080,9,9,6562,1],[23,1,1,0,6,7561,1032,428,449,9471,8164,11254,6,6,6383,1],[23,1,1,1,7,7841,1019,428,null,9289,7946,10776,7,7,6785,1],[23,1,2,0,6,5981,839,428,349,7597,6591,9281,6,6,6623,1],[23,1,2,1,7,6440,881,428,null,7749,6524,9266,7,7,6659,1],[23,1,3,0,9,5327,764,428,399,6917,6092,8200,9,9,7149,1],[23,1,3,1,7,5871,809,428,null,7108,6125,8171,7,7,6375,1],[23,1,4,0,6,5150,707,428,299,6584,5785,7858,5,6,6243,1],[23,1,4,1,7,5537,804,428,null,6769,5896,7818,7,7,7214,1],[23,2,0,0,7,8187,1146,312,349,9994,7501,13209,7,7,6480,1],[23,2,0,1,5,8569,1161,312,null,10042,7778,12969,5,5,6714,1],[23,2,1,0,7,5531,740,312,399,6982,6075,8061,7,7,6919,1],[23,2,1,1,4,6153,873,312,null,7338,6305,8709,4,4,6538,1],[23,2,2,0,5,4692,674,312,399,6077,5153,7220,5,5,7158,1],[23,2,2,1,8,5280,737,312,null,6329,5366,7664,8,8,6240,1],[23,2,3,0,4,4114,580,312,349,5356,4561,6528,4,4,6658,1],[23,2,3,1,4,4701,621,312,null,5635,4952,6479,4,4,7127,1],[23,2,4,0,9,3769,533,312,399,5013,4221,5838,9,9,6585,1],[23,2,4,1,7,4212,604,312,null,5128,4343,5906,7,7,7421,1],[23,3,0,0,9,11248,1543,428,299,13518,11032,17638,9,9,6915,1],[23,3,0,1,4,11895,1684,428,null,14007,10525,18963,4,4,6532,1],[23,3,1,0,8,7585,1052,428,399,9463,8211,11495,7,8,7225,1],[23,3,1,1,7,8355,1188,428,null,9970,8663,11650,7,7,7185,1],[23,3,2,0,6,6182,894,428,449,7954,6982,9730,5,6,7021,1],[23,3,2,1,7,6943,975,428,null,8346,7290,9791,7,7,7172,1],[23,3,3,0,6,5589,744,428,299,7060,6242,8188,6,6,7631,1],[23,3,3,1,6,5859,841,428,null,7129,5991,8537,6,6,6667,1],[23,3,4,0,9,5290,698,428,449,6865,5786,8135,9,9,6816,1],[23,3,4,1,9,5719,816,428,null,6963,5894,7967,9,9,8084,1],[23,4,0,0,6,6284,827,236,399,7746,6244,10019,6,6,6514,1],[23,4,0,1,5,6556,861,236,null,7654,5772,9674,5,5,6280,1],[23,4,1,0,9,4225,610,236,449,5520,4751,6611,9,9,7118,1],[23,4,1,1,4,4526,605,236,null,5367,4548,6284,4,4,6381,1],[23,4,2,0,6,3397,461,236,349,4443,3868,5254,6,6,6220,1],[23,4,2,1,4,3964,574,236,null,4774,4022,5647,4,4,6692,1],[23,4,3,0,8,2880,393,236,399,3908,3440,4659,8,8,7411,1],[23,4,3,1,8,3420,497,236,null,4152,3536,4970,8,8,7344,1],[23,4,4,0,6,2825,400,236,399,3859,3345,4669,6,6,5800,1],[23,4,4,1,6,3264,458,236,null,3958,3500,4734,6,6,7032,1],[23,5,0,0,6,11855,1708,428,349,14340,11298,18466,5,6,7133,1],[23,5,0,1,6,13102,1737,428,null,15267,11577,19332,6,6,6336,1],[23,5,1,0,4,8793,1189,428,449,10859,9481,12623,4,4,6679,1],[23,5,1,1,4,9411,1264,428,null,11103,9693,12926,4,4,7005,1],[23,5,2,0,6,6746,975,428,449,8598,7447,10215,6,6,7173,1],[23,5,2,1,8,7387,1021,428,null,8836,7727,10283,7,8,6311,1],[23,5,3,0,8,6121,856,428,449,7854,6728,9589,8,8,7410,1],[23,5,3,1,9,6709,916,428,null,8053,6913,9683,9,9,6697,1],[23,5,4,0,4,6007,834,428,399,7668,6587,8981,4,4,6767,1],[23,5,4,1,4,6543,872,428,null,7843,6929,9250,3,4,7048,1],[24,0,0,0,9,9634,1297,312,349,11591,8624,15624,9,9,6142,1],[24,0,0,1,7,9958,1437,312,null,11708,8719,15892,7,7,7263,1],[24,0,1,0,5,6496,929,312,449,8187,7093,9371,5,5,7430,1],[24,0,1,1,9,7239,1017,312,null,8568,7521,10159,9,9,5775,1],[24,0,2,0,6,5494,785,312,299,6890,5839,8213,6,6,6934,1],[24,0,2,1,7,5843,801,312,null,6956,6011,8354,7,7,7008,1],[24,0,3,0,9,4888,677,312,349,6225,5440,7602,9,9,7301,1],[24,0,3,1,8,5307,690,312,null,6309,5584,7491,8,8,7496,1],[24,0,4,0,4,4675,636,312,299,5922,5129,7184,4,4,6555,1],[24,0,4,1,7,5131,709,312,null,6153,5311,7396,7,7,5821,1],[24,1,0,0,9,10216,1407,428,399,12451,9777,16322,9,9,6446,1],[24,1,0,1,5,11311,1542,428,null,13281,10507,16929,5,5,5718,1],[24,1,1,0,6,7436,997,428,299,9160,7780,10704,6,6,5974,1],[24,1,1,1,4,8150,1085,428,null,9663,8332,11757,4,4,6873,1],[24,1,2,0,6,6222,832,428,349,7832,6764,9256,6,6,6797,1],[24,1,2,1,6,6664,946,428,null,8039,6778,9782,6,6,5747,1],[24,1,3,0,8,5567,741,428,299,7035,5942,8465,8,8,6635,1],[24,1,3,1,5,5967,789,428,null,7184,6317,8512,5,5,6035,1],[24,1,4,0,4,5084,668,428,399,6579,5616,7952,4,4,6274,1],[24,1,4,1,6,5737,807,428,null,6973,6083,8386,6,6,6226,1],[24,2,0,0,7,8213,1094,312,449,10068,7816,13264,6,7,7306,1],[24,2,0,1,5,8914,1295,312,null,10522,8379,14225,5,5,6711,1],[24,2,1,0,8,5566,756,312,399,7033,6207,8080,8,8,6773,1],[24,2,1,1,4,6338,872,312,null,7522,6589,9071,4,4,7025,1],[24,2,2,0,7,4960,674,312,299,6245,5358,7614,7,7,7329,1],[24,2,2,1,8,5087,703,312,null,6102,5308,7223,8,8,6502,1],[24,2,3,0,4,4018,571,312,399,5300,4613,6410,4,4,6074,1],[24,2,3,1,6,4496,617,312,null,5425,4769,6553,6,6,6616,1],[24,2,4,0,5,3939,533,312,299,5083,4477,6205,4,5,6561,1],[24,2,4,1,4,4482,598,312,null,5393,4709,6312,4,4,6775,1],[24,3,0,0,4,11020,1440,428,349,13237,10308,18036,4,4,8477,1],[24,3,0,1,4,11313,1559,428,null,13300,9962,16463,4,4,5785,1],[24,3,1,0,4,7837,1091,428,399,9755,8503,11878,4,4,6186,1],[24,3,1,1,7,8355,1140,428,null,9923,8804,11570,7,7,7407,1],[24,3,2,0,7,6575,898,428,299,8200,6892,9803,7,7,6952,1],[24,3,2,1,7,6736,934,428,null,8099,6954,9898,7,7,6731,1],[24,3,3,0,8,5681,814,428,349,7272,6314,8734,8,8,6584,1],[24,3,3,1,9,6097,861,428,null,7385,6465,8632,8,9,7628,1],[24,3,4,0,5,5158,682,428,349,6616,5788,7908,4,5,7046,1],[24,3,4,1,6,5733,775,428,null,6937,5853,8422,6,6,7274,1],[24,4,0,0,7,6221,824,236,349,7630,5708,9653,7,7,7243,1],[24,4,0,1,5,6714,950,236,null,7900,6430,10216,5,5,6773,1],[24,4,1,0,4,4016,584,236,449,5285,4442,6418,4,4,6772,1],[24,4,1,1,7,4828,650,236,null,5714,4914,6753,7,7,7202,1],[24,4,2,0,9,3329,468,236,449,4481,3766,5209,9,9,6791,1],[24,4,2,1,7,3828,523,236,null,4587,3979,5381,7,7,6589,1],[24,4,3,0,8,3001,410,236,299,3946,3424,4799,8,8,6596,1],[24,4,3,1,5,3391,461,236,null,4088,3463,4714,5,5,7223,1],[24,4,4,0,7,2886,388,236,349,3859,3408,4693,7,7,6437,1],[24,4,4,1,6,3412,446,236,null,4093,3520,4742,6,6,7073,1],[24,5,0,0,5,12083,1594,428,299,14404,11337,18037,5,5,6715,1],[24,5,0,1,6,13310,1732,428,null,15470,11704,19408,6,6,7258,1],[24,5,1,0,9,8848,1174,428,399,10848,9141,13213,8,9,6525,1],[24,5,1,1,6,8943,1237,428,null,10608,9011,12391,6,6,6504,1],[24,5,2,0,7,6897,978,428,449,8752,7535,10558,7,7,6696,1],[24,5,2,1,9,7490,1028,428,null,8945,7544,10524,9,9,6740,1],[24,5,3,0,6,6059,852,428,399,7739,6624,8973,6,6,6832,1],[24,5,3,1,4,6545,911,428,null,7884,6985,9355,4,4,6573,1],[24,5,4,0,6,6173,814,428,299,7714,6522,8860,6,6,6310,1],[24,5,4,1,9,6521,906,428,null,7856,6797,9233,9,9,6517,1],[25,0,0,0,5,9845,1304,312,349,11810,9290,14976,4,5,5768,1],[25,0,0,1,4,10441,1511,312,null,12264,9496,15508,4,4,6432,1],[25,0,1,0,6,6883,916,312,399,8510,7179,10239,5,6,6437,1],[25,0,1,1,4,7222,940,312,null,8474,7228,9900,4,4,7003,1],[25,0,2,0,5,5601,745,312,349,7008,6025,8080,5,5,6220,1],[25,0,2,1,7,6185,890,312,null,7387,6427,8815,7,7,6082,1],[25,0,3,0,8,4880,638,312,299,6130,5387,7135,7,8,7140,1],[25,0,3,1,8,5361,738,312,null,6410,5668,7602,8,8,7130,1],[25,0,4,0,9,4615,603,312,449,5978,5300,6994,8,9,7469,1],[25,0,4,1,6,5297,698,312,null,6308,5405,7359,6,6,6620,1],[25,1,0,0,9,11144,1460,428,299,13331,10106,16602,9,9,6477,1],[25,1,0,1,5,11629,1651,428,null,13708,10782,18205,5,5,7496,1],[25,1,1,0,6,7351,1049,428,349,9176,7878,10744,6,6,6815,1],[25,1,1,1,7,8351,1154,428,null,9933,8782,11631,7,7,6429,1],[25,1,2,0,7,6472,896,428,299,8094,7161,9648,7,7,5556,1],[25,1,2,1,6,6918,929,428,null,8275,7092,10086,6,6,7427,1],[25,1,3,0,4,5374,751,428,349,6902,5871,8119,4,4,6344,1],[25,1,3,1,7,5873,834,428,null,7135,6043,8718,7,7,6940,1],[25,1,4,0,6,5425,776,428,349,6978,5924,8326,4,6,6213,1],[25,1,4,1,6,5715,758,428,null,6901,6057,8376,6,6,6828,1],[25,2,0,0,8,8515,1201,312,299,10327,8155,13073,8,8,7199,1],[25,2,0,1,8,9178,1196,312,null,10687,7937,13840,8,8,6391,1],[25,2,1,0,8,5709,754,312,399,7174,6143,8634,8,8,6326,1],[25,2,1,1,5,6430,912,312,null,7654,6748,8846,5,5,7059,1],[25,2,2,0,9,4776,651,312,349,6088,5406,7131,9,9,5977,1],[25,2,2,1,9,5375,778,312,null,6465,5677,7728,9,9,6943,1],[25,2,3,0,8,4215,600,312,349,5476,4615,6531,8,8,6689,1],[25,2,3,1,4,4708,650,312,null,5670,4951,6690,4,4,7190,1],[25,2,4,0,7,3899,509,312,349,5069,4275,6156,7,7,6145,1],[25,2,4,1,4,4638,621,312,null,5571,4735,6728,4,4,6789,1],[25,3,0,0,4,11206,1535,428,349,13517,10459,16750,4,4,6622,1],[25,3,0,1,8,11868,1559,428,null,13855,11147,17984,8,8,6926,1],[25,3,1,0,5,8191,1088,428,399,10106,8936,12281,5,5,7068,1],[25,3,1,1,8,8752,1172,428,null,10352,8712,12510,8,8,6870,1],[25,3,2,0,4,6721,883,428,399,8431,7303,10066,4,4,7073,1],[25,3,2,1,5,6959,935,428,null,8323,7048,9978,5,5,6767,1],[25,3,3,0,7,5690,757,428,349,7223,6214,8316,7,7,5639,1],[25,3,3,1,6,6119,836,428,null,7383,6315,8547,6,6,5881,1],[25,3,4,0,7,5517,787,428,299,7031,6203,8470,6,7,6574,1],[25,3,4,1,8,5805,773,428,null,7006,5993,8540,8,8,7406,1],[25,4,0,0,7,6346,892,236,449,7923,5877,10320,7,7,7124,1],[25,4,0,1,9,6991,940,236,null,8168,6548,10928,9,9,6604,1],[25,4,1,0,6,4422,620,236,399,5678,5030,6706,6,6,6726,1],[25,4,1,1,6,4861,639,236,null,5737,5021,6669,6,6,6094,1],[25,4,2,0,9,3477,459,236,449,4621,3925,5462,8,9,6844,1],[25,4,2,1,6,4077,545,236,null,4858,4301,5907,6,6,7307,1],[25,4,3,0,5,3069,400,236,299,4004,3371,4601,4,5,6855,1],[25,4,3,1,9,3621,483,236,null,4340,3712,5066,9,9,6825,1],[25,4,4,0,6,2772,396,236,449,3853,3398,4663,6,6,5979,1],[25,4,4,1,8,3389,489,236,null,4113,3456,4713,8,8,6872,1],[25,5,0,0,5,12230,1669,428,299,14626,11033,18989,5,5,6975,1],[25,5,0,1,5,12882,1831,428,null,15141,11362,20302,5,5,6422,1],[25,5,1,0,8,8566,1180,428,299,10473,8799,12055,8,8,7095,1],[25,5,1,1,8,9670,1324,428,null,11422,9839,13198,7,8,7300,1],[25,5,2,0,4,7247,964,428,449,9088,7644,10581,4,4,6496,1],[25,5,2,1,5,7822,1021,428,null,9271,7828,10695,5,5,5822,1],[25,5,3,0,7,6440,899,428,399,8165,6949,9975,7,7,6216,1],[25,5,3,1,5,7003,975,428,null,8405,7226,10196,5,5,6731,1],[25,5,4,0,7,6268,822,428,299,7817,6935,9084,7,7,6321,1],[25,5,4,1,6,6380,924,428,null,7733,6864,9075,6,6,6949,1],[26,0,0,0,7,10078,1349,312,399,12138,9440,15437,7,7,6985,1],[26,0,0,1,7,10997,1430,312,null,12739,9760,16885,7,7,6858,1],[26,0,1,0,9,6816,937,312,399,8464,7254,10333,8,9,6697,1],[26,0,1,1,8,7426,1028,312,null,8767,7676,10562,8,8,6565,1],[26,0,2,0,9,5766,811,312,299,7188,6253,8590,9,9,7546,1],[26,0,2,1,9,6454,904,312,null,7670,6573,9151,9,9,6157,1],[26,0,3,0,7,5114,721,312,299,6446,5685,7513,7,7,7708,1],[26,0,3,1,7,5673,808,312,null,6793,5992,7938,6,7,6454,1],[26,0,4,0,4,4779,693,312,449,6232,5509,7620,4,4,7013,1],[26,0,4,1,4,5520,762,312,null,6593,5614,7859,4,4,6992,1],[26,1,0,0,8,11515,1658,428,349,13950,10414,18719,8,8,6564,1],[26,1,0,1,6,11688,1663,428,null,13780,10939,18623,6,6,7152,1],[26,1,1,0,7,8156,1163,428,349,10096,8852,11786,7,7,6979,1],[26,1,1,1,8,8665,1192,428,null,10285,8841,12586,8,8,5636,1],[26,1,2,0,8,6345,900,428,399,8072,7026,9548,8,8,5495,1],[26,1,2,1,9,7323,984,428,null,8734,7687,10679,9,9,7101,1],[26,1,3,0,5,5502,755,428,399,7084,6053,8332,5,5,7686,1],[26,1,3,1,8,6214,879,428,null,7520,6469,8754,8,8,6730,1],[26,1,4,0,6,5311,760,428,449,6948,6092,7966,6,6,6358,1],[26,1,4,1,7,5760,825,428,null,7013,5918,8265,6,7,6790,1],[26,2,0,0,8,8740,1222,312,299,10573,8065,13265,8,8,6790,1],[26,2,0,1,9,8956,1256,312,null,10524,7809,13644,9,9,6784,1],[26,2,1,0,5,6097,805,312,299,7513,6348,8859,5,5,7126,1],[26,2,1,1,5,6762,936,312,null,8010,6970,9372,5,5,6795,1],[26,2,2,0,7,5246,721,312,299,6579,5688,7973,7,7,6354,1],[26,2,2,1,8,5335,735,312,null,6382,5567,7534,8,8,6845,1],[26,2,3,0,9,4251,610,312,349,5521,4703,6380,9,9,6773,1],[26,2,3,1,8,4902,637,312,null,5852,5039,6737,8,8,6329,1],[26,2,4,0,4,4205,593,312,399,5510,4659,6370,2,4,7231,1],[26,2,4,1,6,4688,634,312,null,5633,4938,6810,6,6,7267,1],[26,3,0,0,5,12074,1661,428,399,14563,11447,18762,5,5,6060,1],[26,3,0,1,4,12530,1807,428,null,14765,11927,19778,4,4,6303,1],[26,3,1,0,4,8112,1163,428,299,10002,8492,12083,4,4,6475,1],[26,3,1,1,4,8988,1191,428,null,10607,8939,12456,4,4,6922,1],[26,3,2,0,7,6814,910,428,449,8602,7366,10237,6,7,7220,1],[26,3,2,1,5,7589,1020,428,null,9037,7811,10929,5,5,7057,1],[26,3,3,0,7,6091,865,428,349,7734,6808,9006,7,7,7172,1],[26,3,3,1,6,6341,867,428,null,7636,6510,9186,6,6,6543,1],[26,3,4,0,8,5611,776,428,299,7114,5990,8328,8,8,6721,1],[26,3,4,1,9,5978,838,428,null,7244,6124,8834,9,9,6549,1],[26,4,0,0,7,6366,860,236,449,7912,6313,10047,7,7,6147,1],[26,4,0,1,9,6883,970,236,null,8090,6286,10159,9,9,6700,1],[26,4,1,0,4,4509,610,236,349,5704,4823,6528,4,4,7094,1],[26,4,1,1,8,4940,714,236,null,5890,5000,6929,8,8,6723,1],[26,4,2,0,5,3728,522,236,299,4785,4109,5666,5,5,7045,1],[26,4,2,1,5,4075,543,236,null,4854,4214,5597,5,5,5947,1],[26,4,3,0,7,3226,442,236,349,4253,3702,5093,7,7,6459,1],[26,4,3,1,9,3700,527,236,null,4462,3930,5393,9,9,6724,1],[26,4,4,0,7,2947,427,236,349,3959,3483,4802,7,7,5826,1],[26,4,4,1,5,3456,496,236,null,4189,3681,5082,5,5,7933,1],[26,5,0,0,5,12594,1651,428,299,14972,11450,19448,5,5,6484,1],[26,5,0,1,5,13552,1769,428,null,15750,11679,19693,5,5,6470,1],[26,5,1,0,6,8871,1218,428,449,10966,9665,13308,6,6,7183,1],[26,5,1,1,6,9761,1399,428,null,11589,9796,13933,6,6,6589,1],[26,5,2,0,6,7244,1026,428,449,9146,8006,11174,6,6,6996,1],[26,5,2,1,7,8284,1197,428,null,9909,8604,11778,7,7,6057,1],[26,5,3,0,7,6652,885,428,399,8363,7168,9784,7,7,6833,1],[26,5,3,1,9,7101,1010,428,null,8539,7444,10059,9,9,6741,1],[26,5,4,0,7,6272,854,428,299,7853,6819,9112,7,7,6976,1],[26,5,4,1,5,6577,950,428,null,7955,6929,9579,5,5,7360,1],[27,0,0,0,6,9228,1287,312,449,11275,8756,14977,5,6,7607,1],[27,0,0,1,5,10385,1474,312,null,12172,9126,15055,5,5,6765,1],[27,0,1,0,8,6673,970,312,449,8405,7438,9758,8,8,7106,1],[27,0,1,1,6,7448,1020,312,null,8779,7783,10365,6,6,6144,1],[27,0,2,0,8,5527,758,312,449,7046,5939,8433,8,8,6826,1],[27,0,2,1,4,6110,841,312,null,7263,6421,8739,4,4,7733,1],[27,0,3,0,4,4870,660,312,299,6142,5178,7484,4,4,6929,1],[27,0,3,1,5,5436,741,312,null,6490,5747,7917,5,5,6382,1],[27,0,4,0,9,4648,666,312,349,5975,5281,7146,8,9,6099,1],[27,0,4,1,7,4937,713,312,null,5962,5252,6907,7,7,6897,1],[27,1,0,0,7,10975,1456,428,299,13157,10046,17463,7,7,7197,1],[27,1,0,1,5,11251,1491,428,null,13169,10541,17906,4,5,7126,1],[27,1,1,0,4,7583,1031,428,449,9491,8142,10955,4,4,6290,1],[27,1,1,1,4,8252,1100,428,null,9780,8675,11267,4,4,6680,1],[27,1,2,0,4,6393,927,428,299,8047,6958,9282,4,4,7297,1],[27,1,2,1,7,6725,884,428,null,8037,6794,9273,6,7,7338,1],[27,1,3,0,5,5254,762,428,449,6892,5827,8285,5,5,6922,1],[27,1,3,1,8,5960,825,428,null,7213,6351,8823,8,8,6181,1],[27,1,4,0,4,5265,694,428,449,6836,5868,8173,4,4,7121,1],[27,1,4,1,9,5815,778,428,null,7020,6005,8115,9,9,7707,1],[27,2,0,0,6,8270,1198,312,299,10079,7990,12487,6,6,6520,1],[27,2,0,1,6,8981,1236,312,null,10528,8503,13230,6,6,7353,1],[27,2,1,0,8,5721,751,312,299,7082,6220,8564,8,8,6970,1],[27,2,1,1,7,6308,827,312,null,7447,6488,8897,7,7,6397,1],[27,2,2,0,4,4607,665,312,449,6032,5335,7323,4,4,6874,1],[27,2,2,1,6,5284,734,312,null,6330,5582,7253,6,6,6733,1],[27,2,3,0,5,4123,585,312,299,5318,4644,6087,5,5,7715,1],[27,2,3,1,9,4678,673,312,null,5663,4916,6881,9,9,7077,1],[27,2,4,0,6,3985,545,312,349,5191,4576,6272,6,6,5939,1],[27,2,4,1,4,4455,641,312,null,5408,4756,6200,4,4,6469,1],[27,3,0,0,9,11051,1481,428,349,13309,10695,17654,8,9,6624,1],[27,3,0,1,6,12029,1563,428,null,14020,11258,18658,6,6,7935,1],[27,3,1,0,9,7858,1134,428,399,9819,8365,11667,9,9,5883,1],[27,3,1,1,9,8406,1220,428,null,10054,8615,11556,9,9,6837,1],[27,3,2,0,5,6522,935,428,349,8234,7168,9514,5,5,6571,1],[27,3,2,1,7,6946,987,428,null,8361,7351,10013,7,7,6106,1],[27,3,3,0,4,5493,741,428,399,7061,6020,8275,4,4,6708,1],[27,3,3,1,4,6080,793,428,null,7301,6441,8537,4,4,6882,1],[27,3,4,0,4,5279,735,428,449,6892,5988,8270,4,4,7065,1],[27,3,4,1,7,6018,792,428,null,7239,6237,8558,7,7,6240,1],[27,4,0,0,9,6097,849,236,449,7632,6160,10183,9,9,6307,1],[27,4,0,1,4,6648,966,236,null,7851,5958,10243,4,4,6812,1],[27,4,1,0,5,4155,603,236,399,5393,4622,6431,5,5,6854,1],[27,4,1,1,5,4614,624,236,null,5475,4834,6693,5,5,6912,1],[27,4,2,0,6,3631,494,236,299,4660,4067,5361,6,6,7848,1],[27,4,2,1,4,3947,549,236,null,4732,4125,5531,4,4,6744,1],[27,4,3,0,7,2974,420,236,449,4079,3510,4716,7,7,6158,1],[27,4,3,1,4,3527,482,236,null,4246,3711,5038,4,4,7573,1],[27,4,4,0,7,2849,400,236,349,3834,3252,4625,7,7,5684,1],[27,4,4,1,4,3316,469,236,null,4020,3536,4823,4,4,6333,1],[27,5,0,0,7,12075,1724,428,349,14576,11126,19181,7,7,6897,1],[27,5,0,1,5,13379,1784,428,null,15591,11582,20373,4,5,6261,1],[27,5,1,0,7,8709,1266,428,399,10802,9346,12630,7,7,6723,1],[27,5,1,1,9,9048,1274,428,null,10750,9144,12947,9,9,6507,1],[27,5,2,0,6,6982,935,428,349,8694,7450,10444,6,6,7011,1],[27,5,2,1,9,7667,1087,428,null,9182,7724,10561,9,9,6677,1],[27,5,3,0,7,6002,860,428,449,7740,6778,8881,7,7,6470,1],[27,5,3,1,7,6886,935,428,null,8250,7177,9696,7,7,6678,1],[27,5,4,0,8,6167,872,428,299,7766,6524,9386,8,8,6404,1],[27,5,4,1,9,6644,871,428,null,7944,6767,9572,9,9,7262,1],[28,0,0,0,8,9314,1300,312,399,11325,8721,14081,8,8,5933,1],[28,0,0,1,9,10244,1430,312,null,11986,9233,15807,9,9,7523,1],[28,0,1,0,9,6722,956,312,399,8389,7274,9803,9,9,7927,1],[28,0,1,1,4,7235,988,312,null,8535,7238,9789,4,4,6114,1],[28,0,2,0,7,5488,771,312,399,6970,6073,8084,7,7,7321,1],[28,0,2,1,9,5900,837,312,null,7050,6227,8410,9,9,7094,1],[28,0,3,0,7,4894,671,312,399,6275,5532,7401,7,7,6810,1],[28,0,3,1,8,5216,758,312,null,6286,5472,7211,8,8,6066,1],[28,0,4,0,7,4736,646,312,299,5993,5091,7035,7,7,5989,1],[28,0,4,1,7,4959,669,312,null,5941,5095,7260,7,7,6775,1],[28,1,0,0,7,10847,1515,428,399,13189,10345,17943,7,7,6940,1],[28,1,0,1,7,11008,1443,428,null,12879,9609,16416,7,7,6916,1],[28,1,1,0,7,7160,1005,428,449,9042,7951,10763,7,7,6336,1],[28,1,1,1,5,7782,1047,428,null,9256,8000,11060,5,5,6933,1],[28,1,2,0,6,6124,872,428,299,7723,6499,8944,5,6,6161,1],[28,1,2,1,8,6848,911,428,null,8187,7217,9746,8,8,6682,1],[28,1,3,0,9,5246,730,428,449,6853,6009,7864,9,9,6892,1],[28,1,3,1,9,5829,775,428,null,7032,5918,8376,9,9,7378,1],[28,1,4,0,4,5190,683,428,349,6651,5690,8139,4,4,6744,1],[28,1,4,1,7,5579,742,428,null,6749,5862,7950,7,7,6504,1],[28,2,0,0,6,8568,1113,312,299,10292,8266,14008,6,6,6651,1],[28,2,0,1,4,9063,1228,312,null,10603,7908,13123,4,4,6282,1],[28,2,1,0,5,5786,760,312,399,7258,6283,8525,5,5,6256,1],[28,2,1,1,6,6458,860,312,null,7631,6689,9334,6,6,6174,1],[28,2,2,0,6,4628,656,312,299,5895,5152,6753,5,6,6723,1],[28,2,2,1,8,5142,669,312,null,6123,5235,7424,8,8,7372,1],[28,2,3,0,9,4288,579,312,349,5527,4886,6453,9,9,6823,1],[28,2,3,1,6,4559,601,312,null,5472,4717,6428,6,6,6886,1],[28,2,4,0,9,4034,571,312,299,5216,4628,6128,9,9,6541,1],[28,2,4,1,5,4218,585,312,null,5114,4466,6059,5,5,6940,1],[28,3,0,0,4,11161,1512,428,399,13500,10768,17613,4,4,5988,1],[28,3,0,1,8,12008,1717,428,null,14152,11503,18315,8,8,6836,1],[28,3,1,0,4,7980,1113,428,399,9920,8556,11599,4,4,7236,1],[28,3,1,1,6,8093,1175,428,null,9696,8466,11857,6,6,7626,1],[28,3,2,0,7,6501,885,428,349,8162,6905,9723,7,7,5830,1],[28,3,2,1,8,6878,927,428,null,8233,6927,9477,8,8,6665,1],[28,3,3,0,9,5528,741,428,299,6997,6178,8321,9,9,6380,1],[28,3,3,1,5,6194,883,428,null,7506,6388,8629,5,5,6941,1],[28,3,4,0,4,5202,689,428,449,6768,5691,8020,4,4,7253,1],[28,3,4,1,5,5996,806,428,null,7229,6264,8824,5,5,6628,1],[28,4,0,0,8,6243,828,236,449,7756,5972,9749,8,8,7314,1],[28,4,0,1,6,6682,903,236,null,7820,6374,10373,6,6,6565,1],[28,4,1,0,7,4028,559,236,449,5273,4536,6157,7,7,6997,1],[28,4,1,1,7,4647,657,236,null,5540,4810,6355,7,7,7941,1],[28,4,2,0,4,3483,492,236,449,4660,4019,5613,4,4,6304,1],[28,4,2,1,7,4037,542,236,null,4814,4171,5548,7,7,6840,1],[28,4,3,0,7,3173,433,236,349,4191,3696,4849,5,7,6628,1],[28,4,3,1,9,3572,469,236,null,4277,3738,5008,9,9,7385,1],[28,4,4,0,9,2827,386,236,349,3797,3368,4482,8,9,7767,1],[28,4,4,1,5,3288,475,236,null,4000,3362,4692,5,5,7121,1],[28,5,0,0,5,12589,1754,428,349,15120,12350,19891,5,5,7535,1],[28,5,0,1,9,12804,1783,428,null,15016,11120,19738,9,9,5919,1],[28,5,1,0,7,8976,1220,428,299,10923,9239,12628,7,7,6130,1],[28,5,1,1,8,9114,1188,428,null,10730,9269,13127,8,8,6588,1],[28,5,2,0,5,7401,1037,428,299,9166,7919,10937,5,5,6894,1],[28,5,2,1,8,7925,1061,428,null,9413,8040,11521,8,8,6553,1],[28,5,3,0,8,5967,847,428,399,7642,6780,8969,8,8,7178,1],[28,5,3,1,6,6631,933,428,null,7993,6897,9276,5,6,7594,1],[28,5,4,0,8,6152,853,428,349,7782,6745,9437,7,8,5082,1],[28,5,4,1,8,6503,863,428,null,7793,6640,8979,8,8,6497,1],[29,0,0,0,9,8841,1257,312,449,10859,8521,14256,9,9,5770,1],[29,0,0,1,4,10056,1343,312,null,11711,9137,15201,4,4,6527,1],[29,0,1,0,6,6591,873,312,399,8176,7259,9737,5,6,6281,1],[29,0,1,1,9,6969,1003,312,null,8283,7330,9541,9,9,7015,1],[29,0,2,0,5,5325,748,312,349,6735,5786,8062,5,5,7204,1],[29,0,2,1,8,5715,817,312,null,6844,5992,7923,8,8,6910,1],[29,0,3,0,8,4605,641,312,299,5857,4969,6726,8,8,6560,1],[29,0,3,1,8,5064,712,312,null,6088,5140,6968,8,8,7166,1],[29,0,4,0,4,4227,576,312,349,5464,4759,6390,4,4,6093,1],[29,0,4,1,4,4916,682,312,null,5910,5101,7073,4,4,6672,1],[29,1,0,0,4,10409,1400,428,349,12586,10168,16275,4,4,6808,1],[29,1,0,1,7,10694,1477,428,null,12599,10179,15734,7,7,6013,1],[29,1,1,0,7,7123,1000,428,449,9001,7927,10644,7,7,6225,1],[29,1,1,1,4,7393,1068,428,null,8889,7473,10686,4,4,6079,1],[29,1,2,0,5,5801,811,428,349,7389,6507,8670,5,5,7155,1],[29,1,2,1,9,6189,847,428,null,7463,6354,9057,9,9,7243,1],[29,1,3,0,6,5026,665,428,299,6418,5415,7828,6,6,6343,1],[29,1,3,1,8,5474,768,428,null,6670,5618,7890,8,8,6535,1],[29,1,4,0,9,4992,674,428,349,6443,5552,7551,9,9,7254,1],[29,1,4,1,7,5201,704,428,null,6333,5413,7523,7,7,6511,1],[29,2,0,0,7,7928,1141,312,399,9780,7494,12733,6,7,6082,1],[29,2,0,1,9,8332,1207,312,null,9851,7682,12340,9,9,6498,1],[29,2,1,0,7,5170,749,312,449,6679,5767,7991,7,7,7433,1],[29,2,1,1,5,5850,807,312,null,6969,6103,8391,5,5,6012,1],[29,2,2,0,4,4552,631,312,299,5795,5060,6848,4,4,6543,1],[29,2,2,1,4,4889,651,312,null,5852,4956,7009,4,4,6675,1],[29,2,3,0,4,4110,540,312,299,5261,4657,6227,3,4,6246,1],[29,2,3,1,7,4361,571,312,null,5244,4447,6275,7,7,7158,1],[29,2,4,0,6,3661,491,312,349,4813,4077,5761,5,6,7432,1],[29,2,4,1,6,4129,589,312,null,5030,4403,5786,6,6,6048,1],[29,3,0,0,9,10325,1374,428,349,12475,9530,16367,9,9,5930,1],[29,3,0,1,9,11022,1468,428,null,12919,10119,17304,9,9,6935,1],[29,3,1,0,6,7618,1063,428,299,9408,8228,11308,6,6,6260,1],[29,3,1,1,6,7911,1105,428,null,9444,7975,11217,6,6,7282,1],[29,3,2,0,6,5985,868,428,399,7680,6757,9197,6,6,5533,1],[29,3,2,1,9,6557,863,428,null,7848,6916,9033,9,9,6845,1],[29,3,3,0,7,5463,710,428,299,6901,6061,8102,7,7,7087,1],[29,3,3,1,9,6051,801,428,null,7280,6418,8457,8,9,6707,1],[29,3,4,0,4,4888,704,428,399,6419,5518,7598,4,4,7206,1],[29,3,4,1,4,5455,754,428,null,6637,5634,7829,4,4,5878,1],[29,4,0,0,5,5719,829,236,299,7083,5575,8852,5,5,7137,1],[29,4,0,1,4,6316,887,236,null,7440,5910,9688,4,4,7248,1],[29,4,1,0,4,4068,542,236,299,5144,4361,6199,4,4,6544,1],[29,4,1,1,6,4633,631,236,null,5500,4639,6604,5,6,8011,1],[29,4,2,0,6,3304,458,236,449,4447,3739,5088,6,6,7215,1],[29,4,2,1,8,3630,502,236,null,4368,3706,5000,8,8,7402,1],[29,4,3,0,5,2855,403,236,399,3892,3396,4739,5,5,7464,1],[29,4,3,1,7,3312,480,236,null,4027,3477,4726,7,7,6414,1],[29,4,4,0,7,2680,388,236,299,3602,3089,4304,7,7,6314,1],[29,4,4,1,4,3033,418,236,null,3687,3131,4269,4,4,7801,1],[29,5,0,0,7,11265,1565,428,299,13556,10748,18064,7,7,7988,1],[29,5,0,1,6,12014,1735,428,null,14177,11401,18533,6,6,5734,1],[29,5,1,0,6,8431,1123,428,349,10330,9083,12154,6,6,6667,1],[29,5,1,1,6,8721,1196,428,null,10346,9064,12524,6,6,6282,1],[29,5,2,0,6,6733,938,428,299,8398,7375,9922,6,6,6537,1],[29,5,2,1,8,7274,956,428,null,8658,7547,10287,7,8,7051,1],[29,5,3,0,6,6164,808,428,299,7699,6702,9139,6,6,6436,1],[29,5,3,1,4,6267,908,428,null,7602,6429,8749,4,4,6579,1],[29,5,4,0,9,5539,778,428,299,7044,5995,8114,8,9,6808,1],[29,5,4,1,4,6306,856,428,null,7590,6410,9221,4,4,6909,1]],"compare":{"pages":60,"models":[{"id":"deepseek-ai/deepseek-v4-flash-0731","short":"DeepSeek-v4-flash","valid_json":93.3,"latency_s":4.18,"records":312,"expected":336,"retries":11,"truncations":7,"cost_note":"free tier"},{"id":"deepseek-ai/deepseek-v4-pro-0813","short":"DeepSeek-v4-pro","valid_json":97.9,"latency_s":6.74,"records":330,"expected":336,"retries":3,"truncations":1,"cost_note":"free tier"}]},"recent":[{"origin":"DEL","destination":"CCU","carrier":"SpiceJet","source":"cleartrip","advance_window_days":7,"departure_time":"17:50","base_fare":8338,"taxes":1148,"udf":428,"convenience_fee":299,"total_fare":10213,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T18:07:00Z"},{"origin":"DEL","destination":"BLR","carrier":"Akasa Air","source":"indigo","advance_window_days":15,"departure_time":"07:10","base_fare":6499,"taxes":895,"udf":428,"convenience_fee":null,"total_fare":7822,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T18:07:00Z"},{"origin":"DEL","destination":"BLR","carrier":"Vistara","source":"indigo","advance_window_days":1,"departure_time":"08:25","base_fare":11125,"taxes":1531,"udf":428,"convenience_fee":null,"total_fare":13085,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T14:31:00Z"},{"origin":"DEL","destination":"CCU","carrier":"Air India","source":"indigo","advance_window_days":7,"departure_time":"07:05","base_fare":7550,"taxes":1039,"udf":428,"convenience_fee":null,"total_fare":9017,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T14:22:00Z"},{"origin":"BLR","destination":"HYD","carrier":"IndiGo","source":"indigo","advance_window_days":30,"departure_time":"09:10","base_fare":3875,"taxes":533,"udf":236,"convenience_fee":null,"total_fare":4644,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T14:14:00Z"},{"origin":"MAA","destination":"DEL","carrier":"IndiGo","source":"cleartrip","advance_window_days":1,"departure_time":"11:50","base_fare":13783,"taxes":1897,"udf":428,"convenience_fee":399,"total_fare":16508,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T14:07:00Z"},{"origin":"DEL","destination":"BLR","carrier":"IndiGo","source":"cleartrip","advance_window_days":7,"departure_time":"07:05","base_fare":8324,"taxes":1146,"udf":428,"convenience_fee":349,"total_fare":10246,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T14:02:00Z"},{"origin":"BOM","destination":"BLR","carrier":"Air India","source":"indigo","advance_window_days":15,"departure_time":"14:50","base_fare":4827,"taxes":665,"udf":312,"convenience_fee":null,"total_fare":5804,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T10:31:00Z"},{"origin":"BLR","destination":"HYD","carrier":"Air India","source":"indigo","advance_window_days":15,"departure_time":"19:55","base_fare":4001,"taxes":551,"udf":236,"convenience_fee":null,"total_fare":4788,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T10:22:00Z"},{"origin":"MAA","destination":"DEL","carrier":"IndiGo","source":"cleartrip","advance_window_days":15,"departure_time":"11:55","base_fare":6370,"taxes":877,"udf":428,"convenience_fee":349,"total_fare":8024,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T10:22:00Z"},{"origin":"DEL","destination":"BLR","carrier":"Vistara","source":"indigo","advance_window_days":15,"departure_time":"21:05","base_fare":5786,"taxes":796,"udf":428,"convenience_fee":null,"total_fare":7011,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T06:31:00Z"},{"origin":"DEL","destination":"CCU","carrier":"IndiGo","source":"indigo","advance_window_days":30,"departure_time":"07:05","base_fare":6434,"taxes":886,"udf":428,"convenience_fee":null,"total_fare":7748,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T06:31:00Z"},{"origin":"BLR","destination":"HYD","carrier":"SpiceJet","source":"cleartrip","advance_window_days":30,"departure_time":"11:40","base_fare":3284,"taxes":452,"udf":236,"convenience_fee":349,"total_fare":4321,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T06:22:00Z"},{"origin":"BOM","destination":"BLR","carrier":"SpiceJet","source":"indigo","advance_window_days":30,"departure_time":"18:55","base_fare":4985,"taxes":686,"udf":312,"convenience_fee":null,"total_fare":5983,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T06:14:00Z"},{"origin":"BLR","destination":"HYD","carrier":"Air India","source":"indigo","advance_window_days":1,"departure_time":"08:25","base_fare":6410,"taxes":882,"udf":236,"convenience_fee":null,"total_fare":7529,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T06:14:00Z"},{"origin":"MAA","destination":"DEL","carrier":"IndiGo","source":"indigo","advance_window_days":1,"departure_time":"18:10","base_fare":13416,"taxes":1847,"udf":428,"convenience_fee":null,"total_fare":15691,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T02:22:00Z"},{"origin":"DEL","destination":"CCU","carrier":"Air India","source":"cleartrip","advance_window_days":7,"departure_time":"21:40","base_fare":7886,"taxes":1086,"udf":428,"convenience_fee":349,"total_fare":9749,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T02:07:00Z"},{"origin":"DEL","destination":"CCU","carrier":"Air India","source":"indigo","advance_window_days":15,"departure_time":"09:05","base_fare":6402,"taxes":881,"udf":428,"convenience_fee":null,"total_fare":7712,"model_used":"deepseek-ai/deepseek-v4-pro-0813","scraped_at":"2026-08-31T02:02:00Z"}],"runs":[{"ts":"2026-08-31 22:04","source":"cleartrip","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":178,"skipped":0,"failed":0,"status":"ok","dur_s":343.6},{"ts":"2026-08-31 18:04","source":"indigo","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":202,"skipped":0,"failed":1,"status":"partial","dur_s":275.4},{"ts":"2026-08-31 14:04","source":"cleartrip","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":183,"skipped":3,"failed":0,"status":"ok","dur_s":364.2},{"ts":"2026-08-31 10:04","source":"indigo","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":212,"skipped":6,"failed":2,"status":"partial","dur_s":246.6},{"ts":"2026-08-31 06:04","source":"cleartrip","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":185,"skipped":0,"failed":1,"status":"partial","dur_s":281.3},{"ts":"2026-08-31 02:04","source":"indigo","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":200,"skipped":0,"failed":2,"status":"partial","dur_s":361.3},{"ts":"2026-08-30 22:04","source":"cleartrip","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":74,"skipped":2,"failed":14,"status":"failed","dur_s":305.6},{"ts":"2026-08-30 18:04","source":"indigo","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":194,"skipped":0,"failed":0,"status":"ok","dur_s":223.0},{"ts":"2026-08-30 14:04","source":"cleartrip","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":185,"skipped":0,"failed":0,"status":"ok","dur_s":243.5},{"ts":"2026-08-30 10:04","source":"indigo","model":"deepseek-ai/deepseek-v4-pro-0813","routes":6,"windows":5,"written":190,"skipped":6,"failed":0,"status":"partial","dur_s":392.2}]};
+/* =====================================================================
+   SUPABASE — fill these two in and the page goes live.
+   Get them from your project: Settings -> API. Use the ANON key, never the
+   service-role key: the anon key is public by design and schema.sql makes it
+   read-only. The scraper writes with the service-role key from the server.
+
+   Where this works: anywhere the page is served normally — opened from disk,
+   a local server, Vercel, Netlify, GitHub Pages.
+   Where it cannot: a published Claude Artifact. That sandbox blocks every
+   outbound fetch, silently, so the page falls back to the sample rows baked
+   in below and says so in the banner. That is a hosting limit, not a bug.
+   ===================================================================== */
+const SUPABASE = {
+  url: "https://ngywgselrypjcyagaast.supabase.co",
+  key: "sb_publishable_r5EYm0a75HNtfHRzZ4iIJQ_wqK4qcwy",
+  days: 30,                // how much history to pull
+  recent: 18,              // rows for the "Latest extractions" table
+  runs: 10                 // rows for the pipeline-health panel
+};
+
+const NS = "http://www.w3.org/2000/svg";
+const D = DATA.rows, R = DATA.routes, W = DATA.windows, SRC = DATA.sources;
+const C = {d:0,r:1,w:2,s:3,n:4,base:5,tax:6,udf:7,conv:8,tot:9,lo:10,hi:11,ok:12,att:13,ms:14,m:15};
+const RK = R.map(r => r.o + "–" + r.d);
+const SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6"];
+const ORD = ["--o1","--o2","--o3","--o4"];
+const COMP = [
+  {key:"base", lab:"Base fare",       tok:"--o1", ink:"--o1-ink", col:"base_fare"},
+  {key:"tax",  lab:"Taxes",           tok:"--o2", ink:"--o2-ink", col:"taxes"},
+  {key:"udf",  lab:"UDF",             tok:"--o3", ink:"--o3-ink", col:"udf"},
+  {key:"conv", lab:"Convenience fee", tok:"--o4", ink:"--o4-ink", col:"convenience_fee"}
+];
+const state = {days:30, routes:new Set(R.map((_,i)=>i)), src:"all", tables:false,
+               view:"index", tvRoute:0};
+
+/* ---------- formatting ---------- */
+const inr  = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const inrK = n => n>=1000 ? "₹"+(+(n/1000).toFixed(1))+"k" : "₹"+Math.round(n);
+const pct  = (n,dp=1) => (n>=0?"+":"−") + Math.abs(n).toFixed(dp) + "%";
+const num  = n => Math.round(n).toLocaleString("en-IN");
+const dayDate = d => {
+  const t = new Date(DATA.meta.start + "T00:00:00Z");
+  t.setUTCDate(t.getUTCDate() + d);
+  return t;
+};
+const dayLab = d => dayDate(d).toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
+const mean = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
+
+/* ---------- filtering + aggregation ---------- */
+const minDay = () => DATA.meta.days - state.days;
+function rowsFor(opts){
+  const o = opts||{}, lo = o.allDays ? 0 : minDay();
+  return D.filter(r =>
+    r[C.d] >= lo &&
+    state.routes.has(r[C.r]) &&
+    (state.src === "all" || r[C.s] === +state.src));
+}
+function meanBy(rows, keyFn, valFn){
+  const m = new Map();
+  for (const r of rows){
+    const k = keyFn(r);
+    let e = m.get(k); if(!e){ e = {s:0,n:0}; m.set(k,e); }
+    e.s += valFn(r); e.n++;
+  }
+  return m;
+}
+function indexSeries(){
+  const all = rowsFor({allDays:true});
+  const byDay = meanBy(all, r=>r[C.d], r=>r[C.tot]);
+  const base = byDay.get(0) ? byDay.get(0).s/byDay.get(0).n : 1;
+  const out = [];
+  for (let d = minDay(); d < DATA.meta.days; d++){
+    const e = byDay.get(d);
+    if (e) out.push({d, v:100*(e.s/e.n)/base, fare:e.s/e.n});
+  }
+  return out;
+}
+
+/* ---------- svg helpers ---------- */
+function S(tag, attrs, style){
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (style) e.setAttribute("style", style);
+  return e;
+}
+function txt(x, y, s, cls, extra){
+  const t = S("text", Object.assign({x, y}, extra||{}));
+  if (cls) t.setAttribute("class", cls);
+  t.textContent = s;
+  return t;
+}
+function svgFor(host, h){
+  host.querySelectorAll("svg").forEach(n=>n.remove());
+  const w = Math.max(320, host.clientWidth || 640);
+  const svg = S("svg", {viewBox:`0 0 ${w} ${h}`, width:w, height:h,
+                        role:"img", preserveAspectRatio:"none"});
+  svg.style.width = "100%"; svg.style.height = h + "px";
+  host.appendChild(svg);
+  return {svg, w, h};
+}
+function yTicks(min, max, n){
+  const span = max - min || 1, raw = span/n;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1,2,2.5,5,10].map(m=>m*mag).find(s=>s>=raw) || 10*mag;
+  const out = []; let v = Math.ceil(min/step)*step;
+  while (v <= max + 1e-6){ out.push(v); v += step; }
+  return out;
+}
+function tipRow(colorTok, label, value, isLine){
+  const row = document.createElement("div"); row.className = "row";
+  if (colorTok){
+    const k = document.createElement("span"); k.className = "k";
+    k.style.background = `var(${colorTok})`;
+    if (!isLine){ k.style.height = "10px"; k.style.width = "10px"; k.style.borderRadius = "2px"; }
+    row.appendChild(k);
+  }
+  const l = document.createElement("span"); l.className = "l"; l.textContent = label;
+  const n = document.createElement("span"); n.className = "n"; n.textContent = value;
+  row.append(l, n); return row;
+}
+function showTip(tip, host, x, y, title, rows){
+  tip.textContent = "";
+  const h4 = document.createElement("h4"); h4.textContent = title; tip.appendChild(h4);
+  rows.forEach(r => tip.appendChild(r));
+  tip.classList.add("on");
+  const bw = tip.offsetWidth, bh = tip.offsetHeight, hw = host.clientWidth;
+  let left = x + 14; if (left + bw > hw - 4) left = x - bw - 14;
+  tip.style.left = Math.max(2, left) + "px";
+  tip.style.top  = Math.max(2, y - bh - 12) + "px";
+}
+const hideTip = tip => tip.classList.remove("on");
+
+/* ================= index line ================= */
+function drawIndex(){
+  const host = document.getElementById("p-index"), tip = document.getElementById("t-index");
+  const data = indexSeries();
+  const H = 158, {svg, w} = svgFor(host, H);
+  const m = {l:40, r:16, t:12, b:24}, pw = w-m.l-m.r, ph = H-m.t-m.b;
+  const vals = data.map(p=>p.v);
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = Math.max(1.2, (hi-lo)*0.28);
+  const y0 = Math.min(99, lo-pad), y1 = hi+pad;
+  const X = i => m.l + (data.length<2 ? pw/2 : i*pw/(data.length-1));
+  const Y = v => m.t + ph - (v-y0)/(y1-y0)*ph;
+
+  yTicks(y0, y1, 3).forEach(v=>{
+    svg.appendChild(S("line",{x1:m.l,x2:w-m.r,y1:Y(v),y2:Y(v)},"stroke:var(--grid);stroke-width:1"));
+    svg.appendChild(txt(m.l-8, Y(v)+3.5, v.toFixed(0), "tick", {"text-anchor":"end"}));
+  });
+  // base = 100 reference
+  if (y0 < 100 && y1 > 100){
+    svg.appendChild(S("line",{x1:m.l,x2:w-m.r,y1:Y(100),y2:Y(100)},
+      "stroke:var(--axis);stroke-width:1"));
+  }
+  const step = data.length > 20 ? 5 : (data.length > 10 ? 3 : 2);
+  data.forEach((p,i)=>{ if (i%step===0 || i===data.length-1)
+    svg.appendChild(txt(X(i), H-7, dayLab(p.d), "tick", {"text-anchor":"middle"})); });
+
+  const dline = data.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
+  svg.appendChild(S("path",{d:`${dline} L${X(data.length-1)} ${m.t+ph} L${X(0)} ${m.t+ph} Z`},
+    "fill:var(--accent);opacity:.10"));
+  svg.appendChild(S("path",{d:dline,fill:"none","stroke-linejoin":"round","stroke-linecap":"round"},
+    "stroke:var(--accent);stroke-width:2"));
+  const last = data.length-1;
+  svg.appendChild(S("circle",{cx:X(last),cy:Y(data[last].v),r:4.5},
+    "fill:var(--accent);stroke:var(--surface);stroke-width:2"));
+
+  const cross = S("line",{x1:0,x2:0,y1:m.t,y2:m.t+ph,opacity:0},"stroke:var(--axis);stroke-width:1");
+  const dot = S("circle",{r:4.5,opacity:0},"fill:var(--accent);stroke:var(--surface);stroke-width:2");
+  svg.append(cross, dot);
+  const hit = S("rect",{x:m.l,y:m.t,width:pw,height:ph,fill:"transparent",tabindex:"0"});
+  svg.appendChild(hit);
+  const at = i => {
+    const p = data[i];
+    cross.setAttribute("x1",X(i)); cross.setAttribute("x2",X(i)); cross.setAttribute("opacity",1);
+    dot.setAttribute("cx",X(i)); dot.setAttribute("cy",Y(p.v)); dot.setAttribute("opacity",1);
+    showTip(tip, host, X(i), Y(p.v), dayLab(p.d), [
+      tipRow("--accent","index", p.v.toFixed(1), true),
+      tipRow(null,"basket mean", inr(p.fare))
+    ]);
+  };
+  hit.addEventListener("pointermove", ev=>{
+    const bx = svg.getBoundingClientRect();
+    const px = (ev.clientX-bx.left) * (w/bx.width);
+    at(Math.max(0, Math.min(data.length-1, Math.round((px-m.l)/(pw/(data.length-1||1))))));
+  });
+  hit.addEventListener("pointerleave", ()=>{ hideTip(tip); cross.setAttribute("opacity",0); dot.setAttribute("opacity",0); });
+  hit.addEventListener("focus", ()=>at(data.length-1));
+  hit.addEventListener("blur", ()=>{ hideTip(tip); cross.setAttribute("opacity",0); dot.setAttribute("opacity",0); });
+
+  // hero figure
+  const cur = data[data.length-1].v, first = data[0].v;
+  document.getElementById("idx-val").textContent = cur.toFixed(1);
+  const dl = document.getElementById("idx-delta");
+  const chg = cur - first, dir = chg >= 0 ? "up" : "down";
+  dl.textContent = "";
+  const sp = document.createElement("span");
+  sp.className = dir;
+  sp.textContent = (chg>=0?"▲ ":"▼ ") + pct(chg/first*100);
+  const sp2 = document.createElement("span");
+  sp2.style.color = "var(--muted)";
+  sp2.textContent = "over " + state.days + " days";
+  dl.append(sp, sp2);
+  const el = document.getElementById("idx-base");
+  el.textContent = "";
+  const b1 = document.createElement("div");
+  b1.textContent = "Base " + dayLab(0) + " 2026 = 100 · " + inr(data[0].fare) + " basket mean";
+  const b2 = document.createElement("div");
+  b2.style.marginTop = "3px";
+  b2.textContent = "Now " + inr(data[data.length-1].fare) + " · " +
+                   state.routes.size + " of 6 routes · " +
+                   (state.src==="all" ? "both sources" : SRC[+state.src].n);
+  el.append(b1, b2);
+}
+
+/* ================= advance-window curve ================= */
+function drawCurve(){
+  const host = document.getElementById("p-curve"), tip = document.getElementById("t-curve");
+  const rows = rowsFor();
+  const routes = [...state.routes].sort((a,b)=>a-b);
+  const byRW = meanBy(rows, r=>r[C.r]+":"+r[C.w], r=>r[C.tot]);
+  const series = routes.map(ri => ({
+    ri, tok: SERIES[ri], name: RK[ri],
+    pts: W.map((_,wi)=>{ const e = byRW.get(ri+":"+wi); return e ? e.s/e.n : null; })
+  })).filter(s => s.pts.some(p=>p!=null));
+
+  const H = 268, {svg, w} = svgFor(host, H);
+  const m = {l:52, r:54, t:12, b:34}, pw = w-m.l-m.r, ph = H-m.t-m.b;
+  const flat = series.flatMap(s=>s.pts).filter(v=>v!=null);
+  const hi = Math.max(...flat, 1), lo = Math.min(...flat);
+  const y1 = hi*1.06, y0 = Math.max(0, lo - (hi-lo)*0.18);
+  const X = i => m.l + i*pw/(W.length-1);
+  const Y = v => m.t + ph - (v-y0)/(y1-y0)*ph;
+
+  yTicks(y0, y1, 4).forEach(v=>{
+    svg.appendChild(S("line",{x1:m.l,x2:w-m.r,y1:Y(v),y2:Y(v)},"stroke:var(--grid);stroke-width:1"));
+    svg.appendChild(txt(m.l-8, Y(v)+3.5, inrK(v), "tick", {"text-anchor":"end"}));
+  });
+  svg.appendChild(S("line",{x1:m.l,x2:w-m.r,y1:m.t+ph,y2:m.t+ph},"stroke:var(--axis);stroke-width:1"));
+  W.forEach((wd,i)=> svg.appendChild(txt(X(i), H-14, "T+"+wd, "tick", {"text-anchor":"middle"})));
+  svg.appendChild(txt(m.l, H-2, "days before departure", "axlabel"));
+
+  series.forEach(s=>{
+    const d = s.pts.map((v,i)=> v==null?"":`${i?"L":"M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
+    svg.appendChild(S("path",{d,fill:"none","stroke-linejoin":"round","stroke-linecap":"round"},
+      `stroke:var(${s.tok});stroke-width:2`));
+    s.pts.forEach((v,i)=>{ if(v!=null) svg.appendChild(S("circle",{cx:X(i),cy:Y(v),r:3.4},
+      `fill:var(${s.tok});stroke:var(--surface);stroke-width:2`)); });
+  });
+  // direct-label only the extremes at T+1, where the lines are furthest apart
+  if (series.length){
+    const first = series.map(s=>({s, v:s.pts[0]})).filter(o=>o.v!=null).sort((a,b)=>b.v-a.v);
+    [first[0], first[first.length-1]].filter(Boolean).forEach((o,k,arr)=>{
+      if (k===1 && arr[0] && arr[0].s===o.s) return;
+      svg.appendChild(txt(X(0)+9, Y(o.v)+3.5, o.s.name, "dlabel"));
+    });
+  }
+  const cross = S("line",{x1:0,x2:0,y1:m.t,y2:m.t+ph,opacity:0},"stroke:var(--axis);stroke-width:1");
+  svg.appendChild(cross);
+  const hit = S("rect",{x:m.l-14,y:m.t,width:pw+28,height:ph,fill:"transparent",tabindex:"0"});
+  svg.appendChild(hit);
+  const at = i => {
+    cross.setAttribute("x1",X(i)); cross.setAttribute("x2",X(i)); cross.setAttribute("opacity",1);
+    const rows = series.map(s=>({s,v:s.pts[i]})).filter(o=>o.v!=null).sort((a,b)=>b.v-a.v)
+      .map(o=>tipRow(o.s.tok, o.s.name, inr(o.v), true));
+    showTip(tip, host, X(i), m.t+24, "T+"+W[i]+" days", rows);
+  };
+  hit.addEventListener("pointermove", ev=>{
+    const bx = svg.getBoundingClientRect();
+    const px = (ev.clientX-bx.left)*(w/bx.width);
+    at(Math.max(0, Math.min(W.length-1, Math.round((px-m.l)/(pw/(W.length-1))))));
+  });
+  hit.addEventListener("pointerleave", ()=>{ hideTip(tip); cross.setAttribute("opacity",0); });
+  hit.addEventListener("focus", ()=>at(0));
+  hit.addEventListener("blur", ()=>{ hideTip(tip); cross.setAttribute("opacity",0); });
+
+  // legend
+  const lg = document.getElementById("l-curve"); lg.textContent = "";
+  series.forEach(s=>{
+    const it = document.createElement("span"); it.className = "item";
+    const k = document.createElement("i"); k.className = "line"; k.style.background = `var(${s.tok})`;
+    const t = document.createElement("span"); t.className = "mono"; t.textContent = s.name;
+    it.append(k,t); lg.appendChild(it);
+  });
+  // table twin
+  const dt = document.getElementById("d-curve");
+  dt.textContent = "";
+  const tb = document.createElement("div"); tb.className = "tw";
+  const tbl = document.createElement("table");
+  tbl.appendChild(rowEl("tr", ["Route", ...W.map(x=>"T+"+x)], "th", [0]));
+  series.forEach(s=> tbl.appendChild(
+    rowEl("tr", [s.name, ...s.pts.map(v=> v==null?"—":inr(v))], "td", [0])));
+  tb.appendChild(tbl); dt.appendChild(tb);
+}
+function rowEl(tag, cells, cellTag, textCols){
+  const tr = document.createElement(tag);
+  cells.forEach((c,i)=>{
+    const td = document.createElement(cellTag);
+    if (!textCols.includes(i)) td.className = "num";
+    else if (cellTag === "td") td.className = "rt";
+    td.textContent = c; tr.appendChild(td);
+  });
+  return tr;
+}
+
+/* rounded right end, square left */
+function segPath(x, y, w, h, r){
+  const rr = Math.min(r, w);
+  return `M${x} ${y} H${x+w-rr} Q${x+w} ${y} ${x+w} ${y+rr} V${y+h-rr} Q${x+w} ${y+h} ${x+w-rr} ${y+h} H${x} Z`;
+}
+/* ================= fare composition ================= */
+function drawComp(){
+  const host = document.getElementById("p-comp"), tip = document.getElementById("t-comp");
+  const rows = rowsFor();
+  const routes = [...state.routes].sort((a,b)=>a-b);
+  const agg = new Map();
+  for (const r of rows){
+    let e = agg.get(r[C.r]);
+    if (!e){ e = {base:0,tax:0,udf:0,conv:0,n:0,convN:0}; agg.set(r[C.r], e); }
+    e.base += r[C.base]; e.tax += r[C.tax]; e.udf += r[C.udf]; e.n++;
+    if (r[C.conv] != null){ e.conv += r[C.conv]; e.convN++; }
+  }
+  const items = routes.filter(ri=>agg.has(ri)).map(ri=>{
+    const e = agg.get(ri);
+    const v = {base:e.base/e.n, tax:e.tax/e.n, udf:e.udf/e.n, conv:e.conv/e.n, convN:e.convN};
+    v.total = v.base+v.tax+v.udf+v.conv; v.ri = ri; return v;
+  }).sort((a,b)=>b.total-a.total);
+
+  const rowH = 30, gap = 12, H = items.length*(rowH+gap) + 26;
+  const {svg, w} = svgFor(host, Math.max(H, 80));
+  const m = {l:66, r:62, t:6}, pw = w-m.l-m.r;
+  const max = Math.max(...items.map(i=>i.total), 1);
+  const X = v => v/max*pw;
+
+  items.forEach((it, k)=>{
+    const y = m.t + k*(rowH+gap);
+    svg.appendChild(txt(0, y+rowH/2+4, RK[it.ri], "dlabel"));
+    let x = m.l;
+    const lastIdx = COMP.map(c=>X(it[c.key])).reduce((a,v,i)=> v>0.2 ? i : a, 0);
+    COMP.forEach((c,ci)=>{
+      const raw = X(it[c.key]);
+      const wid = Math.max(0, raw - (ci < lastIdx ? 2 : 0));  // 2px surface gap
+      if (raw <= 0.2) return;
+      // square at the baseline, 4px rounded data-end on the final segment only
+      const rect = ci === lastIdx
+        ? S("path",{d:segPath(x,y,wid,rowH,4), tabindex:"0"}, `fill:var(${c.tok})`)
+        : S("rect",{x, y, width:wid, height:rowH, tabindex:"0"}, `fill:var(${c.tok})`);
+      const show = () => showTip(tip, host, x+wid/2, y, RK[it.ri], [
+        ...COMP.map(cc=>tipRow(cc.tok, cc.lab, cc.key==="conv" && it.convN===0 ? "null" : inr(it[cc.key]))),
+        tipRow(null, "total", inr(it.total))
+      ]);
+      rect.addEventListener("pointerenter", show);
+      rect.addEventListener("focus", show);
+      rect.addEventListener("pointerleave", ()=>hideTip(tip));
+      rect.addEventListener("blur", ()=>hideTip(tip));
+      svg.appendChild(rect);
+      // in-segment label only when it comfortably fits
+      const lab = inr(it[c.key]);
+      if (wid > lab.length*7.2 + 16){
+        const t = txt(x+8, y+rowH/2+4, lab, "dlabel");
+        t.setAttribute("style", `fill:var(${c.ink})`);
+        svg.appendChild(t);
+      }
+      x += raw;
+    });
+    const tot = txt(m.l+X(it.total)+9, y+rowH/2+4, inr(it.total), "dlabel");
+    tot.setAttribute("style","fill:var(--ink);font-weight:600");
+    svg.appendChild(tot);
+  });
+
+  const lg = document.getElementById("l-comp"); lg.textContent = "";
+  COMP.forEach(c=>{
+    const it = document.createElement("span"); it.className = "item";
+    const k = document.createElement("i"); k.className = "swatch"; k.style.background = `var(${c.tok})`;
+    const t = document.createElement("span"); t.textContent = c.lab;
+    it.append(k,t); lg.appendChild(it);
+  });
+  const note = document.createElement("span");
+  note.style.color = "var(--muted)"; note.style.marginLeft = "auto"; note.className = "mono";
+  note.style.fontSize = "10.5px";
+  note.textContent = state.src === "0" ? "convenience_fee null on airline" : "mean per flight";
+  lg.appendChild(note);
+
+  const dt = document.getElementById("d-comp"); dt.textContent = "";
+  const tw = document.createElement("div"); tw.className = "tw";
+  const tbl = document.createElement("table");
+  tbl.appendChild(rowEl("tr", ["Route", ...COMP.map(c=>c.col), "total_fare"], "th", [0]));
+  items.forEach(it=> tbl.appendChild(rowEl("tr",
+    [RK[it.ri], ...COMP.map(c=> c.key==="conv" && it.convN===0 ? "null" : inr(it[c.key])), inr(it.total)],
+    "td", [0])));
+  tw.appendChild(tbl); dt.appendChild(tw);
+}
+
+/* ================= late-booking premium matrix ================= */
+const BINS = [
+  {t:-4, lim:-5,  tok:"--dv-b2", ink:"--dv-b2-ink"},
+  {t:-3, lim:-1,  tok:"--dv-b1", ink:"--dv-b1-ink"},
+  {t:0,  lim:1,   tok:"--dv-neutral", ink:"--dv-n-ink"},
+  {t:1,  lim:10,  tok:"--dv-r1", ink:"--dv-r1-ink"},
+  {t:2,  lim:25,  tok:"--dv-r2", ink:"--dv-r2-ink"},
+  {t:3,  lim:50,  tok:"--dv-r3", ink:"--dv-r3-ink"},
+  {t:4,  lim:75,  tok:"--dv-r4", ink:"--dv-r4-ink"},
+  {t:5,  lim:1e9, tok:"--dv-r5", ink:"--dv-r5-ink"}
+];
+const binFor = p => BINS.find(b=>p < b.lim) || BINS[BINS.length-1];
+
+function drawMatrix(){
+  const host = document.getElementById("p-matrix"), tip = document.getElementById("t-matrix");
+  const rows = rowsFor();
+  const routes = [...state.routes].sort((a,b)=>a-b);
+  const byRW = meanBy(rows, r=>r[C.r]+":"+r[C.w], r=>r[C.tot]);
+  const base = wi => W[wi] === 30;
+  const baseIdx = W.indexOf(30);
+
+  const cellH = 30, gapY = 5, H = routes.length*(cellH+gapY) + 24;
+  const {svg, w} = svgFor(host, Math.max(H, 80));
+  const m = {l:66, r:4, t:18}, pw = w-m.l-m.r, cw = pw/W.length;
+
+  W.forEach((wd,i)=> svg.appendChild(
+    txt(m.l + cw*i + cw/2, 10, "T+"+wd, "tick", {"text-anchor":"middle"})));
+
+  routes.forEach((ri, k)=>{
+    const y = m.t + k*(cellH+gapY);
+    svg.appendChild(txt(0, y+cellH/2+4, RK[ri], "dlabel"));
+    const b = byRW.get(ri+":"+baseIdx);
+    const bv = b ? b.s/b.n : null;
+    W.forEach((wd, wi)=>{
+      const e = byRW.get(ri+":"+wi);
+      if (!e || !bv) return;
+      const v = e.s/e.n, p = (v/bv-1)*100, bin = binFor(p);
+      const x = m.l + cw*wi;
+      const rect = S("rect",{x:x+1, y, width:cw-2, height:cellH, rx:3, tabindex:"0"},
+        `fill:var(${bin.tok})`);
+      const show = () => showTip(tip, host, x+cw/2, y, RK[ri] + "  T+" + wd, [
+        tipRow(bin.tok, "vs T+30", pct(p)),
+        tipRow(null, "mean fare", inr(v)),
+        tipRow(null, "T+30 fare", inr(bv))
+      ]);
+      rect.addEventListener("pointerenter", show); rect.addEventListener("focus", show);
+      rect.addEventListener("pointerleave", ()=>hideTip(tip)); rect.addEventListener("blur", ()=>hideTip(tip));
+      svg.appendChild(rect);
+      const t = txt(x+cw/2, y+cellH/2+4, base(wi) ? "base" : pct(p, Math.abs(p)<10?1:0),
+                    "dlabel", {"text-anchor":"middle"});
+      t.setAttribute("style", `fill:var(${bin.ink})`);
+      svg.appendChild(t);
+    });
+  });
+
+  const lg = document.getElementById("l-matrix"); lg.textContent = "";
+  const wrap = document.createElement("span"); wrap.className = "scale";
+  const c1 = document.createElement("span"); c1.className = "cap"; c1.textContent = "cheaper";
+  wrap.appendChild(c1);
+  BINS.forEach(b=>{ const i = document.createElement("i"); i.style.background = `var(${b.tok})`;
+    i.title = b.lim >= 1e9 ? "+75% and over" : "under " + b.lim + "%"; wrap.appendChild(i); });
+  const c2 = document.createElement("span"); c2.className = "cap"; c2.textContent = "+75% or more";
+  wrap.appendChild(c2);
+  const lead = document.createElement("span");
+  lead.style.color = "var(--muted)"; lead.style.fontSize = "11.5px";
+  lead.textContent = "premium against the same route at T+30";
+  lg.append(lead, wrap);
+}
+
+/* ================= model head-to-head ================= */
+function drawModels(){
+  const host = document.getElementById("p-models"), tip = document.getElementById("t-models");
+  const M = DATA.compare.models, toks = ["--s1","--s2"];
+  const facets = [
+    {lab:"Valid JSON on first pass", unit:"%", get:m=>m.valid_json, fmt:v=>v.toFixed(1)+"%", good:"high"},
+    {lab:"Flights extracted of "+M[0].expected, unit:"", get:m=>m.records, fmt:v=>num(v), good:"high"},
+    {lab:"Median latency per page", unit:"s", get:m=>m.latency_s, fmt:v=>v.toFixed(2)+"s", good:"low"}
+  ];
+  const rowH = 20, gapB = 6, headH = 20, facH = headH + rowH*2 + gapB + 16;
+  const {svg, w} = svgFor(host, facets.length*facH);
+  const m = {l:0, r:74}, pw = w-m.l-m.r;
+
+  facets.forEach((f, fi)=>{
+    const top = fi*facH;
+    const head = txt(0, top+11, f.lab, "axlabel");
+    head.setAttribute("style","fill:var(--ink-2);font-weight:600;font-size:11.5px");
+    svg.appendChild(head);
+    const hint = txt(w, top+11, f.good==="low" ? "lower is better" : "higher is better",
+                     "tick", {"text-anchor":"end"});
+    svg.appendChild(hint);
+    const max = Math.max(...M.map(f.get))*1.02;
+    M.forEach((mm, i)=>{
+      const y = top + headH + i*(rowH+gapB);
+      const bw = Math.max(2, f.get(mm)/max*pw);
+      const rect = S("rect",{x:0, y, width:bw, height:rowH, rx:4, tabindex:"0"},
+        `fill:var(${toks[i]})`);
+      const sq = S("rect",{x:0, y, width:Math.min(4,bw), height:rowH}, `fill:var(${toks[i]})`);
+      const show = () => showTip(tip, host, bw, y, mm.short, [
+        tipRow(toks[i], f.lab.toLowerCase(), f.fmt(f.get(mm))),
+        tipRow(null, "retries", num(mm.retries)),
+        tipRow(null, "truncated", num(mm.truncations))
+      ]);
+      rect.addEventListener("pointerenter", show); rect.addEventListener("focus", show);
+      rect.addEventListener("pointerleave", ()=>hideTip(tip)); rect.addEventListener("blur", ()=>hideTip(tip));
+      svg.append(rect, sq);
+      const t = txt(bw+9, y+rowH/2+4, f.fmt(f.get(mm)), "dlabel");
+      t.setAttribute("style","fill:var(--ink);font-weight:600");
+      svg.appendChild(t);
+    });
+  });
+
+  const lg = document.getElementById("l-models"); lg.textContent = "";
+  M.forEach((mm,i)=>{
+    const it = document.createElement("span"); it.className = "item";
+    const k = document.createElement("i"); k.className = "swatch"; k.style.background = `var(${toks[i]})`;
+    const t = document.createElement("span"); t.className = "mono"; t.style.fontSize = "11px";
+    t.textContent = mm.id;
+    it.append(k,t); lg.appendChild(it);
+  });
+
+  const dt = document.getElementById("d-models"); dt.textContent = "";
+  const tw = document.createElement("div"); tw.className = "tw";
+  const tbl = document.createElement("table");
+  tbl.appendChild(rowEl("tr", ["Model","valid JSON","flights","retries","truncated","median latency"], "th", [0]));
+  M.forEach(mm=> tbl.appendChild(rowEl("tr",
+    [mm.short, mm.valid_json.toFixed(1)+"%", mm.records+" / "+mm.expected,
+     mm.retries, mm.truncations, mm.latency_s.toFixed(2)+"s"], "td", [0])));
+  tw.appendChild(tbl); dt.appendChild(tw);
+}
+
+/* ================= KPIs ================= */
+function drawKPIs(){
+  const rows = rowsFor();
+  const recs = rows.reduce((a,r)=>a+r[C.n],0);
+  const live = DATA.meta.extraction;
+  const ok  = live ? live.ok  : rows.reduce((a,r)=>a+r[C.ok],0);
+  const att = live ? live.att : rows.reduce((a,r)=>a+r[C.att],0);
+  const pages = rows.length;
+  const spanDays = new Set(rows.map(r=>r[C.d])).size;
+  const byRW = meanBy(rows, r=>r[C.r]+":"+r[C.w], r=>r[C.tot]);
+  const baseIdx = W.indexOf(30);
+  const prem = wi => {
+    const v = [];
+    for (const ri of state.routes){
+      const a = byRW.get(ri+":"+wi), b = byRW.get(ri+":"+baseIdx);
+      if (a && b) v.push(((a.s/a.n)/(b.s/b.n)-1)*100);
+    }
+    return v.length ? mean(v) : null;
+  };
+  const p1 = prem(W.indexOf(1));
+  const best = W.map((wd,wi)=>({wd, p:prem(wi)})).filter(o=>o.p!=null).sort((a,b)=>a.p-b.p)[0];
+  const cells = new Set(rows.map(r=>r[C.r]+":"+r[C.w]+":"+r[C.s])).size;
+  const expectCells = state.routes.size * W.length * (state.src==="all" ? 2 : 1);
+
+  const K = [
+    {lab:"Flight fares captured", val:num(recs),
+     sub:num(pages)+" pages · "+spanDays+" day"+(spanDays===1?"":"s")+" of data"},
+    {lab:"Extraction success", val:(ok/att*100).toFixed(1)+"%",
+     sub:num(ok)+" of "+num(att)+" flights returned valid JSON",
+     state: ok/att>0.95 ? "ok" : "warn"},
+    {lab:"Last-minute premium", val:p1==null?"—":pct(p1,0),
+     sub:"T+1 against T+30, mean of "+state.routes.size+" routes"},
+    {lab:"Cheapest lead time", val: best ? "T+"+best.wd : "—",
+     sub: best ? pct(best.p) + " against T+30" : "—"}
+  ];
+  const host = document.getElementById("kpis"); host.textContent = "";
+  K.forEach(k=>{
+    const d = document.createElement("div"); d.className = "kpi";
+    const l = document.createElement("div"); l.className = "lab";
+    if (k.state){ const dot = document.createElement("span"); dot.className = "dot" + (k.state==="ok"?"":" warn");
+      l.appendChild(dot); }
+    l.appendChild(document.createTextNode(k.lab));
+    const v = document.createElement("div"); v.className = "val"; v.textContent = k.val;
+    const s = document.createElement("div"); s.className = "sub"; s.textContent = k.sub;
+    d.append(l,v,s); host.appendChild(d);
+  });
+  document.getElementById("idx-model-note").textContent =
+    cells + " of " + expectCells + " basket cells live";
+}
+
+/* ================= route table ================= */
+function sparkline(vals){
+  const w = 92, h = 22, lo = Math.min(...vals), hi = Math.max(...vals), sp = (hi-lo)||1;
+  const svg = S("svg",{viewBox:`0 0 ${w} ${h}`, width:w, height:h, class:"spark"});
+  const X = i => i*(w-6)/(vals.length-1||1) + 3;
+  const Y = v => h-4 - (v-lo)/sp*(h-8);
+  svg.appendChild(S("path",{d:vals.map((v,i)=>`${i?"L":"M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" "),
+    fill:"none","stroke-linejoin":"round","stroke-linecap":"round"},"stroke:var(--demote);stroke-width:1.6"));
+  svg.appendChild(S("circle",{cx:X(vals.length-1),cy:Y(vals[vals.length-1]),r:2.8},
+    "fill:var(--accent);stroke:var(--surface);stroke-width:1.5"));
+  return svg;
+}
+function drawRouteTable(){
+  const rows = rowsFor();
+  const routes = [...state.routes].sort((a,b)=>a-b);
+  const tbl = document.getElementById("t-routes"); tbl.textContent = "";
+  const head = document.createElement("tr");
+  ["Route", state.days+"-day trend","Mean fare","Δ over window","T+1","T+30","T+45","Lowest seen","Highest seen","Fares"]
+    .forEach((h,i)=>{ const th = document.createElement("th");
+      if (i>1) th.className = "num"; th.textContent = h; head.appendChild(th); });
+  tbl.appendChild(head);
+  const wIdx = {1:W.indexOf(1), 30:W.indexOf(30), 45:W.indexOf(45)};
+
+  routes.forEach(ri=>{
+    const rr = rows.filter(r=>r[C.r]===ri);
+    if (!rr.length) return;
+    const days = [...new Set(rr.map(r=>r[C.d]))].sort((a,b)=>a-b);
+    const daily = days.map(d=>mean(rr.filter(r=>r[C.d]===d).map(r=>r[C.tot])));
+    const avg = mean(rr.map(r=>r[C.tot]));
+    const chg = (daily[daily.length-1]/daily[0]-1)*100;
+    const at = wi => { const s = rr.filter(r=>r[C.w]===wi); return s.length ? mean(s.map(r=>r[C.tot])) : null; };
+    const tr = document.createElement("tr");
+    const c0 = document.createElement("td"); c0.className = "rt";
+    c0.append(R[ri].o, Object.assign(document.createElement("span"),{className:"arrow",textContent:"→"}), R[ri].d);
+    const c1 = document.createElement("td"); c1.style.width = "100px"; c1.appendChild(sparkline(daily));
+    tr.append(c0, c1);
+    const cells = [inr(avg), null, inr(at(wIdx[1])), inr(at(wIdx[30])), inr(at(wIdx[45])),
+                   inr(Math.min(...rr.map(r=>r[C.lo]))), inr(Math.max(...rr.map(r=>r[C.hi]))),
+                   num(rr.reduce((a,r)=>a+r[C.n],0))];
+    cells.forEach((v,i)=>{
+      const td = document.createElement("td"); td.className = "num";
+      if (i===1){
+        td.textContent = pct(chg);
+        td.style.color = chg >= 0 ? "var(--crit)" : "var(--good-text)";
+        td.style.fontWeight = "600";
+      } else td.textContent = v;
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+}
+
+/* ================= runs + recent ================= */
+function drawRuns(){
+  const tbl = document.getElementById("t-runs"); tbl.textContent = "";
+  const head = document.createElement("tr");
+  ["Started","Source","Written","Skipped","Failed","Status"].forEach((h,i)=>{
+    const th = document.createElement("th"); if(i>1&&i<5) th.className="num"; th.textContent=h; head.appendChild(th);});
+  tbl.appendChild(head);
+  DATA.runs.forEach(r=>{
+    const tr = document.createElement("tr");
+    const c0 = document.createElement("td"); c0.className = "mono"; c0.textContent = r.ts.slice(5);
+    const c1 = document.createElement("td"); c1.className = "mono"; c1.textContent = r.source;
+    tr.append(c0,c1);
+    [r.written, r.skipped, r.failed].forEach(v=>{
+      const td = document.createElement("td"); td.className = "num"; td.textContent = num(v); tr.appendChild(td); });
+    const cs = document.createElement("td");
+    const p = document.createElement("span");
+    const STATUS = {ok:["ok","ok"], partial:["warn","partial"],
+                    skipped:["n","robots skip"], failed:["fail","failed"]};
+    const [cls, label] = STATUS[r.status] || STATUS.failed;
+    p.className = "pill " + cls;
+    p.textContent = label;
+    cs.appendChild(p); tr.appendChild(cs);
+    tbl.appendChild(tr);
+  });
+  const last = DATA.runs[0];
+  document.getElementById("run-ts").textContent = last.ts;
+  document.getElementById("run-next").textContent = "1h 56m";
+  document.getElementById("run-model").textContent = last.model;
+  document.getElementById("run-dot").className = "dot" + (last.status==="ok"?"":" warn");
+}
+function drawRecent(){
+  const tbl = document.getElementById("t-recent"); tbl.textContent = "";
+  const cols = [["scraped_at",0],["route",0],["carrier",0],["dep",0],["src",0],
+                ["adv",1],["base_fare",1],["taxes",1],["udf",1],["conv_fee",1],["total_fare",1]];
+  const head = document.createElement("tr");
+  cols.forEach(([h,n])=>{ const th=document.createElement("th"); if(n) th.className="num"; th.textContent=h; head.appendChild(th);});
+  tbl.appendChild(head);
+  DATA.recent.forEach(r=>{
+    const tr = document.createElement("tr");
+    const mk = (v, cls) => { const td=document.createElement("td"); if(cls) td.className=cls;
+      td.textContent = v; return td; };
+    tr.append(
+      mk(r.scraped_at.slice(11,16), "mono"),
+      mk(r.origin+"→"+r.destination, "rt"),
+      mk(r.carrier),
+      mk(r.departure_time, "mono"),
+      mk(r.source, "mono"),
+      mk("T+"+r.advance_window_days, "num"),
+      mk(num(r.base_fare), "num"),
+      mk(num(r.taxes), "num"),
+      mk(num(r.udf), "num"));
+    const cf = document.createElement("td"); cf.className = "num";
+    if (r.convenience_fee == null){ const s = document.createElement("span");
+      s.className = "null"; s.textContent = "null"; cf.appendChild(s); }
+    else cf.textContent = num(r.convenience_fee);
+    tr.appendChild(cf);
+    const tot = mk(num(r.total_fare), "num"); tot.style.fontWeight = "600"; tr.appendChild(tot);
+    tbl.appendChild(tr);
+  });
+}
+
+/* ================= traveller view ================= */
+/* Same rows as the index, asked the other way round: what does this route cost
+   for a seat tomorrow, and is that normal for this route at this much notice? */
+const W1 = W.indexOf(1);
+const WHEN  = {1:"Tomorrow", 7:"In a week", 15:"In 2 weeks", 30:"In a month", 45:"In 6 weeks"};
+const AHEAD = {7:"a week ahead", 15:"two weeks ahead", 30:"a month ahead", 45:"six weeks ahead"};
+const TONES = {
+  good:   {label:"Good price",          fg:"var(--good-text)", bg:"rgba(12,163,12,.12)",  bar:"var(--good)"},
+  normal: {label:"About normal",        fg:"var(--ink-2)",     bg:"var(--inset)",         bar:"var(--demote)"},
+  new:    {label:"Still collecting",    fg:"var(--ink-2)",     bg:"var(--inset)",         bar:"var(--demote)"},
+  warn:   {label:"Above normal",        fg:"var(--ink)",       bg:"rgba(250,178,25,.20)", bar:"var(--warn)"},
+  crit:   {label:"Expensive right now", fg:"var(--crit)",      bg:"rgba(208,59,59,.13)",  bar:"var(--crit)"}
+};
+const ICONS = {           // status never rides on colour alone
+  good:   "M3 8.5l3.2 3.2L13 5",
+  normal: "M3.5 8h9",
+  new:    "M8 4.2v4.4M8 10.8v.5",
+  warn:   "M8 3.4v5.2M8 11.4v.6",
+  crit:   "M8 3.4v5.2M8 11.4v.6"
+};
+function toneIcon(tone, color){
+  const svg = S("svg", {viewBox:"0 0 16 16", width:15, height:15, "aria-hidden":"true"});
+  if (tone === "warn" || tone === "crit")
+    svg.appendChild(S("path", {d:"M8 1.6l6.4 11.6H1.6z", fill:"none"},
+      `stroke:${color};stroke-width:1.5;stroke-linejoin:round`));
+  svg.appendChild(S("path", {d:ICONS[tone], fill:"none"},
+    `stroke:${color};stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round`));
+  return svg;
+}
+
+/* cheapest seat for tomorrow, per day, for one route */
+function tvStats(ri){
+  const rows = D.filter(r => r[C.r] === ri && r[C.w] === W1);
+  const days = [...new Set(rows.map(r => r[C.d]))].sort((a,b) => a-b);
+  const series = days.map(d => Math.min(...rows.filter(r => r[C.d] === d).map(r => r[C.lo])));
+  const today = series[series.length-1];
+  const past = series.slice(0, -1);
+  const normal = mean(past);
+  const delta = (today - normal) / normal;
+  const cheaper = past.filter(v => v > today).length;
+  const pctCheaper = past.length ? Math.round(cheaper / past.length * 100) : 0;
+  const MIN_HISTORY = 3;          // below this there is no baseline to judge against
+  // Judge against the route's own spread, not a fixed percentage: a quiet route
+  // and a volatile one both get an honest verdict this way.
+  const tone = past.length < MIN_HISTORY ? "new"
+             : pctCheaper >= 70 ? "good"
+             : pctCheaper >= 30 ? "normal"
+             : pctCheaper >= 15 ? "warn" : "crit";
+  return {series, today, normal, delta, tone, pctCheaper,
+          lowest: Math.min(...series), highest: Math.max(...series)};
+}
+
+/* mean fare by advance window, for the "book earlier" ladder */
+function tvLadder(ri){
+  const rows = D.filter(r => r[C.r] === ri);
+  return W.map((wd, wi) => {
+    const set = rows.filter(r => r[C.w] === wi);
+    if (!set.length) return {wd, cost:null};
+    // cheapest seat per day, then averaged — the same basis as the headline
+    const days = [...new Set(set.map(r => r[C.d]))];
+    return {wd, cost: mean(days.map(d =>
+      Math.min(...set.filter(r => r[C.d] === d).map(r => r[C.lo]))))};
+  }).filter(o => o.cost != null);
+}
+
+function tvSpark(vals){
+  const w = 200, h = 66, lo = Math.min(...vals), hi = Math.max(...vals), sp = (hi-lo) || 1;
+  const svg = S("svg", {viewBox:`0 0 ${w} ${h}`, width:w, height:h, "aria-hidden":"true"});
+  svg.style.maxWidth = "100%";
+  const X = i => 3 + i * (w-6) / (vals.length-1 || 1);
+  const Y = v => h-13 - (v-lo)/sp * (h-26);
+  const d = vals.map((v,i) => `${i?"L":"M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(" ");
+  svg.appendChild(S("path", {d:`${d} L${X(vals.length-1)} ${h-3} L${X(0)} ${h-3} Z`},
+    "fill:var(--accent);opacity:.10"));
+  svg.appendChild(S("path", {d, fill:"none", "stroke-linejoin":"round", "stroke-linecap":"round"},
+    "stroke:var(--accent);stroke-width:2"));
+  const last = vals.length-1;
+  svg.appendChild(S("circle", {cx:X(last), cy:Y(vals[last]), r:4.5},
+    "fill:var(--accent);stroke:var(--surface);stroke-width:2"));
+  return svg;
+}
+
+function renderTraveller(){
+  const ri = state.tvRoute, st = tvStats(ri), r = R[ri], tone = TONES[st.tone];
+  const span = st.series.length;                    // however much history exists
+  const spanTxt = `the last ${span} day${span === 1 ? "" : "s"}`;
+
+  const route = document.getElementById("tv-route");
+  route.textContent = "";
+  const b = document.createElement("b");
+  b.textContent = `${r.o} → ${r.d}`;
+  const t = document.createElement("span");
+  t.textContent = `${r.on} to ${r.dn} · leaving tomorrow`;
+  route.append(b, t);
+
+  const price = document.getElementById("tv-price");
+  price.textContent = "";
+  const from = document.createElement("small"); from.textContent = "from";
+  price.append(from, document.createTextNode(inr(st.today)));
+
+  const vw = document.getElementById("tv-verdict");
+  vw.textContent = "";
+  const pill = document.createElement("span");
+  pill.className = "tv-verdict";
+  pill.style.color = tone.fg; pill.style.background = tone.bg;
+  pill.appendChild(toneIcon(st.tone, tone.fg));
+  pill.appendChild(document.createTextNode(tone.label));
+  vw.appendChild(pill);
+
+  const why = document.getElementById("tv-why");
+  why.textContent = "";
+  const line1 = document.createElement("div");
+  if (st.tone === "new"){
+    line1.textContent =
+      `We have been tracking ${r.o}–${r.d} for ${span} day${span === 1 ? "" : "s"}. ` +
+      `Calling a price good or bad needs a few days of history to compare against — ` +
+      `this fills in on its own as the scheduled runs accumulate.`;
+    why.append(line1);
+  } else {
+  const dir = st.delta < 0 ? "below" : "above";
+  line1.append(
+    document.createTextNode("That is "),
+    Object.assign(document.createElement("b"),
+      {textContent: `${Math.abs(st.delta*100).toFixed(0)}% ${dir} normal`}),
+    document.createTextNode(` for ${r.o}–${r.d} at one day's notice, which has averaged `),
+    Object.assign(document.createElement("b"), {textContent: inr(st.normal)}),
+    document.createTextNode("."));
+  const line2 = document.createElement("div");
+  line2.style.marginTop = "5px";
+  line2.textContent = st.pctCheaper >= 50
+    ? `Cheaper than ${st.pctCheaper}% of ${spanTxt} — the lowest we have seen is ${inr(st.lowest)}.`
+    : `Only ${st.pctCheaper}% of ${spanTxt} were dearer. It has been as low as ${inr(st.lowest)}.`;
+  why.append(line1, line2);
+  }
+
+  const sp = document.getElementById("tv-spark");
+  sp.textContent = ""; sp.appendChild(tvSpark(st.series));
+  const cap = sp.parentElement.querySelector(".cap");
+  if (cap) cap.textContent = `Cheapest seat for tomorrow, ${spanTxt}`;
+  const spanEl = document.getElementById("tv-span");
+  if (spanEl) spanEl.textContent = spanTxt;
+
+  /* every route at a glance */
+  const wx = document.getElementById("tv-weather");
+  wx.textContent = "";
+  R.forEach((rr, i) => {
+    const s2 = tvStats(i), tn = TONES[s2.tone];
+    const card = document.createElement("button");
+    card.type = "button"; card.className = "tv-w";
+    card.style.borderLeftColor = tn.bar;
+    card.setAttribute("aria-current", i === ri);
+    const a = document.createElement("div"); a.className = "r"; a.textContent = RK[i];
+    const p = document.createElement("div"); p.className = "p"; p.textContent = inr(s2.today);
+    const st2 = document.createElement("div"); st2.className = "s"; st2.style.color = tn.fg;
+    st2.appendChild(toneIcon(s2.tone, tn.fg));
+    st2.appendChild(document.createTextNode(tn.label));
+    const n = document.createElement("div"); n.className = "n";
+    n.textContent = s2.tone === "new" ? "no baseline yet" : `normally ${inr(s2.normal)}`;
+    card.append(a, p, st2, n);
+    card.addEventListener("click", () => { state.tvRoute = i; renderTraveller(); });
+    wx.appendChild(card);
+  });
+
+  /* what notice is worth */
+  const ladder = tvLadder(ri);
+  const base = ladder.find(o => o.wd === 1);
+  const max = Math.max(...ladder.map(o => o.cost));
+  const host = document.getElementById("tv-wait");
+  host.textContent = "";
+  ladder.forEach(o => {
+    const row = document.createElement("div"); row.className = "tv-row";
+    const when = document.createElement("div"); when.className = "when";
+    when.textContent = WHEN[o.wd] || `T+${o.wd}`;
+    const track = document.createElement("div");
+    const bar = document.createElement("div"); bar.className = "bar";
+    const wpc = Math.max(12, o.cost / max * 100);
+    bar.style.width = wpc + "%";
+    if (wpc < 26) bar.classList.add("out");
+    const val = document.createElement("span"); val.textContent = inr(o.cost);
+    bar.appendChild(val); track.appendChild(bar);
+    const save = document.createElement("div"); save.className = "save";
+    if (o.wd === 1) { save.classList.add("none"); save.textContent = "booking tomorrow"; }
+    else {
+      const d = base.cost - o.cost;
+      save.textContent = d > 0 ? `${inr(d)} less` : `${inr(-d)} more`;
+      save.style.color = d > 0 ? "var(--good-text)" : "var(--crit)";
+    }
+    row.append(when, track, save);
+    host.appendChild(row);
+  });
+  const best = ladder.filter(o => o.wd !== 1).sort((a,b) => a.cost - b.cost)[0];
+  document.getElementById("tv-wait-sub").textContent = best && base
+    ? `On ${r.o}–${r.d}, booking ${AHEAD[best.wd] || ("T+" + best.wd)} instead of the day before has ` +
+      `cost ${inr(base.cost - best.cost)} less, on average, over ${spanTxt}.`
+    : "Only one booking window has been scraped so far — run the full basket to compare lead times.";
+
+  document.querySelectorAll("#tv-routes .chip").forEach((c, i) =>
+    c.setAttribute("aria-pressed", i === ri));
+}
+
+function buildTravellerChips(){
+  const host = document.getElementById("tv-routes");
+  host.textContent = "";
+  R.forEach((r, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip";
+    b.setAttribute("aria-pressed", i === state.tvRoute);
+    b.style.setProperty("--ck", `var(${SERIES[i]})`);
+    const k = document.createElement("span"); k.className = "key";
+    const t = document.createElement("span"); t.textContent = `${r.o} → ${r.d}`;
+    b.append(k, t);
+    b.addEventListener("click", () => { state.tvRoute = i; renderTraveller(); });
+    host.appendChild(b);
+  });
+}
+
+function setView(v){
+  state.view = v;
+  document.getElementById("view-index").hidden = v !== "index";
+  document.getElementById("view-traveller").hidden = v !== "traveller";
+  document.getElementById("tab-index").setAttribute("aria-selected", v === "index");
+  document.getElementById("tab-traveller").setAttribute("aria-selected", v === "traveller");
+  // charts measure their container, so they must be drawn while it is visible
+  if (v === "index") renderAll(); else renderTraveller();
+}
+document.getElementById("tab-index").addEventListener("click", () => setView("index"));
+document.getElementById("tab-traveller").addEventListener("click", () => setView("traveller"));
+
+/* ================= filters + init ================= */
+function renderAll(){
+  drawIndex(); drawCurve(); drawComp(); drawMatrix(); drawModels();
+  drawKPIs(); drawRouteTable();
+}
+function buildRouteChips(){
+  const host = document.getElementById("f-routes"); host.textContent = "";
+  R.forEach((r,i)=>{
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", state.routes.has(i));
+    b.style.setProperty("--ck", `var(${SERIES[i]})`);
+    const k = document.createElement("span"); k.className = "key";
+    const t = document.createElement("span"); t.textContent = RK[i];
+    b.append(k,t);
+    b.addEventListener("click", ()=>{
+      if (state.routes.has(i)){ if (state.routes.size === 1) return; state.routes.delete(i); }
+      else state.routes.add(i);
+      b.setAttribute("aria-pressed", state.routes.has(i));
+      renderAll();
+    });
+    host.appendChild(b);
+  });
+}
+document.getElementById("f-routes-all").addEventListener("click", ()=>{
+  R.forEach((_,i)=>state.routes.add(i));
+  document.querySelectorAll("#f-routes .chip").forEach(b=>b.setAttribute("aria-pressed","true"));
+  renderAll();
+});
+document.getElementById("f-range").addEventListener("click", ev=>{
+  const b = ev.target.closest("button[data-days]"); if (!b) return;
+  state.days = +b.dataset.days;
+  [...ev.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed", x===b));
+  renderAll();
+});
+document.getElementById("f-source").addEventListener("click", ev=>{
+  const b = ev.target.closest("button[data-src]"); if (!b) return;
+  state.src = b.dataset.src;
+  [...ev.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed", x===b));
+  renderAll();
+});
+document.getElementById("f-tables").addEventListener("click", ev=>{
+  state.tables = !state.tables;
+  ev.currentTarget.setAttribute("aria-pressed", state.tables);
+  ev.currentTarget.textContent = state.tables ? "hide data tables" : "show data tables";
+  ["d-curve","d-comp"].forEach(id=>document.getElementById(id).classList.toggle("on", state.tables));
+});
+
+/* ================= live data ================= */
+/* The page renders from DATA immediately, then tries to replace it. Arrays are
+   mutated in place rather than reassigned, so every `const` binding taken at
+   load (D, R, W...) keeps pointing at live data. */
+const SRC_INDEX = Object.fromEntries(SRC.map((s, i) => [s.k, i]));
+const RT_INDEX  = Object.fromEntries(R.map((r, i) => [r.o + "-" + r.d, i]));
+const W_INDEX   = Object.fromEntries(W.map((w, i) => [w, i]));
+
+async function rest(path, params){
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${SUPABASE.url}/rest/v1/${path}?${qs}`, {
+    headers: {
+      apikey: SUPABASE.key,
+      Authorization: `Bearer ${SUPABASE.key}`,
+      Accept: "application/json"
+    }
+  });
+  if (!res.ok) throw new Error(`${path} → HTTP ${res.status} ${await res.text()}`.slice(0, 220));
+  return res.json();
+}
+
+function isoDay(d){ return d.toISOString().slice(0, 10); }
+
+/* fares_daily rows -> the compact array shape the charts already read */
+function adoptDaily(daily){
+  const days = [...new Set(daily.map(r => r.day))].sort();
+  const dayIx = Object.fromEntries(days.map((d, i) => [d, i]));
+  const rows = [];
+  let skipped = 0;
+  for (const r of daily){
+    const ri = RT_INDEX[`${r.origin}-${r.destination}`];
+    const si = SRC_INDEX[r.source];
+    const wi = W_INDEX[r.advance_window_days];
+    if (ri === undefined || si === undefined || wi === undefined){ skipped++; continue; }
+    const n = +r.n_flights || 0;
+    rows.push([
+      dayIx[r.day], ri, wi, si, n,
+      +r.base_fare || 0, +r.taxes || 0, +r.udf || 0,
+      r.convenience_fee == null ? null : +r.convenience_fee,
+      +r.total_fare || 0, +r.min_fare || 0, +r.max_fare || 0,
+      n, n, 0, 0
+    ]);
+  }
+  if (!rows.length) throw new Error("no fares_daily rows matched the configured basket");
+  if (skipped) console.warn(`${skipped} row(s) outside the configured basket were ignored`);
+  return {rows, days};
+}
+
+async function goLive(){
+  if (!SUPABASE.url || !SUPABASE.key) return {live:false, why:"not configured"};
+  const since = new Date(Date.now() - SUPABASE.days * 864e5);
+
+  const [daily, recent, runs] = await Promise.all([
+    rest("fares_daily", {select:"*", day:`gte.${isoDay(since)}`, order:"day.asc", limit:5000}),
+    rest("fares", {select:"origin,destination,carrier,source,advance_window_days,base_fare," +
+                          "taxes,udf,convenience_fee,total_fare,model_used,scraped_at",
+                   order:"scraped_at.desc", limit:SUPABASE.recent}),
+    rest("scrape_runs", {select:"*", order:"started_at.desc", limit:SUPABASE.runs})
+  ]);
+
+  // Connected fine, just nothing collected yet — a state of its own, not an error.
+  if (!daily.length) return {live:false, why:"empty", runs:runs.length};
+
+  const {rows, days} = adoptDaily(daily);
+
+  DATA.rows.length = 0; DATA.rows.push(...rows);
+  DATA.meta.start = days[0];
+  DATA.meta.today = days[days.length - 1];
+  DATA.meta.days = days.length;
+  DATA.meta.base_period = days[0];
+
+  DATA.recent.length = 0;
+  DATA.recent.push(...recent.map(r => ({
+    ...r, departure_time: r.departure_time || "—",
+    carrier: r.carrier || "—"
+  })));
+
+  DATA.runs.length = 0;
+  DATA.runs.push(...runs.map(r => ({
+    ts: (r.started_at || "").replace("T", " ").slice(0, 16),
+    source: r.source, model: r.model_used,
+    written: r.rows_written ?? 0, skipped: r.skipped_robots ?? 0,
+    failed: (r.failed_fetch ?? 0) + (r.failed_extract ?? 0),
+    status: r.status || "ok", dur_s: r.duration_s
+  })));
+
+  // extraction success is a run-level fact; the fares table only holds successes
+  const att = runs.reduce((a, r) => a + (r.flights_extracted ?? 0) + (r.failed_extract ?? 0), 0);
+  const ok  = runs.reduce((a, r) => a + (r.rows_written ?? 0), 0);
+  DATA.meta.extraction = att ? {ok, att} : null;
+
+  // A range wider than the history just shows all of it, so the buttons stay
+  // usable; the tooltip and the KPI label carry the truth.
+  document.querySelectorAll("#f-range button[data-days]").forEach(b => {
+    b.title = +b.dataset.days > days.length
+      ? `only ${days.length} day(s) collected so far` : "";
+  });
+
+  return {live:true, rows:rows.length, days:days.length, recent:recent.length, runs:runs.length};
+}
+
+function setBanner(state_){
+  const box = document.querySelector(".notice");
+  const body = box.querySelector("div");
+  body.textContent = "";
+  const strong = document.createElement("b");
+  const rest_ = document.createElement("span");
+  if (state_.live){
+    box.style.borderLeftColor = "var(--good)";
+    strong.textContent = "Live. ";
+    rest_.textContent =
+      `${num(state_.rows)} daily rows over ${state_.days} day(s) from Supabase, ` +
+      `last scrape ${DATA.runs[0] ? DATA.runs[0].ts : "—"}. ` +
+      `Figures update on the next scheduled run.`;
+  } else if (state_.why === "empty"){
+    box.style.borderLeftColor = "var(--accent)";
+    strong.textContent = "Connected — no fares yet. ";
+    rest_.textContent =
+      "Supabase is reachable and the tables are in place; nothing has been scraped " +
+      "into them so far. The figures below are sample data, and the page switches to " +
+      "the real thing by itself once the first run lands.";
+  } else {
+    box.style.borderLeftColor = "var(--warn)";
+    strong.textContent = "Sample data. ";
+    rest_.textContent = state_.why === "not configured"
+      ? "No Supabase project is wired up yet — fill in SUPABASE.url and SUPABASE.key " +
+        "near the top of the script. Every figure below is generated to the exact shape " +
+        "of the fares table, so nothing else changes when you do."
+      : `Could not reach Supabase — ${state_.why}. Showing the built-in sample rows. ` +
+        "If this page is a published Artifact, that sandbox blocks outbound requests by " +
+        "design; served from a normal host it goes live.";
+  }
+  body.append(strong, rest_);
+}
+
+function boot(){
+  buildRouteChips(); buildTravellerChips(); drawRuns(); drawRecent(); renderAll();
+  goLive()
+    .then(result => {
+      if (result.live){
+        buildRouteChips(); buildTravellerChips();
+        drawRuns(); drawRecent();
+        (state.view === "index" ? renderAll : renderTraveller)();
+      }
+      setBanner(result);
+    })
+    .catch(err => setBanner({live:false, why:String(err.message || err).slice(0, 160)}));
+}
+boot();
+let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(
+  () => (state.view === "index" ? renderAll() : renderTraveller()), 140); });
+</script>

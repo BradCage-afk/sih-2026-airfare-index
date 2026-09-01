@@ -1,0 +1,48 @@
+# The fast tier — today's fare on the busiest routes, for the consumer view.
+#
+# A caveat worth knowing before you rely on this: GitHub's scheduled workflows
+# accept a 5-minute cron, but they are queued, not guaranteed. Under load a
+# scheduled run is routinely 5-20 minutes late and can be dropped entirely, so
+# the real cadence you get here is "roughly every 15-30 minutes". If the demo
+# needs a dependable 10-minute heartbeat, run `main.py --tier hot` in a loop on
+# a small always-on host instead; the code is the same either way.
+name: scrape-airfares-live
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Which tier to run"
+        required: false
+        default: "live"
+
+concurrency:
+  group: scrape-airfares-live      # a late run never stacks on the previous one
+  cancel-in-progress: false
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    defaults:
+      run:
+        working-directory: airfare-scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+      - name: Scrape live tier
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'deepseek-ai/deepseek-v4-pro-0813' }}
+        run: python main.py --tier ${{ github.event.inputs.tier || 'live' }}

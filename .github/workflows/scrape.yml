@@ -1,0 +1,54 @@
+# Runs the basket every 4 hours. If this file lives in a subdirectory of your
+# repo, move it to <repo>/.github/workflows/ and keep the working-directory
+# setting below pointed at the scraper.
+name: scrape-airfares
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"      # 00:00, 04:00, ... UTC
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Override LLM_MODEL for this run"
+        required: false
+        default: ""
+
+concurrency:
+  group: scrape-airfares
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: airfare-scraper
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Scrape
+        env:
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          LLM_MODEL: ${{ github.event.inputs.model || vars.LLM_MODEL || 'z-ai/glm-5.2' }}
+        run: python main.py | tee run.jsonl
+
+      - name: Upload run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-log-${{ github.run_id }}
+          path: airfare-scraper/run.jsonl
+          retention-days: 14
