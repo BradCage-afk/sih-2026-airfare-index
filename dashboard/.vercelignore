@@ -1,4 +1,8 @@
-# dev-only tooling — never part of the deployed site
+# Only index.html and vercel.json belong in the deployment.
+node_modules/
+package.json
+package-lock.json
+.env.local
 mock_supabase.py
 README.md
 *.png
