@@ -10,13 +10,16 @@ name: scrape-airfares-live
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Every 8 hours. GitHub queues scheduled runs rather than guaranteeing
+    # them, so a 15-minute cron is not honoured anyway; for a genuine fast
+    # heartbeat run `main.py --tier hot` on an always-on host.
+    - cron: "0 */8 * * *"
   workflow_dispatch:
     inputs:
       tier:
         description: "Which tier to run"
         required: false
-        default: "live"
+        default: "hot"
 
 concurrency:
   group: scrape-airfares-live      # a late run never stacks on the previous one
@@ -25,7 +28,7 @@ concurrency:
 jobs:
   live:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: airfare-scraper
@@ -45,4 +48,4 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           LLM_MODEL: ${{ vars.LLM_MODEL || 'deepseek-ai/deepseek-v4-pro-0813' }}
-        run: python main.py --tier ${{ github.event.inputs.tier || 'live' }}
+        run: python main.py --tier ${{ github.event.inputs.tier || 'hot' }}

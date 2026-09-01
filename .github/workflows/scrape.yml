@@ -5,7 +5,11 @@ name: scrape-airfares
 
 on:
   schedule:
-    - cron: "0 */4 * * *"      # 00:00, 04:00, ... UTC
+    # Once daily at 02:00 UTC (07:30 IST). A full-basket run is ~45 minutes,
+    # and a private repo gets 2,000 Actions minutes a month — 4-hourly would
+    # burn that in a week. Make the repo public (unlimited minutes) if you
+    # want the original */4 cadence back.
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       model:
