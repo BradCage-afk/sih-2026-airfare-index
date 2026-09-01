@@ -96,9 +96,9 @@ def run() -> int:
         first = json.loads(fh.readline())
     os.unlink(path)
 
-    expected = {"origin", "destination", "carrier", "source", "advance_window_days",
-                "base_fare", "taxes", "udf", "convenience_fee", "total_fare",
-                "model_used", "scraped_at"}
+    expected = {"origin", "destination", "carrier", "departure_time", "source",
+                "advance_window_days", "base_fare", "taxes", "udf",
+                "convenience_fee", "total_fare", "model_used", "scraped_at"}
     ok &= check("db.write returned a count", written == len(records), f"{written} rows")
     ok &= check("row matches the fares schema", set(first) == expected,
                 ", ".join(sorted(set(first) ^ expected)) or "exact match")

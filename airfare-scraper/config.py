@@ -82,7 +82,14 @@ LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-ai/deepseek-v4-pro-0813")
 # not in the NIM catalogue at all (no GLM models are), and "deepseek-v4-pro"
 # is published under a dated id. `python extractor.py --list-models` prints
 # what the key can actually reach.
-KNOWN_MODELS = ["deepseek-ai/deepseek-v4-pro-0813", "deepseek-ai/deepseek-v4-flash-0731"]
+KNOWN_MODELS = ["meta/llama-3.2-11b-vision-instruct", "meta/muse-glimmer-30b"]
+
+# Tried in order when the active model answers 410 Gone or 404 — free-tier
+# model availability changes without warning, twice in one afternoon here.
+FALLBACK_MODELS = [m.strip() for m in os.getenv(
+    "FALLBACK_MODELS",
+    "meta/llama-3.2-11b-vision-instruct,meta/muse-glimmer-30b,minimaxai/minimax-m3"
+).split(",") if m.strip()]
 
 # NIM free tier is ~40 requests/minute, shared across models.
 NIM_REQUESTS_PER_MINUTE = int(os.getenv("NIM_RPM", "40"))

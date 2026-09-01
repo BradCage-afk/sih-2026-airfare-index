@@ -133,6 +133,15 @@ class Extractor:
             max_retries=0,
         )
         self.limiter = limiter or RateLimiter(config.NIM_REQUESTS_PER_MINUTE)
+        self._dead: set = set()          # models that answered 410/404 this run
+
+    def _live_model(self, failed: str) -> str:
+        """Swap to the next configured model when one is retired mid-run."""
+        self._dead.add(failed)
+        for candidate in config.FALLBACK_MODELS:
+            if candidate not in self._dead:
+                return candidate
+        return failed                    # nothing left; let the caller fail honestly
 
     # -- public ------------------------------------------------------------
     def extract(
@@ -144,6 +153,8 @@ class Extractor:
     ) -> ExtractionResult:
         """Extract flights, splitting long listings so replies never truncate."""
         model = model or self.model
+        if model in self._dead:
+            model = self._live_model(model)
         row_list = _as_rows(rows)
         chunks = _chunk(row_list, config.MAX_PROMPT_CHARS)
 
@@ -197,12 +208,15 @@ class Extractor:
                 raw = self._call(prompt if attempt == 1 else prompt + RETRY_SUFFIX, model)
             except Exception as exc:  # transport / rate / server error
                 last_error = f"{type(exc).__name__}: {str(exc)[:160]}"
-                if "404" in str(exc) or "not found" in str(exc).lower():
-                    last_error += (
-                        f" — is {model!r} in the catalogue? "
-                        "run: python extractor.py --list-models"
-                    )
-                    break  # a wrong model id will not fix itself on retry
+                text = str(exc)
+                if "410" in text or "end of life" in text.lower() or "404" in text:
+                    replacement = self._live_model(model)
+                    if replacement != model:
+                        last_error += f" — {model} is gone; falling back to {replacement}"
+                        model = replacement
+                        continue         # retry this same chunk on the new model
+                    last_error += " — no working model left in FALLBACK_MODELS"
+                    break
                 continue
             try:
                 payload = _loads_json(raw)
