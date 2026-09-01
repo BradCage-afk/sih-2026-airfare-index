@@ -1,8 +1,10 @@
 # Airfare index — scheduled scrapes on this machine.
 # Install with:  crontab -l 2>/dev/null | cat - ~/SIH/airfare-scraper/crontab.example | crontab -
 
-# The 3-route hot basket, every 8 hours (~6 min each)
-0 */8 * * * ~/SIH/airfare-scraper/run-scheduled.sh hot
+# The 3-route hot basket, every 10 minutes (~2 min each; flock skips overlaps).
+# This is the collection cadence. The published index is computed daily from
+# these observations — the same way official price statistics work.
+*/10 * * * * ~/SIH/airfare-scraper/run-scheduled.sh hot
 
 # The full 6-route basket once a day at 07:30 IST (~45 min)
 0 2 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index

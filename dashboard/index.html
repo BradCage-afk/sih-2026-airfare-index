@@ -288,6 +288,23 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
 .tv-row .save{font-size:12.5px;text-align:right;font-weight:600}
 .tv-row .save.none{color:var(--muted);font-weight:400}
 
+.fold{grid-column:span 12;margin-top:4px}
+.fold summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+  padding:13px 18px;background:var(--surface);border:1px solid var(--border);
+  border-radius:6px;font-size:13.5px;font-weight:600;color:var(--ink);
+}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary:hover{border-color:var(--axis)}
+.fold summary .cnt{margin-left:auto;font-size:11.5px;font-weight:400;color:var(--muted)}
+.fold summary .chev{transition:transform .15s;color:var(--muted);flex:none}
+.fold[open] summary .chev{transform:rotate(90deg)}
+.fold[open] summary{border-radius:6px 6px 0 0;border-bottom-color:transparent}
+.fold .inner{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;
+  padding:16px;border:1px solid var(--border);border-top:0;border-radius:0 0 6px 6px;
+  background:var(--inset)}
+.fold .inner .card{background:var(--surface)}
+.fold .toolbar{grid-column:span 12;display:flex;justify-content:flex-end;margin-top:-4px}
 .tv-fine{margin-top:22px;padding:14px 16px;background:var(--inset);border-radius:6px;
   font-size:12px;color:var(--ink-2);line-height:1.6}
 .tv-fine b{color:var(--ink)}
@@ -353,9 +370,6 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
         <button type="button" data-src="1">IndiGo</button>
       </div>
     </div>
-    <div class="fgroup" style="margin-left:auto">
-      <button type="button" class="linkbtn" id="f-tables" aria-pressed="false">show data tables</button>
-    </div>
   </div>
 
   <div class="grid">
@@ -399,6 +413,30 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       <div class="datatable" id="d-curve"></div>
     </section>
 
+    <section class="card c12">
+      <div class="chead">
+        <div>
+          <h2>Route basket</h2>
+          <p>One row per city pair, over the selected window. Sparkline shows the route&rsquo;s
+             own daily mean fare; this table is also the accessible twin of the fare curve above.</p>
+        </div>
+      </div>
+      <div class="tw"><table id="t-routes"></table></div>
+    </section>
+  </div><!-- /always-visible -->
+
+  <details class="fold" id="fold-method">
+    <summary>
+      <svg class="chev" width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+        <path d="M4 2l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Methodology &amp; pipeline
+      <span class="cnt">how the numbers are produced &middot; 5 sections</span>
+    </summary>
+    <div class="inner">
+      <div class="toolbar">
+        <button type="button" class="linkbtn" id="f-tables" aria-pressed="false">show data tables</button>
+      </div>
     <section class="card c5">
       <div class="chead">
         <div>
@@ -436,16 +474,6 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       <div class="datatable on" id="d-models"></div>
     </section>
 
-    <section class="card c12">
-      <div class="chead">
-        <div>
-          <h2>Route basket</h2>
-          <p>One row per city pair, over the selected window. Sparkline shows the route&rsquo;s
-             own daily mean fare; this table is also the accessible twin of the fare curve above.</p>
-        </div>
-      </div>
-      <div class="tw"><table id="t-routes"></table></div>
-    </section>
 
     <section class="card c5">
       <div class="chead">
@@ -469,6 +497,9 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
     </section>
 
   </div>
+
+    </div>
+  </details>
 
   </div><!-- /view-index -->
 
@@ -839,15 +870,42 @@ function drawComp(){
   const agg = new Map();
   for (const r of rows){
     let e = agg.get(r[C.r]);
-    if (!e){ e = {base:0,tax:0,udf:0,conv:0,n:0,convN:0}; agg.set(r[C.r], e); }
-    e.base += r[C.base]; e.tax += r[C.tax]; e.udf += r[C.udf]; e.n++;
+    if (!e){ e = {base:0,tax:0,udf:0,conv:0,tot:0,n:0,convN:0}; agg.set(r[C.r], e); }
+    e.base += r[C.base]; e.tax += r[C.tax]; e.udf += r[C.udf]; e.tot += r[C.tot]; e.n++;
     if (r[C.conv] != null){ e.conv += r[C.conv]; e.convN++; }
   }
   const items = routes.filter(ri=>agg.has(ri)).map(ri=>{
     const e = agg.get(ri);
     const v = {base:e.base/e.n, tax:e.tax/e.n, udf:e.udf/e.n, conv:e.conv/e.n, convN:e.convN};
-    v.total = v.base+v.tax+v.udf+v.conv; v.ri = ri; return v;
+    v.components = v.base + v.tax + v.udf + v.conv;
+    v.total = e.tot / e.n;              // the fare actually paid, not the sum of parts
+    v.ri = ri; return v;
   }).sort((a,b)=>b.total-a.total);
+
+  // Portals publish the headline fare, not its breakup — so these columns are
+  // NULL on live rows. Say so rather than drawing a chart of zeroes.
+  const host2 = document.getElementById("p-comp");
+  if (!items.some(it => it.components > 0)){
+    host2.querySelectorAll("svg").forEach(n => n.remove());
+    document.getElementById("l-comp").textContent = "";
+    document.getElementById("d-comp").textContent = "";
+    const box = document.createElement("div");
+    box.style.cssText = "padding:22px 4px;font-size:12.5px;color:var(--ink-2);line-height:1.6";
+    const b1 = document.createElement("b");
+    b1.textContent = "No breakup published for these fares. ";
+    box.append(b1, document.createTextNode(
+      "The listing shows one headline price per flight, so base_fare, taxes, udf and " +
+      "convenience_fee are stored as NULL — we record what the page states rather than " +
+      "splitting a total ourselves. The columns fill in if a source that publishes the " +
+      "split is added; total_fare is complete either way."));
+    const seen = document.createElement("div");
+    seen.style.cssText = "margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted)";
+    seen.textContent = items.map(it => `${RK[it.ri]} ${inr(it.total)}`).join("   ");
+    box.appendChild(seen);
+    host2.appendChild(box);
+    return;
+  }
+  host2.querySelectorAll("div:not(.tip)").forEach(n => n.remove());
 
   const rowH = 30, gap = 12, H = items.length*(rowH+gap) + 26;
   const {svg, w} = svgFor(host, Math.max(H, 80));
@@ -1432,6 +1490,14 @@ function setView(v){
   // charts measure their container, so they must be drawn while it is visible
   if (v === "index") renderAll(); else renderTraveller();
 }
+// Charts measure their container, so anything drawn inside a closed <details>
+// comes out at zero width. Redraw when it opens.
+const fold = document.getElementById("fold-method");
+if (fold) fold.addEventListener("toggle", () => {
+  // the toggle fires before layout settles, so measure on the next frame
+  if (fold.open) requestAnimationFrame(() => requestAnimationFrame(renderAll));
+});
+
 document.getElementById("tab-index").addEventListener("click", () => setView("index"));
 document.getElementById("tab-traveller").addEventListener("click", () => setView("traveller"));
 
