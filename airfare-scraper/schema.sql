@@ -122,3 +122,26 @@ GROUP BY 1, 2, 3, 4, 5;
 
 ALTER VIEW fares_hourly SET (security_invoker = on);
 GRANT SELECT ON fares_hourly TO anon;
+
+
+-- ---------------------------------------------------------------------------
+-- Published index values. The engine computes from `fares`; this table is the
+-- published record, so a figure MoSPI ingested can always be reproduced.
+CREATE TABLE IF NOT EXISTS apix_daily (
+  day             DATE PRIMARY KEY,
+  base_day        DATE,
+  apix            NUMERIC,
+  provisional     BOOLEAN DEFAULT false,
+  by_window       JSONB,
+  by_route        JSONB,
+  routes_covered  INT,
+  observations    INT,
+  weight_covered  NUMERIC,
+  method          TEXT,
+  computed_at     TIMESTAMP DEFAULT now()
+);
+
+ALTER TABLE apix_daily ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS apix_anon_read ON apix_daily;
+CREATE POLICY apix_anon_read ON apix_daily FOR SELECT TO anon USING (true);
+GRANT SELECT ON apix_daily TO anon;

@@ -1,21 +1,11 @@
-Core stuff
+"For Smart India Hackathon Problem Statement SIH26056, teams are expected to replace manual airfare data collection with an automated ecosystem that gathers, cleans, and indexes dynamic flight prices. The required solution involves a production-grade analytics pipeline featuring a resilient scraping network, a statistical engine applying economic weighting matrices, and an institutional dashboard for government officials."
 
-1. code quality
-2. real-time execution - Real-world impact, target beneficiaries, market/social utility, and potential scalability.
-3. system architecture
-4. database design - end-to-end data flow, data pipelines, outflows, etc
-5. Supporting case studies, data points, literature, or market research
+ we are no where close to what the problem statement demanded.
 
-final round:
-present the fully working prototype
-technical Q&A
-code security, deployment, and scalability
+"The solution serves as an institutional macroeconomic tool designed to help the Government of India track inflation rather than functioning as a consumer-facing commerce or price-comparison application. By aggregating high-frequency data points to augment the Consumer Price Index (CPI), the platform enables policymakers to monitor national airfare trends effectively."
 
-Non - negotiables
-Core idea and everything about the problem statement
-tech stack (APIs, frameworks, databases, hardware specs)
-Real-world impact
+our solution doesn't mention inflation or anything , we don't want it to be a price comparison tool , for that even google flights is there , we want to track inflation to augment the CPI, we will now ditch the vercel app, lets make this new project , I think we wasted out time collecting data like this , see what all data can be salvageable 
 
-Important things
-Deployment and fully working solution
-solution better to the evaluation rubrics
+"Scraping Pipeline: A scheduled worker system (e.g., Celery/Playwright) scraping routes (e.g., DEL–BOM, BLR–DEL) across lead-time buckets ($T-1$, $T-7$, $T-15$, $T-30$).Calculation Engine: Algorithms that take the clean minimum logical fares, compute geometric averages (Jevons), and weight them by route passenger volume to generate a single monthly/daily APIx number (e.g., 108.4).MoSPI Portal & Integration API:Web Dashboard: An analytics UI showing route-level heatmaps, fare spikes, seasonal trends, and airline comparisons.Export API: A secure REST endpoint (e.g., GET /api/v1/apix?month=2026-08) so MoSPI's central statistical systems can ingest your calculated index directly into their official CPI calculations."
+
+create a new project now
