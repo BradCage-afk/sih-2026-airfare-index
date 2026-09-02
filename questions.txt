@@ -1,0 +1,21 @@
+Core stuff
+
+1. code quality
+2. real-time execution - Real-world impact, target beneficiaries, market/social utility, and potential scalability.
+3. system architecture
+4. database design - end-to-end data flow, data pipelines, outflows, etc
+5. Supporting case studies, data points, literature, or market research
+
+final round:
+present the fully working prototype
+technical Q&A
+code security, deployment, and scalability
+
+Non - negotiables
+Core idea and everything about the problem statement
+tech stack (APIs, frameworks, databases, hardware specs)
+Real-world impact
+
+Important things
+Deployment and fully working solution
+solution better to the evaluation rubrics
