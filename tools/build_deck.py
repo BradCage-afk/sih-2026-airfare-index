@@ -14,6 +14,7 @@ CURVE = TMP + "/chart-curve.png"
 PREM  = TMP + "/chart-premium.png"
 CARR  = TMP + "/chart-carriers.png"
 MAP   = TMP + "/chart-map.png"
+CAD   = TMP + "/chart-cadence.png"
 REC   = TMP + "/chart-record.png"
 
 NAVY   = RGBColor(0x1F, 0x49, 0x7D)
@@ -204,8 +205,8 @@ write(prob.text_frame, [
 
 textbox(s2, 0.45, 2.26, 6.2, 1.4, [
     ("Proposed Solution", 15, True, NAVY),
-    ("A fixed basket of routes, re-priced every 10 minutes and published "
-     "as a price index.", 15, False, INK, 8),
+    ("The 15 busiest domestic city pairs, re-priced every 10 minutes and "
+     "published as a price index.", 15, False, INK, 8),
 ])
 ln = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.47), Inches(2.56),
                          Inches(1.5), Inches(0.03))
@@ -256,18 +257,20 @@ for i, (n, t, d) in enumerate(STEPS):
 ev = panel(s3, 0.45, 3.55, 12.4, 0.92, fill=PALE, line=None)
 write(ev.text_frame, [
     ("BUILT AND RUNNING", 12, True, NAVY),
-    ("2,342 live fares in Postgres · 14 scheduled runs · zero failed extractions "
-     "· a public dashboard reading the database on every load.", 14, False, INK, 4)])
+    ("15,000+ live fares in Postgres · 132 scheduled runs, 98% clean · a public "
+     "dashboard reading the database on every load.", 14, False, INK, 4)])
 
 s3.shapes.add_picture(REC, Inches(0.45), Inches(4.58), width=Inches(4.45))
+s3.shapes.add_picture(CAD, Inches(5.30), Inches(4.62), width=Inches(4.6))
 
-heading(s3, 7.0, 4.62, 5.9, "Technologies", 14)
-bullets(s3, 7.0, 5.05, 5.9, 1.7, [
-    "Python · Playwright headless Chromium",
-    "LLM over an OpenAI-compatible endpoint",
-    "Pydantic validation · Supabase Postgres",
-    "cron on a residential host · HTML + SVG dashboard",
-], size=13.5, gap=7)
+heading(s3, 10.25, 4.62, 2.6, "Stack", 13)
+bullets(s3, 10.25, 5.02, 2.7, 1.8, [
+    "Python · Playwright",
+    "OpenAI-compatible LLM",
+    "Pydantic validation",
+    "Supabase Postgres",
+    "cron · HTML + SVG",
+], size=11.5, gap=5)
 
 # =====================================================================  S4
 s4 = prs.slides[3]
