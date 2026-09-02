@@ -574,6 +574,9 @@ const D = DATA.rows, R = DATA.routes, W = DATA.windows, SRC = DATA.sources;
 const C = {d:0,r:1,w:2,s:3,n:4,base:5,tax:6,udf:7,conv:8,tot:9,lo:10,hi:11,ok:12,att:13,ms:14,m:15};
 const RK = R.map(r => r.o + "–" + r.d);
 const SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6"];
+/* past the palette, a route gets the de-emphasis grey rather than an
+   invented hue that would be indistinguishable under colour blindness */
+const seriesTok = i => SERIES[i] || "--demote";
 const ORD = ["--o1","--o2","--o3","--o4"];
 const COMP = [
   {key:"base", lab:"Base fare",       tok:"--o1", ink:"--o1-ink", col:"base_fare"},
@@ -788,7 +791,7 @@ function drawCurve(){
   const routes = [...state.routes].sort((a,b)=>a-b);
   const byRW = meanBy(rows, r=>r[C.r]+":"+r[C.w], r=>r[C.tot]);
   const series = routes.map(ri => ({
-    ri, tok: SERIES[ri], name: RK[ri],
+    ri, tok: seriesTok(ri), name: RK[ri],
     pts: W.map((_,wi)=>{ const e = byRW.get(ri+":"+wi); return e ? e.s/e.n : null; })
   })).filter(s => s.pts.some(p=>p!=null));
 
@@ -1508,7 +1511,7 @@ function buildTravellerChips(){
     const b = document.createElement("button");
     b.type = "button"; b.className = "chip";
     b.setAttribute("aria-pressed", i === state.tvRoute);
-    b.style.setProperty("--ck", `var(${SERIES[i]})`);
+    b.style.setProperty("--ck", `var(${seriesTok(i)})`);
     const k = document.createElement("span"); k.className = "key";
     const t = document.createElement("span"); t.textContent = `${r.o} → ${r.d}`;
     b.append(k, t);
@@ -1547,7 +1550,7 @@ function buildRouteChips(){
   R.forEach((r,i)=>{
     const b = document.createElement("button");
     b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", state.routes.has(i));
-    b.style.setProperty("--ck", `var(${SERIES[i]})`);
+    b.style.setProperty("--ck", `var(${seriesTok(i)})`);
     const k = document.createElement("span"); k.className = "key";
     const t = document.createElement("span"); t.textContent = RK[i];
     b.append(k,t);
@@ -1589,8 +1592,37 @@ document.getElementById("f-tables").addEventListener("click", ev=>{
    mutated in place rather than reassigned, so every `const` binding taken at
    load (D, R, W...) keeps pointing at live data. */
 const SRC_INDEX = Object.fromEntries(SRC.map((s, i) => [s.k, i]));
-const RT_INDEX  = Object.fromEntries(R.map((r, i) => [r.o + "-" + r.d, i]));
+let   RT_INDEX  = Object.fromEntries(R.map((r, i) => [r.o + "-" + r.d, i]));
 const W_INDEX   = Object.fromEntries(W.map((w, i) => [w, i]));
+
+/* The basket grows. Rebuild the route list from whatever the database returns,
+   ordered by how much data each pair has, so new city pairs appear on their own
+   rather than being filtered out against a hardcoded list. */
+function adoptRoutes(daily){
+  const seen = new Map();
+  for (const r of daily){
+    const k = `${r.origin}-${r.destination}`;
+    seen.set(k, (seen.get(k) || 0) + (+r.n_flights || 0));
+  }
+  const ordered = [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k);
+  if (!ordered.length) return;
+  R.length = 0;
+  RK.length = 0;
+  for (const k of ordered){
+    const [o, d] = k.split("-");
+    R.push({o, d, on: o, dn: d});
+    RK.push(`${o}–${d}`);
+  }
+  RT_INDEX = Object.fromEntries(ordered.map((k, i) => [k, i]));
+  // keep only selections that still exist; default to the busiest few
+  state.routes = new Set(R.map((_, i) => i).slice(0, CHART_ROUTES));
+  state.tvRoute = 0;
+}
+
+/* A categorical palette tops out around eight series. Above that, plotting one
+   line per route stops being readable, so the chart shows a chosen subset while
+   the tables carry every pair. */
+const CHART_ROUTES = 6;
 
 async function rest(path, params){
   const qs = new URLSearchParams(params).toString();
@@ -1650,6 +1682,7 @@ async function goLive(){
   // Connected fine, just nothing collected yet — a state of its own, not an error.
   if (!daily.length) return {live:false, why:"empty", runs:runs.length};
 
+  adoptRoutes(daily);
   const {rows, days} = adoptDaily(daily);
 
   // Collapse the intraday view to one index point per hour, across the basket.

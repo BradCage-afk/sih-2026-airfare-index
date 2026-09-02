@@ -14,14 +14,38 @@ load_dotenv()
 
 # ---------------------------------------------------------------- basket ----
 # City-pair basket. Order matters only for reporting.
-ROUTES: list[tuple[str, str]] = [
-    ("DEL", "BOM"),
-    ("DEL", "BLR"),
-    ("BOM", "BLR"),
-    ("DEL", "CCU"),
-    ("BLR", "HYD"),
-    ("MAA", "DEL"),
-]
+# The 15 busiest domestic city pairs by scheduled seats. A price index basket
+# should follow traffic, not intuition — these are ranked, and the seat counts
+# are kept so the index can later be weighted properly rather than treating a
+# Delhi-Mumbai fare as equal in importance to a Delhi-Srinagar one.
+#
+# Source: published schedule data, top-15 domestic routes (seats per month).
+# Refresh against DGCA city-pair statistics when the basket is next reviewed.
+ROUTE_SEATS: dict = {
+    ("DEL", "BOM"): 654_532,   # 1
+    ("DEL", "BLR"): 457_557,   # 2
+    ("BOM", "BLR"): 385_374,   # 3
+    ("DEL", "HYD"): 328_082,   # 4
+    ("DEL", "PNQ"): 271_598,   # 5
+    ("DEL", "CCU"): 265_590,   # 6
+    ("CCU", "BLR"): 245_317,   # 8
+    ("DEL", "AMD"): 241_931,   # 7
+    ("MAA", "DEL"): 234_459,   # 11
+    ("HYD", "BOM"): 218_990,   # 10
+    ("CCU", "BOM"): 213_434,   # 13
+    ("HYD", "BLR"): 203_618,   # 9
+    ("MAA", "BOM"): 201_494,   # 14
+    ("AMD", "BOM"): 195_938,   # 12
+    ("DEL", "SXR"): 180_884,   # 15
+}
+
+ROUTES: list[tuple[str, str]] = list(ROUTE_SEATS)
+
+# Share of basket seats, for a weighted index. Not yet applied to the published
+# figure — the current index is an unweighted basket mean, which is stated on
+# the dashboard. Weighting is the next methodological step, not a hidden one.
+_TOTAL_SEATS = sum(ROUTE_SEATS.values())
+ROUTE_WEIGHTS: dict = {r: n / _TOTAL_SEATS for r, n in ROUTE_SEATS.items()}
 
 # Advance-booking windows, in days from today.
 ADVANCE_WINDOWS: list[int] = [1, 7, 15, 30, 45]
@@ -50,14 +74,14 @@ TIERS: dict = {
         "note": "full basket for the price index",
     },
     "live": {
-        "routes": ROUTES,
+        "routes": ROUTES[:6],
         "windows": [1],
         "sources": ["cleartrip"],
         "period_s": 15 * 60,
         "note": "today's fare on every route, for the consumer view",
     },
     "hot": {
-        "routes": [("DEL", "BOM"), ("DEL", "BLR"), ("BOM", "BLR")],
+        "routes": ROUTES[:3],          # the three busiest pairs
         "windows": [1],
         "sources": ["cleartrip"],
         "period_s": 10 * 60,
