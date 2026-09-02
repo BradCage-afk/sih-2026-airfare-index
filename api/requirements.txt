@@ -1,2 +1,5 @@
 fastapi>=0.110
 uvicorn[standard]>=0.27
+supabase>=2.7
+python-dotenv>=1.0
+pydantic>=2.9

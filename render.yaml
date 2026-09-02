@@ -1,0 +1,23 @@
+# Render Blueprint — deploy with: New → Blueprint → pick this repo.
+#
+# Only the export API runs here. The collector stays on a residential host,
+# because OTAs answer datacenter IPs with HTTP 403 (verified in CI).
+services:
+  - type: web
+    name: apix-api
+    runtime: python
+    plan: free
+    region: singapore                # nearest Render region to India
+    rootDir: .
+    buildCommand: pip install -r api/requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: SUPABASE_URL
+        sync: false                  # set in the Render dashboard
+      - key: SUPABASE_KEY
+        sync: false                  # the ANON key — this service only reads
+      - key: APIX_API_KEYS
+        sync: false                  # comma-separated keys for X-API-Key

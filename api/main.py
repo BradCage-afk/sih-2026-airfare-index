@@ -28,9 +28,13 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Security
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "engine"))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                "..", "airfare-scraper"))
+# Works whether uvicorn is started from api/ or from the repo root, which is
+# what a platform like Render does.
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+for _sub in ("engine", "airfare-scraper"):
+    _path = os.path.join(_ROOT, _sub)
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
 import engine                                     # noqa: E402
 from db import FareStore                          # noqa: E402
 
