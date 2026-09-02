@@ -97,3 +97,28 @@ CREATE POLICY runs_anon_read ON scrape_runs
 ALTER VIEW fares_daily SET (security_invoker = on);
 
 GRANT SELECT ON fares, scrape_runs, fares_daily TO anon;
+
+
+-- ---------------------------------------------------------------------------
+-- Intraday points for the "real-time" chart.
+--
+-- fares_daily is the statistical product — one row per day, which is what a
+-- price index publishes. But collection runs every 10 minutes, and a daily
+-- bucket throws all of that away: two days of scraping plots as two points.
+-- This view keeps the intraday shape for the dashboard's index chart.
+CREATE OR REPLACE VIEW fares_hourly AS
+SELECT
+  date_trunc('hour', (scraped_at AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Kolkata') AS bucket,
+  origin,
+  destination,
+  source,
+  advance_window_days,
+  count(*)::int          AS n_flights,
+  round(avg(total_fare)) AS total_fare,
+  min(total_fare)        AS min_fare,
+  max(total_fare)        AS max_fare
+FROM fares
+GROUP BY 1, 2, 3, 4, 5;
+
+ALTER VIEW fares_hourly SET (security_invoker = on);
+GRANT SELECT ON fares_hourly TO anon;

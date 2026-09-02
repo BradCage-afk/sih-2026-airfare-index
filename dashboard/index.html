@@ -77,7 +77,6 @@ body{
 .brand-ps{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;letter-spacing:.10em;
   color:var(--accent);background:var(--accent-soft);padding:3px 7px;border-radius:3px}
 .brand-t{font-size:17px;font-weight:600;letter-spacing:-.015em}
-.brand-s{font-size:12px;color:var(--muted)}
 .runmeta{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--ink-2)}
 .runmeta b{font-weight:600;color:var(--ink)}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:var(--good);
@@ -315,12 +314,10 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
     <div class="brand">
       <span class="brand-ps">SIH26056</span>
       <span class="brand-t">Airfare Price Index &middot; India</span>
-      <span class="brand-s">6-route basket &middot; 5 advance windows &middot; 2 sources</span>
     </div>
     <div class="runmeta mono">
       <span><span class="dot" id="run-dot"></span>last run <b id="run-ts">—</b></span>
       <span>next in <b id="run-next">—</b></span>
-      <span>model <b id="run-model">—</b></span>
     </div>
   </div>
 </div>
@@ -685,9 +682,25 @@ function showTip(tip, host, x, y, title, rows){
 const hideTip = tip => tip.classList.remove("on");
 
 /* ================= index line ================= */
+/* One point per hour when the intraday view is available, otherwise one per
+   day. Collection runs every 10 minutes either way — this only controls how
+   finely that is drawn. */
+function chartSeries(){
+  const pts = DATA.points;
+  if (pts && pts.length >= 2){
+    const base = pts[0].v || 1;
+    return pts.map(p => ({
+      label: new Date(p.t + "Z").toLocaleString("en-GB",
+        {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit",
+         hour12:false, timeZone:"UTC"}),
+      v: 100 * p.v / base, fare: p.v}));
+  }
+  return indexSeries().map(p => ({label: dayLab(p.d), v: p.v, fare: p.fare}));
+}
+
 function drawIndex(){
   const host = document.getElementById("p-index"), tip = document.getElementById("t-index");
-  const data = indexSeries();
+  const data = chartSeries();
   const H = 158, {svg, w} = svgFor(host, H);
   const m = {l:40, r:16, t:12, b:24}, pw = w-m.l-m.r, ph = H-m.t-m.b;
   const vals = data.map(p=>p.v);
@@ -708,7 +721,7 @@ function drawIndex(){
   }
   const step = data.length > 20 ? 5 : (data.length > 10 ? 3 : 2);
   data.forEach((p,i)=>{ if (i%step===0 || i===data.length-1)
-    svg.appendChild(txt(X(i), H-7, dayLab(p.d), "tick", {"text-anchor":"middle"})); });
+    svg.appendChild(txt(X(i), H-7, p.label, "tick", {"text-anchor":"middle"})); });
 
   const dline = data.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)} ${Y(p.v).toFixed(1)}`).join(" ");
   svg.appendChild(S("path",{d:`${dline} L${X(data.length-1)} ${m.t+ph} L${X(0)} ${m.t+ph} Z`},
@@ -728,7 +741,7 @@ function drawIndex(){
     const p = data[i];
     cross.setAttribute("x1",X(i)); cross.setAttribute("x2",X(i)); cross.setAttribute("opacity",1);
     dot.setAttribute("cx",X(i)); dot.setAttribute("cy",Y(p.v)); dot.setAttribute("opacity",1);
-    showTip(tip, host, X(i), Y(p.v), dayLab(p.d), [
+    showTip(tip, host, X(i), Y(p.v), p.label, [
       tipRow("--accent","index", p.v.toFixed(1), true),
       tipRow(null,"basket mean", inr(p.fare))
     ]);
@@ -758,7 +771,7 @@ function drawIndex(){
   const el = document.getElementById("idx-base");
   el.textContent = "";
   const b1 = document.createElement("div");
-  b1.textContent = "Base " + dayLab(0) + " 2026 = 100 · " + inr(data[0].fare) + " basket mean";
+  b1.textContent = "Base " + data[0].label + " = 100 · " + inr(data[0].fare) + " basket mean";
   const b2 = document.createElement("div");
   b2.style.marginTop = "3px";
   b2.textContent = "Now " + inr(data[data.length-1].fare) + " · " +
@@ -1230,10 +1243,32 @@ function drawRuns(){
   });
   const last = DATA.runs[0];
   document.getElementById("run-ts").textContent = last.ts;
-  document.getElementById("run-next").textContent = "1h 56m";
-  document.getElementById("run-model").textContent = last.model;
   document.getElementById("run-dot").className = "dot" + (last.status==="ok"?"":" warn");
+  startCountdown(last.ts);
 }
+/* The collection cadence, in minutes. Runs land on the 10-minute mark, so the
+   next one is simply the last one plus this. */
+const CADENCE_MIN = 10;
+let countdownTimer = null;
+
+function startCountdown(lastTs){
+  // "2026-09-02 13:20" is UTC, as written by the scraper
+  const last = new Date(lastTs.replace(" ", "T") + ":00Z");
+  const el = document.getElementById("run-next");
+  const tick = () => {
+    if (isNaN(last)) { el.textContent = "—"; return; }
+    let next = new Date(last.getTime() + CADENCE_MIN * 60000);
+    const now = new Date();
+    // a missed run should not show a negative countdown
+    while (next <= now) next = new Date(next.getTime() + CADENCE_MIN * 60000);
+    const secs = Math.round((next - now) / 1000);
+    el.textContent = secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
+  };
+  tick();
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(tick, 1000);
+}
+
 function drawRecent(){
   const tbl = document.getElementById("t-recent"); tbl.textContent = "";
   const cols = [["scraped_at",0],["route",0],["carrier",0],["dep",0],["src",0],
@@ -1600,18 +1635,31 @@ async function goLive(){
   if (!SUPABASE.url || !SUPABASE.key) return {live:false, why:"not configured"};
   const since = new Date(Date.now() - SUPABASE.days * 864e5);
 
-  const [daily, recent, runs] = await Promise.all([
+  const [daily, recent, runs, hourly] = await Promise.all([
     rest("fares_daily", {select:"*", day:`gte.${isoDay(since)}`, order:"day.asc", limit:5000}),
     rest("fares", {select:"origin,destination,carrier,source,advance_window_days,base_fare," +
                           "taxes,udf,convenience_fee,total_fare,model_used,scraped_at",
                    order:"scraped_at.desc", limit:SUPABASE.recent}),
-    rest("scrape_runs", {select:"*", order:"started_at.desc", limit:SUPABASE.runs})
+    rest("scrape_runs", {select:"*", order:"started_at.desc", limit:SUPABASE.runs}),
+    // optional: the page still works if this view has not been created yet
+    rest("fares_hourly", {select:"bucket,total_fare,n_flights", order:"bucket.asc", limit:20000})
+      .catch(err => { console.warn("fares_hourly unavailable:", err.message); return []; })
   ]);
 
   // Connected fine, just nothing collected yet — a state of its own, not an error.
   if (!daily.length) return {live:false, why:"empty", runs:runs.length};
 
   const {rows, days} = adoptDaily(daily);
+
+  // Collapse the intraday view to one index point per hour, across the basket.
+  const buckets = new Map();
+  for (const h of hourly){
+    let e = buckets.get(h.bucket);
+    if (!e){ e = {s:0, n:0}; buckets.set(h.bucket, e); }
+    e.s += +h.total_fare || 0; e.n++;
+  }
+  DATA.points = [...buckets.entries()].sort((a,b) => a[0] < b[0] ? -1 : 1)
+    .map(([bucket, e]) => ({t: bucket, v: e.s / e.n}));
 
   DATA.rows.length = 0; DATA.rows.push(...rows);
   DATA.meta.start = days[0];

@@ -13,6 +13,8 @@ DASH = TMP + "/dash-live.png"
 CURVE = TMP + "/chart-curve.png"
 PREM  = TMP + "/chart-premium.png"
 CARR  = TMP + "/chart-carriers.png"
+MAP   = TMP + "/chart-map.png"
+REC   = TMP + "/chart-record.png"
 
 NAVY   = RGBColor(0x1F, 0x49, 0x7D)
 BLUE   = RGBColor(0x4F, 0x81, 0xBD)
@@ -202,35 +204,28 @@ write(prob.text_frame, [
 
 textbox(s2, 0.45, 2.26, 6.2, 1.4, [
     ("Proposed Solution", 15, True, NAVY),
-    ("A fixed basket of routes, re-priced every 10 minutes, published as a "
-     "price index — and as a plain answer for travellers: is today a good "
-     "day to book?", 15, False, INK, 8),
+    ("A fixed basket of routes, re-priced every 10 minutes and published "
+     "as a price index.", 15, False, INK, 8),
 ])
 ln = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.47), Inches(2.56),
                          Inches(1.5), Inches(0.03))
 ln.fill.solid(); ln.fill.fore_color.rgb = BLUE; ln.line.fill.background()
 ln.shadow.inherit = False
 
-heading(s2, 0.45, 3.92, 6.2, "Innovation", 14)
-bullets(s2, 0.45, 4.35, 6.2, 1.9, [
-    "Fares found by shape, not by CSS selectors.",
-    "The model is config — it fails over when one dies.",
-    "Robots-checked before every single fetch.",
-    "Never estimates: unpublished fields stay NULL.",
-], size=14, gap=10)
+s2.shapes.add_picture(MAP, Inches(0.45), Inches(3.35), width=Inches(5.75))
 
-run = panel(s2, 0.45, 6.05, 6.2, 0.72, fill=PALE, line=None)
-write(run.text_frame, [
-    ("RUNNING NOW  ·  2,342 fares  ·  6 routes × 5 windows  ·  every 10 minutes",
-     13, True, NAVY)])
-
-s2.shapes.add_picture(CURVE, Inches(7.0), Inches(1.55), width=Inches(5.9))
-textbox(s2, 7.0, 5.58, 5.9, 1.15, [
+s2.shapes.add_picture(CURVE, Inches(7.0), Inches(1.24), width=Inches(5.9))
+textbox(s2, 7.0, 4.62, 5.9, 0.85, [
     ("Real fares from our own scraper.", 13.5, True, NAVY),
-    ("Booking a month ahead saves 40% on BLR–HYD and nothing at all on "
-     "DEL–BOM. Nobody publishes that spread — which is exactly why it has "
-     "to be measured rather than assumed.", 13, False, GREY, 4),
+    ("Booking a month ahead saves 40% on BLR–HYD and nothing on DEL–BOM. "
+     "Nobody publishes that spread — so it has to be measured.", 13, False, GREY, 4),
 ])
+
+heading(s2, 7.0, 5.58, 5.9, "Innovation", 14)
+bullets(s2, 7.0, 6.00, 5.9, 0.8, [
+    "Fares found by shape, not by CSS selectors.",
+    "The model is config; it fails over automatically.",
+], size=13, gap=6)
 
 # =====================================================================  S3
 s3 = prs.slides[2]
@@ -264,20 +259,15 @@ write(ev.text_frame, [
     ("2,342 live fares in Postgres · 14 scheduled runs · zero failed extractions "
      "· a public dashboard reading the database on every load.", 14, False, INK, 4)])
 
-heading(s3, 0.45, 4.72, 6.0, "Technologies", 14)
-bullets(s3, 0.45, 5.15, 6.0, 1.6, [
+s3.shapes.add_picture(REC, Inches(0.45), Inches(4.58), width=Inches(4.45))
+
+heading(s3, 7.0, 4.62, 5.9, "Technologies", 14)
+bullets(s3, 7.0, 5.05, 5.9, 1.7, [
     "Python · Playwright headless Chromium",
     "LLM over an OpenAI-compatible endpoint",
     "Pydantic validation · Supabase Postgres",
-    "cron on a residential host · HTML/SVG dashboard",
-], size=13.5, gap=6)
-
-heading(s3, 7.0, 4.72, 5.9, "Why the trim matters", 14)
-bullets(s3, 7.0, 5.15, 5.9, 1.6, [
-    "A results page is mostly navigation and offers.",
-    "Sending only the fare rows keeps the prompt short —",
-    "which is what stops a model truncating its JSON.",
-], size=13.5, gap=6)
+    "cron on a residential host · HTML + SVG dashboard",
+], size=13.5, gap=7)
 
 # =====================================================================  S4
 s4 = prs.slides[3]
