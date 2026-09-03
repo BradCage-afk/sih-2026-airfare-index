@@ -5,7 +5,7 @@ India through Automated Web Scraping of Airline and Online Travel Aggregator Por
 for Augmentation of the Consumer Price Index (CPI)
 **Theme:** Travel & Tourism · **Category:** Software · **Ministry:** MoSPI
 
-> Every number in this document came from the running system on 2 Sep 2026 and can be
+> Every number in this document came from the running system on 4 Sep 2026 and can be
 > re-derived live. Where something is a limitation, it is written as a limitation —
 > a judge who finds a gap you did not disclose will trust nothing else you said.
 
@@ -13,15 +13,22 @@ for Augmentation of the Consumer Price Index (CPI)
 
 ## 0. The 60-second answer
 
-We built a price-collection pipeline that re-prices a fixed basket of six Indian city
-pairs every ten minutes, extracts structured fares with an LLM, validates them against
-a strict schema, and writes them to Postgres. A public dashboard reads that database
-directly — once as a statistical index for MoSPI, once as a plain-language "should I
-book?" answer for travellers.
+**APIx is a daily airfare inflation index for CPI augmentation.**
 
-**It is running now:** 14,718 fares, 128 scheduled runs, 126 of them clean.
+A collector re-prices a fixed basket of the 15 busiest domestic city pairs across
+five booking lead times, every ten minutes. A calculation engine turns those fares
+into an index using weighted Jevons aggregation — the method Eurostat and ONS use
+for elementary aggregates — weighted by a matrix of route seat share × booking lead
+time. The result is published two ways: a statistical portal for officials, and an
+authenticated REST API that MoSPI's systems can ingest directly.
 
----
+**It is running now:** 36,076 fares, 298 collection runs, 98.7% clean.
+**Published:** APIx 105.80 on 4 Sep against a 1 Sep base — airfare inflation of +5.8%.
+**Live:** `apix-portal.pages.dev` · `apix-api-n5ux.onrender.com/docs`
+
+It marks its own figures **provisional** when coverage falls below 60% of basket
+weight. That discipline — refusing to present a thin figure as settled — is the
+thing that distinguishes an index from an average.
 
 ## 1. Code quality
 
@@ -39,9 +46,11 @@ book?" answer for travellers.
 | `sources.py` | 112 | Source registry — one dict per portal |
 | `selftest.py` | 111 | 13 offline end-to-end checks |
 | `ratelimit.py` | 40 | Shared sliding-window limiter |
-| `dashboard/index.html` | 1,751 | Single-file dashboard (1,201 lines JS, no framework) |
+| `engine/engine.py` | 300 | Jevons aggregation, weighting matrix, cleaning report, revisions |
+| `api/main.py` | 230 | Export API: monthly, daily, latest, revisions, health |
+| `portal/index.html` | 1,900 | Statistical release portal (no framework, no build step) |
 
-**~2,400 lines of Python, ~1,750 of front-end. No framework, no build step.**
+**~2,900 lines of Python, ~1,900 of front-end. No framework, no build step.**
 
 ### Principles we can defend
 
@@ -167,56 +176,57 @@ bigger scraper.
 ## 3. System architecture
 
 ```
-  ┌──────────────┐   robots.txt (RFC 9309) checked per host, cached
-  │  OTA portal  │◄──────────────────────────────────────────────┐
-  └──────┬───────┘                                               │
-         │ rendered HTML                                         │
-         ▼                                                       │
-  ┌──────────────┐  finds the fare block by STRUCTURE            │
-  │  fetcher.py  │  (repeated "time + ₹price" rows),             │
-  │  Playwright  │  13,000 chars → ~3,700                        │
-  └──────┬───────┘                                               │
-         │ fare rows (text)                                      │
-         ▼                                                       │
-  ┌──────────────┐  OpenAI-compatible endpoint; model is config  │
-  │ extractor.py │  chunked ≤800 chars → strict JSON             │
-  │   + LLM      │  1 retry stricter, then model failover        │
-  └──────┬───────┘                                               │
-         │ candidate records                                     │
-         ▼                                                       │
-  ┌──────────────┐  Pydantic: schema + plausible-range check     │
-  │  validation  │  never estimates a missing field              │
-  └──────┬───────┘                                               │
-         │ validated records                                     │
-         ▼                                                       │
-  ┌──────────────┐   INSERT-only; scraped_at carries the series  │
-  │  Postgres    │   fares · scrape_runs                         │
-  │  (Supabase)  │   views: fares_daily · fares_hourly           │
-  └──────┬───────┘                                               │
-         │ REST (anon key, RLS read-only)                        │
-         ▼                                                       │
-  ┌──────────────┐   two audiences, one dataset                  │
-  │  dashboard   │   index for MoSPI · "should I book?"          │
-  └──────────────┘                                               │
-                                                                 │
-  main.py orchestrates ──────────────────────────────────────────┘
-  tiers · deadlines · 3–5 s randomised delays · shared rate limiter
-  · structured JSON logging · one failure never ends the run
+  ┌──────────────┐  robots.txt (RFC 9309) checked per host, cached
+  │  OTA portal  │◄─────────────────────────────────────────────┐
+  └──────┬───────┘                                              │
+         ▼  rendered HTML                                       │
+  ┌──────────────┐  finds fares by STRUCTURE (repeated           │
+  │  COLLECT     │  "time + ₹price" rows) → 13,000 chars → 3,700 │
+  └──────┬───────┘                                              │
+         ▼                                                      │
+  ┌──────────────┐  OpenAI-compatible endpoint; model is config │
+  │  EXTRACT     │  chunked ≤800 chars → strict JSON            │
+  └──────┬───────┘  1 retry stricter, then model failover        │
+         ▼                                                      │
+  ┌──────────────┐  Pydantic schema + plausible-range check      │
+  │  VALIDATE    │  never estimates a missing field              │
+  └──────┬───────┘                                              │
+         ▼                                                      │
+  ┌──────────────┐  fares · scrape_runs · apix_daily             │
+  │  POSTGRES    │  apix_revisions · views: daily, hourly        │
+  └──────┬───────┘  INSERT-only; scraped_at is the time axis     │
+         ▼                                                      │
+  ┌──────────────┐  minimum logical fare → price relatives →     │
+  │  INDEX       │  weighted Jevons; weights = route seats       │
+  │  ENGINE      │  × booking lead time; cells below 3 obs       │
+  └──────┬───────┘  excluded; coverage below 60% ⇒ provisional   │
+         ▼                                                      │
+  ┌──────────────┬──────────────┐                               │
+  │  PORTAL      │  EXPORT API  │  statistical release ·         │
+  │  (Cloudflare)│  (Render)    │  authenticated REST for MoSPI  │
+  └──────────────┴──────────────┘                               │
+                                                                │
+  cron on a residential host ──────────────────────────────────┘
+  every 10 min · flock · robots gate · 3–5 s delays · rate limiter
 ```
 
-### The two design decisions worth defending
+### The four decisions worth defending
 
-**1. Structure-based extraction, not CSS selectors.** Every element whose text contains
-both a `HH:MM` and a `₹1,234` is a candidate fare row; the innermost such elements are
-the flights, and their common ancestor is the listing. A site redesign changes class
-names — it does not stop a fare row from having a time and a price. This is why the
-scraper has not broken once during the build.
+**1. Structure-based extraction, not CSS selectors.** Fare rows are found by shape — a
+time next to a rupee price. A site redesign changes class names; it does not stop a fare
+row from having a time and a price. The scraper has not broken once during the build.
 
-**2. The LLM is a parser, not an oracle.** It converts semi-structured text into JSON.
-It is never asked to estimate, infer or reconcile. That is what makes an LLM safe in a
-statistical pipeline — and it is why the model can be swapped freely.
+**2. The LLM is a parser, not an oracle.** It converts semi-structured text to JSON. It
+is never asked to estimate, infer or reconcile. That is what makes an LLM safe inside a
+statistical pipeline, and why the model can be swapped freely.
 
----
+**3. Geometric, not arithmetic, aggregation.** Jevons is the international standard for
+elementary aggregates because it is symmetric: a fare that doubles and one that halves
+cancel. An arithmetic mean would report inflation where there was none.
+
+**4. The system refuses to overclaim.** Provisional flags, exclusion rules, NULL rather
+than estimated components, a published cleaning report, and a revision log. Each is a
+place the system says "I do not know" instead of guessing.
 
 ## 4. Database design and data flow
 
@@ -227,6 +237,14 @@ fares                              -- one row per observed flight, INSERT-only
   id, origin, destination, carrier, departure_time, source,
   advance_window_days, base_fare, taxes, udf, convenience_fee,
   total_fare, model_used, scraped_at
+
+apix_daily                         -- the published index, one row per day
+  day, base_day, apix, provisional, by_window, by_route,
+  routes_covered, observations, weight_covered, method
+
+apix_revisions                     -- every change to a published figure
+  day, previous_apix, new_apix, previous_provisional,
+  new_provisional, reason, revised_at
 
 scrape_runs                        -- one row per source per run
   started_at, tier, source, model_used, pages_fetched,
@@ -373,19 +391,34 @@ Disclosing these is a strength. Each has a reasoned position.
 thoroughly and it is genuinely not there.** We chose compliance over completeness, and
 CPI measures what consumers pay — which is `total_fare`.
 
-**2. One working source.** Ixigo disallows its results path; IndiGo, Air India and Akasa
-block automated traffic outright. Mitigation is real, though: the one OTA returns **all
-six major carriers**, so airline coverage does not actually depend on airline sites.
+**2. One working source — 16 portals surveyed.** Ten disallow us in `robots.txt`
+(Ixigo, EaseMyTrip, Goibibo, Paytm, Kayak, Skyscanner), four are unreachable
+(Yatra, MakeMyTrip and others), and every airline site blocks automation. HappyFares
+permits us and renders 142 fare rows, but its results URL ignores every date parameter
+and its Angular date picker does not respond to programmatic events — so it cannot
+serve lead-time buckets without coupling to one site's internals.
+
+Mitigation is real: the one OTA returns **all six major carriers**, so airline coverage
+does not depend on airline sites. But a single source remains the honest limitation, and
+the fix is an access agreement rather than more engineering — which is precisely the
+argument for a ministry operating this.
 
 **3. Short history.** The index began collecting on 1 Sep 2026. Traveller verdicts need
 about three days of baseline, and the dashboard **says "Still collecting" rather than
 guessing** — deliberately, because a confident verdict computed from one day is worse
 than no verdict.
 
-**4. Model availability is unstable.** Three models reached end-of-life during the build,
+**4. Lead-time weighting is uniform, deliberately.** The weighting matrix has a real
+route dimension (seat shares) and a uniform lead-time dimension. No public source
+publishes the share of bookings made at each notice period — only "best time to book"
+advice, which is a different quantity. A fabricated distribution would bias every figure
+invisibly, so the default is uniform and every API response says so. MoSPI or DGCA can
+supply the real distribution and it drops straight in.
+
+**5. Model availability is unstable.** Three models reached end-of-life during the build,
 one mid-run. The pipeline now fails over automatically and records `model_used` per row.
 
-**5. Basket size.** Six routes is a demonstration basket, not a national sample. A
+**6. Basket size.** Six routes is a demonstration basket, not a national sample. A
 production index needs route weights derived from DGCA passenger volumes.
 
 ---
@@ -394,9 +427,9 @@ production index needs route weights derived from DGCA passenger volumes.
 
 | Criterion | Weight | Our evidence |
 |---|---|---|
-| Innovation & uniqueness | 25% | Structure-based extraction; model-agnostic parsing with failover; RFC 9309 parser written because the stdlib is wrong; two audiences from one dataset |
-| Problem understanding | 20% | Booking-window dimension identified as the gap CPI misses; measured, and it differs per route (+40% BLR–HYD, ~0% DEL–BOM) |
-| Technical feasibility | 20% | Running now: 14,718 fares, 128 runs, 98.4% clean, ₹0/month |
+| Innovation & uniqueness | 25% | Structure-based extraction; model-agnostic parsing with failover; RFC 9309 parser written because the stdlib is wrong; a published index that marks its own figures provisional |
+| Problem understanding | 20% | Framed as inflation measurement, not fare tracking; booking-window dimension identified as the gap a single CPI quote misses; Jevons aggregation chosen because it is what statistical offices use |
+| Technical feasibility | 20% | Running now: 36,076 fares, 298 runs, 98.7% clean, ₹0/month, portal and API both live |
 | Impact & scalability | 20% | MoSPI, DGCA, citizens; linear scaling; honest bottleneck named |
 | Presentation quality | 15% | Six slides, ~670 words, charts drawn from live data, deck regenerated from the database |
 
@@ -424,6 +457,21 @@ tell you whether today's price is normal.
 **"What happens if the portal changes its layout?"** Nothing, most likely — extraction keys
 off structure, not class names. If it did, an explicit selector can be pinned per source
 without touching any other code.
+
+**"Why Jevons rather than an average?"** A geometric mean is symmetric: a fare that
+doubles and one that halves cancel to no change, which is correct. An arithmetic mean
+would report +25% inflation on that pair. Eurostat and ONS both use Jevons for
+elementary aggregates, so this is the standard, not a preference.
+
+**"What does provisional mean?"** That the day covered less than 60% of basket weight or
+fewer than three lead-time buckets. The figure is still computed and served, with the
+reason attached — it just is not comparable with a full-basket period. Statistical
+offices publish provisional figures the same way.
+
+**"How would MoSPI actually consume this?"** `GET /api/v1/apix?month=2026-09` with an
+API key. The response carries the value, the reference period, the method string, the
+cleaning report and the provisional flag, so an ingested figure can never be separated
+from how it was produced. There is a revision endpoint for anything that later changed.
 
 **"Can this extend beyond air travel?"** Yes, and it is the natural next step: rail and
 intercity bus fares have the same booking-window behaviour and the same CPI relevance.

@@ -15,6 +15,8 @@ PREM  = TMP + "/chart-premium.png"
 CARR  = TMP + "/chart-carriers.png"
 MAP   = TMP + "/chart-map.png"
 CAD   = TMP + "/chart-cadence.png"
+APIXC = TMP + "/chart-apix.png"
+SURV  = TMP + "/chart-survey.png"
 REC   = TMP + "/chart-record.png"
 
 NAVY   = RGBColor(0x1F, 0x49, 0x7D)
@@ -194,19 +196,20 @@ write(tb.text_frame, blocks)
 # =====================================================================  S2
 s2 = prs.slides[1]
 set_team_oval(s2)
-set_title(s2, "A DAILY AIRFARE PRICE INDEX FOR INDIA", 26)
+set_title(s2, "MEASURING AIRFARE INFLATION FOR THE CPI", 26)
 remove(shape_by_name(s2, "TextBox 8"))
 
 prob = panel(s2, 0.45, 1.22, 6.2, 0.82, fill=PALE, line=None)
 write(prob.text_frame, [
     ("THE PROBLEM", 11, True, NAVY),
-    ("CPI prices air travel from occasional manual quotes — but an airfare is "
-     "not one price. It depends on when you book.", 14, False, INK, 4)])
+    ("India's CPI prices air travel from occasional manual quotes. An airfare "
+     "is not one price — it depends on when you book — so a single quote "
+     "cannot represent it.", 14, False, INK, 4)])
 
 textbox(s2, 0.45, 2.26, 6.2, 1.4, [
     ("Proposed Solution", 15, True, NAVY),
-    ("The 15 busiest domestic city pairs, re-priced every 10 minutes and "
-     "published as a price index.", 15, False, INK, 8),
+    ("APIx — a daily airfare inflation index, built by the method Eurostat "
+     "and ONS use and published for MoSPI to ingest.", 15, False, INK, 8),
 ])
 ln = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.47), Inches(2.56),
                          Inches(1.5), Inches(0.03))
@@ -215,17 +218,17 @@ ln.shadow.inherit = False
 
 s2.shapes.add_picture(MAP, Inches(0.45), Inches(3.35), width=Inches(5.75))
 
-s2.shapes.add_picture(CURVE, Inches(7.0), Inches(1.24), width=Inches(5.9))
+s2.shapes.add_picture(APIXC, Inches(7.0), Inches(1.24), width=Inches(5.9))
 textbox(s2, 7.0, 4.62, 5.9, 0.85, [
-    ("Real fares from our own scraper.", 13.5, True, NAVY),
-    ("Booking a month ahead saves 40% on BLR–HYD and nothing on DEL–BOM. "
-     "Nobody publishes that spread — so it has to be measured.", 13, False, GREY, 4),
+    ("Published from live observations.", 13.5, True, NAVY),
+    ("36,000 fares across 298 runs. Days below the coverage threshold publish "
+     "as provisional, not as settled.", 13, False, GREY, 4),
 ])
 
 heading(s2, 7.0, 5.58, 5.9, "Innovation", 14)
 bullets(s2, 7.0, 6.00, 5.9, 0.8, [
-    "Fares found by shape, not by CSS selectors.",
-    "The model is config; it fails over automatically.",
+    "Weighted Jevons — the international standard method.",
+    "Weights form a matrix: route seats × booking lead time.",
 ], size=13, gap=6)
 
 # =====================================================================  S3
@@ -235,12 +238,12 @@ set_title(s3, "TECHNICAL APPROACH", 28)
 remove(shape_by_name(s3, "TextBox 8"))
 
 heading(s3, 0.45, 1.24, 12.4, "Methodology — one route, one booking window", 15)
-STEPS = [("1", "Robots gate", "RFC 9309 check\nbefore any fetch"),
-         ("2", "Fetch", "Headless browser\nrenders the page"),
-         ("3", "Trim", "13,000 chars\ndown to 3,700"),
-         ("4", "Extract", "LLM → strict JSON\nretry, then fail over"),
-         ("5", "Validate", "Schema + range\nnever estimates"),
-         ("6", "Store", "INSERT with the\nmodel that read it")]
+STEPS = [("1", "Collect", "Robots-gated fetch\nevery 10 minutes"),
+         ("2", "Extract", "LLM → strict JSON\nretry, then fail over"),
+         ("3", "Validate", "Schema + range\nnever estimates"),
+         ("4", "Clean", "Min 3 observations\nexclusions published"),
+         ("5", "Index", "Weighted Jevons\nroute × lead time"),
+         ("6", "Publish", "Portal + REST API\nfor MoSPI ingestion")]
 bw, gap = 1.86, 0.24
 for i, (n, t, d) in enumerate(STEPS):
     x = 0.45 + i * (bw + gap)
@@ -257,8 +260,9 @@ for i, (n, t, d) in enumerate(STEPS):
 ev = panel(s3, 0.45, 3.55, 12.4, 0.92, fill=PALE, line=None)
 write(ev.text_frame, [
     ("BUILT AND RUNNING", 12, True, NAVY),
-    ("15,000+ live fares in Postgres · 132 scheduled runs, 98% clean · a public "
-     "dashboard reading the database on every load.", 14, False, INK, 4)])
+    ("36,076 fares · 298 runs, 98.7% clean · APIx published daily and monthly · "
+     "live portal and authenticated REST API, both reading Postgres directly.",
+     14, False, INK, 4)])
 
 s3.shapes.add_picture(REC, Inches(0.45), Inches(4.58), width=Inches(4.45))
 s3.shapes.add_picture(CAD, Inches(5.30), Inches(4.62), width=Inches(4.6))
@@ -289,20 +293,20 @@ bullets(s4, 0.45, 1.70, 6.0, 2.0, [
 cost = panel(s4, 0.45, 3.95, 6.0, 0.95, fill=PALE, line=None)
 write(cost.text_frame, [
     ("MANUAL COLLECTION vs THIS PIPELINE", 12, True, NAVY),
-    ("periodic → every 10 minutes  ·  one quoted price → 5 lead times  ·  "
-     "field notes → URL, timestamp and model stored per fare", 13, False, INK, 5)])
+    ("periodic → every 10 minutes  ·  one quoted price → 75 priced cells  ·  "
+     "field notes → source, timestamp and model stored per fare", 13, False, INK, 5)])
 
-s4.shapes.add_picture(CARR, Inches(0.45), Inches(5.08), width=Inches(6.0))
+s4.shapes.add_picture(SURV, Inches(0.45), Inches(4.92), width=Inches(5.6))
 
 heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did", 15)
-RISKS = [("Airline sites block automation",
-          "Basket is OTA-first; an official feed closes the gap."),
+RISKS = [("16 portals surveyed, one is usable",
+          "Ten disallow us, four block us, airlines refuse automation entirely."),
          ("Cloud IPs are blocked too",
           "Verified in CI — so collection runs from a residential host."),
          ("Models get retired without notice",
           "Three died during this build. Extraction now fails over."),
-         ("A model could invent a fare",
-          "Strict schema; components stay NULL rather than guessed.")]
+         ("Thin coverage would mislead",
+          "Days below 60% basket weight publish as provisional, with the reason.")]
 y = 1.70
 for risk, fix in RISKS:
     panel(s4, 7.0, y, 5.9, 0.95, fill=PALER, line=LINE)
@@ -332,19 +336,21 @@ bullets(s5, 0.45, 5.05, 6.3, 1.2, [
 fut = panel(s5, 0.45, 6.10, 6.3, 0.72, fill=PALE, line=None)
 write(fut.text_frame, [
     ("NEXT", 11, True, NAVY),
-    ("More city pairs, a second permitted portal, and rail and bus on the "
-     "same pipeline.", 13, False, INK, 3)])
+    ("Official DGCA and CES weights, source access via the ministry, then "
+     "rail and bus on the same pipeline.", 13, False, INK, 3)])
 
 heading(s5, 7.0, 1.24, 5.9, "What changes", 15)
-bullets(s5, 7.0, 1.70, 5.9, 1.7, [
-    "A daily series, not occasional manual quotes.",
-    "The booking-window dimension CPI cannot see.",
-    "Every point traceable to source, time and model.",
-], size=14, gap=10)
+bullets(s5, 7.0, 1.70, 5.9, 2.1, [
+    "A daily airfare inflation series for the CPI transport group.",
+    "The booking-window dimension a single quote cannot capture.",
+    "Machine-readable: MoSPI systems ingest it, nobody retypes it.",
+    "Every figure carries its method, coverage and revision history.",
+], size=13.5, gap=9)
 
 s5.shapes.add_picture(DASH, Inches(7.0), Inches(3.82), width=Inches(5.25))
-textbox(s5, 7.0, 6.52, 5.9, 0.38,
-        [("Live at real-time-airfare.vercel.app", 12.5, True, NAVY)])
+textbox(s5, 7.0, 6.44, 5.9, 0.5,
+        [("Portal: apix-portal.pages.dev", 12, True, NAVY),
+         ("API: apix-api-n5ux.onrender.com/docs", 12, True, NAVY, 2)])
 
 # =====================================================================  S6
 s6 = prs.slides[5]
@@ -369,12 +375,12 @@ bullets(s6, 0.45, 4.28, 6.1, 1.5, [
 
 heading(s6, 7.0, 1.24, 5.9, "Our own field research", 14)
 bullets(s6, 7.0, 1.67, 5.9, 3.4, [
-    "Portal survey: one OTA permits and serves us; two "
-    "disallow or block outright.",
+    "Portal survey, 16 sites: one is usable. Ten disallow us in robots.txt, "
+    "four are unreachable, and every airline site blocks automation.",
     "Python's standard robots parser wrongly permits paths "
     "these sites disallow — we implemented RFC 9309.",
-    "Of 56 free-tier models, six answered; three reached "
-    "end-of-life during the build, one mid-run.",
+    "Of 56 free-tier models, six answered; three reached end-of-life during "
+    "the build, one mid-run — hence automatic model failover.",
     "Splitting the prompt into 800-character chunks took a "
     "small model from 1 of 40 fares to 38.",
 ], size=13.5, gap=9)
