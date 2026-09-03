@@ -110,6 +110,24 @@ def _envelope(rows: list, subset: list, month: str | None = None) -> IndexRespon
     )
 
 
+@app.get("/", tags=["ops"], include_in_schema=False)
+def root():
+    """Anyone who opens the bare address should learn what this is and where
+    to go next, rather than meeting a bare 404."""
+    return {
+        "service": "APIx — Airfare Price Index",
+        "purpose": "Machine-readable airfare index for CPI augmentation (SIH26056)",
+        "documentation": "/docs",
+        "endpoints": {
+            "monthly index": "/api/v1/apix?month=YYYY-MM",
+            "date range": "/api/v1/apix?from=YYYY-MM-DD&to=YYYY-MM-DD",
+            "latest figure": "/api/v1/apix/latest",
+            "service health": "/api/v1/health",
+        },
+        "authentication": "send the key as an X-API-Key header; /api/v1/health is open",
+    }
+
+
 @app.get("/api/v1/apix", response_model=IndexResponse, tags=["index"])
 def get_apix(
     month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$", examples=["2026-09"]),
