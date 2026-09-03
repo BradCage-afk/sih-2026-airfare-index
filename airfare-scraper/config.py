@@ -47,8 +47,35 @@ ROUTES: list[tuple[str, str]] = list(ROUTE_SEATS)
 _TOTAL_SEATS = sum(ROUTE_SEATS.values())
 ROUTE_WEIGHTS: dict = {r: n / _TOTAL_SEATS for r, n in ROUTE_SEATS.items()}
 
+
+
 # Advance-booking windows, in days from today.
 ADVANCE_WINDOWS: list[int] = [1, 7, 15, 30, 45]
+
+# ------------------------------------------------------- weighting matrix ---
+# The index weights a cell by route AND by booking lead time, so the weight is
+# a matrix over (route x lead time) rather than a single vector.
+#
+# The route dimension is real: shares of scheduled seats.
+#
+# The lead-time dimension is UNIFORM BY DEFAULT and that is a deliberate,
+# stated choice, not an oversight. Weighting it properly needs the share of
+# bookings made at each notice period, which no public source publishes —
+# only "best time to book" advice, which is a different thing. A fabricated
+# distribution would bias every published figure invisibly, so the default
+# treats lead times equally and says so. MoSPI or DGCA can supply the real
+# distribution and it drops straight in here.
+LEAD_TIME_WEIGHTS: dict = {w: 1.0 / len(ADVANCE_WINDOWS) for w in ADVANCE_WINDOWS}
+LEAD_TIME_WEIGHT_SOURCE = "uniform (pending an official booking-curve distribution)"
+
+def cell_weight(origin: str, destination: str, advance_days: int) -> float:
+    """One entry of the weighting matrix: route share x lead-time share."""
+    route = ROUTE_WEIGHTS.get((origin, destination))
+    if route is None:
+        route = ROUTE_WEIGHTS.get((destination, origin))
+    if route is None:
+        route = min(ROUTE_WEIGHTS.values())
+    return route * LEAD_TIME_WEIGHTS.get(advance_days, 1.0 / len(ADVANCE_WINDOWS))
 
 # Sources scraped by default. Any key from sources.SOURCES works.
 DEFAULT_SOURCES: list[str] = ["cleartrip", "indigo"]

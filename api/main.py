@@ -85,11 +85,15 @@ class IndexResponse(BaseModel):
     index: str = "APIx"
     base_period: Optional[str]
     method: Optional[str]
+    weighting: Optional[str] = Field(
+        None, description="How cells are weighted; states any dimension that is uniform")
     unit: str = "index, base period = 100"
     generated_at: str
     monthly: Optional[float] = Field(None, description="Geometric mean of the month's dailies")
     month: Optional[str] = None
     provisional: Optional[bool] = None
+    cleaning: Optional[dict] = Field(
+        None, description="What was excluded before the index was computed, and why")
     days: list[DayIndex] = []
 
 
@@ -102,6 +106,8 @@ def _envelope(rows: list, subset: list, month: str | None = None) -> IndexRespon
     return IndexResponse(
         base_period=rows[0]["base_day"] if rows else None,
         method=next((r.get("method") for r in rows if r.get("method")), None),
+        weighting=next((r.get("weighting") for r in rows if r.get("weighting")), None),
+        cleaning=next((r.get("cleaning") for r in reversed(rows) if r.get("cleaning") is not None), None),
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         monthly=monthly,
         month=month,
@@ -121,6 +127,8 @@ def root():
         "endpoints": {
             "monthly index": "/api/v1/apix?month=YYYY-MM",
             "date range": "/api/v1/apix?from=YYYY-MM-DD&to=YYYY-MM-DD",
+            "monthly series": "/api/v1/apix/monthly",
+            "revision history": "/api/v1/apix/revisions",
             "latest figure": "/api/v1/apix/latest",
             "service health": "/api/v1/health",
         },
@@ -149,6 +157,44 @@ def get_apix(
         hi = date_to.isoformat() if date_to else "9999-99-99"
         subset = [r for r in rows if lo <= r["day"] <= hi]
     return _envelope(rows, subset, month)
+
+
+@app.get("/api/v1/apix/monthly", tags=["index"])
+def get_monthly(_: str = Depends(require_key)):
+    """The monthly series — the cadence CPI is actually published at.
+
+    A month containing any provisional day is itself provisional, so a
+    consuming system never mistakes a partial month for a settled one.
+    """
+    rows = _series()
+    if not rows:
+        raise HTTPException(503, "no index data available yet")
+    return {
+        "index": "APIx",
+        "unit": "index, base period = 100",
+        "base_period": rows[0]["base_day"],
+        "method": next((r.get("method") for r in rows if r.get("method")), None),
+        "weighting": next((r.get("weighting") for r in rows if r.get("weighting")), None),
+        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "months": engine.monthly(rows),
+    }
+
+
+@app.get("/api/v1/apix/revisions", tags=["index"])
+def get_revisions(_: str = Depends(require_key)):
+    """Every change made to a previously published figure.
+
+    Published statistics get revised; the record of what changed is part of
+    the statistic, not an afterthought.
+    """
+    try:
+        data = (FareStore()._client.table("apix_revisions")
+                .select("*").order("revised_at", desc=True).limit(200).execute().data)
+    except Exception:
+        data = []
+    return {"revisions": data, "count": len(data),
+            "policy": "a published day is never overwritten silently; "
+                      "each change is recorded before the new value is stored"}
 
 
 @app.get("/api/v1/apix/latest", response_model=IndexResponse, tags=["index"])

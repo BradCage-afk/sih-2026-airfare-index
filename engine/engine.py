@@ -67,8 +67,15 @@ def route_weight(origin: str, destination: str) -> float:
     return w if w is not None else min(config.ROUTE_WEIGHTS.values())
 
 
+CLEANING: dict = defaultdict(int)          # reason -> count, for the audit report
+
+
 def load_cells(client, since: str | None = None) -> dict:
-    """day -> {(origin, destination, window): (min_fare, n_flights)}"""
+    """day -> {(origin, destination, window): (min_fare, n_flights)}
+
+    Also records why anything was dropped, so the cleaning step is auditable
+    rather than invisible."""
+    CLEANING.clear()
     q = client.table("fares_daily").select(
         "day,origin,destination,advance_window_days,min_fare,n_flights")
     if since:
@@ -78,9 +85,11 @@ def load_cells(client, since: str | None = None) -> dict:
     for r in rows:
         n = int(r["n_flights"] or 0)
         if n < MIN_OBSERVATIONS:
+            CLEANING[f"cell below {MIN_OBSERVATIONS} observations"] += 1
             continue
         price = float(r["min_fare"] or 0)
         if price <= 0:
+            CLEANING["non-positive fare"] += 1
             continue
         pair = (r["origin"], r["destination"])
         # A route the basket does not define must not enter the index, and the
@@ -89,7 +98,8 @@ def load_cells(client, since: str | None = None) -> dict:
             if (pair[1], pair[0]) in config.ROUTE_SEATS:
                 pair = (pair[1], pair[0])          # fold onto the basket's direction
             else:
-                continue                            # not in the basket at all
+                CLEANING["route outside the basket"] += 1
+                continue
         key = (pair[0], pair[1], int(r["advance_window_days"]))
         prev = cells[r["day"]].get(key)
         # folding two directions together: keep the cheaper, sum the observations
@@ -119,10 +129,11 @@ def compute(cells: dict, base_day: str, day: str) -> dict:
         rel = cur[key][0] / base[key][0]
         if not (REL_FLOOR <= rel <= REL_CEIL):
             dropped += 1
+            CLEANING[f"price relative outside {REL_FLOOR}-{REL_CEIL}"] += 1
             continue
-        origin, destination, _ = key
+        origin, destination, window = key
         relatives[key] = rel
-        weights[key] = route_weight(origin, destination)
+        weights[key] = config.cell_weight(origin, destination, window)
 
     if not relatives:
         raise InsufficientData("every relative fell outside the plausible band")
@@ -170,6 +181,8 @@ def compute(cells: dict, base_day: str, day: str) -> dict:
         "observations": sum(cur[k][1] for k in relatives),
         "weight_covered": round(weight_share, 4),
         "method": f"weighted-Jevons/min-logical-fare/min_obs={MIN_OBSERVATIONS}",
+        "weighting": f"route seat share x lead time ({config.LEAD_TIME_WEIGHT_SOURCE})",
+        "cleaning": dict(CLEANING),
         "computed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
 
@@ -190,16 +203,59 @@ def series(client, base_day: str | None = None) -> list:
     return out
 
 
+def monthly(rows: list) -> list:
+    """One figure per calendar month.
+
+    CPI is published monthly, so the monthly figure is the geometric mean of
+    that month's daily indices — consistent with the Jevons aggregation used
+    within a day. A month containing any provisional day is itself provisional.
+    """
+    buckets: dict = defaultdict(list)
+    for r in rows:
+        if r.get("apix") is not None:
+            buckets[r["day"][:7]].append(r)
+    out = []
+    for month in sorted(buckets):
+        days = buckets[month]
+        value = math.exp(sum(math.log(d["apix"]) for d in days) / len(days))
+        out.append({
+            "month": month,
+            "apix": round(value, 2),
+            "days_included": len(days),
+            "provisional": any(d.get("provisional") for d in days),
+            "provisional_days": sum(1 for d in days if d.get("provisional")),
+            "base_day": days[0]["base_day"],
+            "observations": sum(d.get("observations") or 0 for d in days),
+        })
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--base", help="base period YYYY-MM-DD (default: first day)")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--write", action="store_true",
                     help="upsert the series into the apix_daily table")
+    ap.add_argument("--monthly", action="store_true",
+                    help="print the monthly index instead of the daily series")
     args = ap.parse_args()
 
     client = FareStore()._client
     rows = series(client, args.base)
+
+    if args.monthly:
+        months = monthly(rows)
+        if args.json:
+            print(json.dumps(months, indent=2))
+        else:
+            print(f"\nAPIx monthly      base {rows[0]['base_day']} = 100\n")
+            print(f"  {'month':<10} {'APIx':>8}  {'days':>5}  status")
+            for m in months:
+                st = (f"provisional ({m['provisional_days']} of {m['days_included']} "
+                      f"days below threshold)") if m["provisional"] else "published"
+                print(f"  {m['month']:<10} {m['apix']:>8.2f}  {m['days_included']:>5}  {st}")
+            print()
+        return 0
 
     if args.json:
         print(json.dumps(rows, indent=2))
@@ -232,6 +288,13 @@ def main() -> int:
                 f"{k} {v:.1f} ({v-100:+.1f})" for k, v in movers))
             if any(x.get("provisional") for x in last):
                 print("\n  * provisional — coverage below publication threshold")
+        print("\n  cleaning report:")
+        if CLEANING:
+            for reason, count in sorted(CLEANING.items(), key=lambda kv: -kv[1]):
+                print(f"    {count:>6}  {reason}")
+        else:
+            print("    nothing excluded — every cell met the observation, "
+                  "basket and plausibility rules")
     if args.write:
         # The stored record must carry the provisional flag. Without it the
         # published table asserts every figure is publishable, which is the
@@ -243,6 +306,35 @@ def main() -> int:
                     "observations": r.get("observations"),
                     "weight_covered": r.get("weight_covered"),
                     "method": r.get("method")} for r in rows if r.get("apix")]
+        # A statistical office revises; it does not silently overwrite. Any day
+        # whose value changes is recorded first, so the published history is
+        # reconstructible and a revision is visible rather than implied.
+        existing = {r["day"]: r for r in
+                    client.table("apix_daily").select("day,apix,provisional")
+                    .execute().data}
+        revisions = []
+        for row in payload:
+            prev = existing.get(row["day"])
+            if prev is None:
+                continue
+            changed = (prev.get("apix") is not None
+                       and abs(float(prev["apix"]) - row["apix"]) > 0.005)
+            if changed or bool(prev.get("provisional")) != row["provisional"]:
+                revisions.append({
+                    "day": row["day"],
+                    "previous_apix": prev.get("apix"),
+                    "new_apix": row["apix"],
+                    "previous_provisional": prev.get("provisional"),
+                    "new_provisional": row["provisional"],
+                    "reason": "recomputed from current observations",
+                })
+        if revisions:
+            try:
+                client.table("apix_revisions").insert(revisions).execute()
+                print(f"  recorded {len(revisions)} revision(s)")
+            except Exception as exc:
+                print(f"  {WARN if False else '!'} could not record revisions: "
+                      f"{type(exc).__name__} — run the apix_revisions DDL in schema.sql")
         client.table("apix_daily").upsert(payload, on_conflict="day").execute()
         print(f"\n  wrote {len(payload)} day(s) to apix_daily")
     return 0

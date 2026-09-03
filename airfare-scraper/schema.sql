@@ -145,3 +145,26 @@ ALTER TABLE apix_daily ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS apix_anon_read ON apix_daily;
 CREATE POLICY apix_anon_read ON apix_daily FOR SELECT TO anon USING (true);
 GRANT SELECT ON apix_daily TO anon;
+
+
+-- ---------------------------------------------------------------------------
+-- Revisions. A statistical office revises a published figure; it does not
+-- silently replace one. Every change to a previously published day is recorded
+-- here first, so the published history is reconstructible.
+CREATE TABLE IF NOT EXISTS apix_revisions (
+  id                    SERIAL PRIMARY KEY,
+  day                   DATE NOT NULL,
+  previous_apix         NUMERIC,
+  new_apix              NUMERIC,
+  previous_provisional  BOOLEAN,
+  new_provisional       BOOLEAN,
+  reason                TEXT,
+  revised_at            TIMESTAMP DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS apix_revisions_day_idx ON apix_revisions (day, revised_at DESC);
+
+ALTER TABLE apix_revisions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS apix_rev_anon_read ON apix_revisions;
+CREATE POLICY apix_rev_anon_read ON apix_revisions FOR SELECT TO anon USING (true);
+GRANT SELECT ON apix_revisions TO anon;
