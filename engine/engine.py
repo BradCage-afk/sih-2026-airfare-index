@@ -82,8 +82,19 @@ def load_cells(client, since: str | None = None) -> dict:
         price = float(r["min_fare"] or 0)
         if price <= 0:
             continue
-        key = (r["origin"], r["destination"], int(r["advance_window_days"]))
-        cells[r["day"]][key] = (price, n)
+        pair = (r["origin"], r["destination"])
+        # A route the basket does not define must not enter the index, and the
+        # same city pair recorded in both directions must not count twice.
+        if pair not in config.ROUTE_SEATS:
+            if (pair[1], pair[0]) in config.ROUTE_SEATS:
+                pair = (pair[1], pair[0])          # fold onto the basket's direction
+            else:
+                continue                            # not in the basket at all
+        key = (pair[0], pair[1], int(r["advance_window_days"]))
+        prev = cells[r["day"]].get(key)
+        # folding two directions together: keep the cheaper, sum the observations
+        cells[r["day"]][key] = ((min(prev[0], price), prev[1] + n)
+                                if prev else (price, n))
     return dict(cells)
 
 
