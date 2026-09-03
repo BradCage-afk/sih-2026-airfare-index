@@ -1,27 +1,49 @@
-# What's left — checked against the running system, 3 Sep 2026
+# What to do next — plain English
 
-Ordered so that anything blocking something else comes first. Times are honest.
+Written assuming you know nothing about Render, Cloudflare or Supabase. Every
+step says what to click, what you'll see, and how to tell it worked.
 
 ---
 
-## 🔴 BLOCKING — do these first
+## First, what do you actually have?
 
-### 1. Create the `apix_daily` table  ·  2 minutes
+Five separate pieces. It helps to know which is which.
 
-**Why it's urgent:** `engine.py --write` runs after every scrape — every 10
-minutes — and is failing every single time because the table doesn't exist.
-`airfare-scraper/logs/engine.log` is filling with the same stack trace:
+| # | Piece | Where it lives | Working? |
+|---|---|---|---|
+| 1 | **The collector** — the program that visits Cleartrip and reads fares | Your own computer, running automatically every 10 minutes | ✅ Yes |
+| 2 | **The database** — where those fares are stored | Supabase (a website that hosts databases) | ✅ Yes |
+| 3 | **The calculator** — turns fares into the APIx index number | Your computer, runs after each collection | ⚠️ Runs, but can't save its answer |
+| 4 | **The API** — a web address MoSPI's computers can call to fetch the index | Nowhere yet | ❌ Not online |
+| 5 | **The portal** — the webpage humans look at | Nowhere yet | ❌ Not online |
 
-```
-PGRST205: Could not find the table 'public.apix_daily' in the schema cache
-```
+**Pieces 1 and 2 are done and running.** Pieces 3, 4 and 5 need you.
 
-Nothing else breaks, but the published index is never being stored.
+---
 
-**Steps**
+# TASK 1 — Let the calculator save its answer
 
-1. Open https://supabase.com/dashboard/project/ngywgselrypjcyagaast/sql/new
-2. Paste and **Run**:
+⏱️ 3 minutes · 🔴 Do this first
+
+### What's wrong
+
+Your calculator works out the index every 10 minutes, then tries to save it
+into a table called `apix_daily`. That table doesn't exist, so the save fails
+every single time. The index is being calculated and thrown away.
+
+### What you'll do
+
+Create that table by pasting some SQL (database instructions) into Supabase.
+
+### Steps
+
+**1.** Open this link in your browser:
+
+https://supabase.com/dashboard/project/ngywgselrypjcyagaast/sql/new
+
+You'll see a big empty text box with a green **Run** button.
+
+**2.** Copy everything in the grey box below. All of it.
 
 ```sql
 CREATE TABLE IF NOT EXISTS apix_daily (
@@ -44,167 +66,299 @@ CREATE POLICY apix_anon_read ON apix_daily FOR SELECT TO anon USING (true);
 GRANT SELECT ON apix_daily TO anon;
 ```
 
-3. Confirm it worked:
+**3.** Paste it into the big text box.
+
+**4.** Click **Run** (or press Ctrl+Enter).
+
+### How you know it worked
+
+Underneath, you'll see **"Success. No rows returned."** That's correct — you
+created an empty table, so there are no rows to return yet.
+
+### Now prove it
+
+In your terminal, run:
 
 ```bash
 cd ~/SIH/engine && python3 engine.py --write
 ```
 
-Expect `wrote 4 day(s) to apix_daily`. If it errors, the SQL didn't run.
+The last line should say **`wrote 4 day(s) to apix_daily`**.
+
+If instead you see `Could not find the table`, the SQL didn't run — go back to
+step 2 and make sure you copied *all* of it.
 
 ---
 
-### 2. Deploy the export API to Render  ·  15 minutes
+# TASK 2 — Put the API online
 
-A live REST endpoint is a **named deliverable** in the problem statement. It
-does not exist publicly yet.
+⏱️ 15 minutes · 🔴 Important
 
-**Steps**
+### What is "the API"?
 
-1. Go to **render.com**, sign in **with GitHub**
-2. **New → Blueprint**
-3. Choose the repo `BradCage-afk/sih-2026-airfare-index`
-   *(if Render can't see it: Configure account → grant access to that repo)*
-4. It reads `render.yaml` automatically — do not hand-configure the service
-5. When prompted for environment variables, set exactly these three:
+The problem statement asks for a web address that MoSPI's own computers can
+call to fetch your index automatically — something like:
 
-   | Key | Value |
-   |---|---|
-   | `SUPABASE_URL` | `https://ngywgselrypjcyagaast.supabase.co` |
-   | `SUPABASE_KEY` | your **anon** key (Settings → API) |
-   | `APIX_API_KEYS` | invent one, e.g. `mospi-demo-2026` |
-
-   ⚠️ **anon key, never service-role.** The API has no write path; giving it
-   write credentials grants privileges it never uses. If a judge asks about
-   API security, this is the answer.
-
-6. **Create** and wait for the first build (~3–5 min)
-7. Verify, replacing the host with your Render URL:
-
-```bash
-curl https://apix-api.onrender.com/api/v1/health
-curl -H "X-API-Key: mospi-demo-2026" \
-     "https://apix-api.onrender.com/api/v1/apix?month=2026-09"
+```
+https://your-address.com/api/v1/apix?month=2026-09
 ```
 
-Expect `"stale": false` from the first, and an index with a `method` string
-from the second.
+Call that address and you get back the index number as data, not a webpage.
+It's how one computer system feeds another. **This is specifically named in
+the problem statement**, and right now it only runs on your laptop.
+
+### What is Render?
+
+A free website that runs programs for you, so they're reachable from the
+internet. Think of it as renting a computer that's always on. You connect it
+to your GitHub code, and it runs it.
+
+### Steps
+
+**1.** Go to **https://render.com** and click **Get Started** / **Sign In**.
+
+**2.** Choose **GitHub** to sign in. It'll ask permission to see your repos —
+allow it. *(You already have a GitHub account: `BradCage-afk`.)*
+
+**3.** Once inside, find the **New +** button (top right). Click it, then
+choose **Blueprint**.
+
+> "Blueprint" means "read the settings file in my code and set everything up
+> for me". I already wrote that file (`render.yaml`), so you don't configure
+> anything by hand.
+
+**4.** You'll see a list of your GitHub repositories. Pick
+**`sih-2026-airfare-index`**.
+
+> Don't see it? Click **Configure account** and give Render permission to
+> access that repository, then come back.
+
+**5.** Render reads the settings and shows a service called **apix-api**. It
+will ask you to fill in three secret values. Enter these:
+
+| It asks for | You type |
+|---|---|
+| `SUPABASE_URL` | `https://ngywgselrypjcyagaast.supabase.co` |
+| `SUPABASE_KEY` | your **anon** key — see below |
+| `APIX_API_KEYS` | `mospi-demo-2026` (or anything you like — it's a password you invent) |
+
+**Where to find the anon key:** open
+https://supabase.com/dashboard/project/ngywgselrypjcyagaast/settings/api-keys
+in another tab. Copy the key labelled **anon** or **publishable**. It's the
+same one already in your portal.
+
+> ⚠️ **Do not use the `service_role` / `secret` key here.** The anon key can
+> only *read*. The service_role key can *delete everything*. This program only
+> ever reads, so it should only ever have read permission. If a judge asks how
+> you secured the API, this is your answer.
+
+**6.** Click **Apply** / **Create**. Render now builds it — takes 3–5 minutes.
+You'll see scrolling text. Wait for **"Your service is live"**.
+
+**7.** At the top of the page Render shows your new web address, something like
+`https://apix-api.onrender.com`. **Copy it.**
+
+### How you know it worked
+
+Paste this into your browser, using your address:
+
+```
+https://apix-api.onrender.com/api/v1/health
+```
+
+You should see something like:
+
+```json
+{"status":"ok","last_scrape":"2026-09-03T18:20:02","minutes_since_scrape":4.2,"stale":false}
+```
+
+`"stale": false` means it's talking to your live database. That's the win.
+
+### If it fails
+
+- **Build failed** → click the service, read the log. Usually a missing
+  environment variable; check all three were entered.
+- **`{"detail":"invalid or missing X-API-Key"}`** → that's *correct* for the
+  index endpoint. Only `/api/v1/health` is open to everyone.
 
 ---
 
-### 3. Stop the API falling asleep  ·  1 minute
+# TASK 3 — Stop the API falling asleep
 
-Render's free tier sleeps a service after 15 minutes idle; waking takes ~50
-seconds. Your scraper already runs every 10 minutes, so it can keep it warm.
+⏱️ 2 minutes · 🟡 Do it right after Task 2
+
+### What's wrong
+
+Render's free plan puts your program to sleep after 15 minutes of nobody using
+it. Waking it up takes about 50 seconds. If a judge clicks your API link during
+judging, they'd stare at a loading spinner for almost a minute.
+
+### The fix
+
+Your collector already runs every 10 minutes. We make it also poke the API each
+time, so it never sits idle long enough to fall asleep.
+
+### Steps
+
+**1.** In your terminal:
 
 ```bash
 crontab -e
 ```
 
-Add this **above** the existing scrape lines, with your real Render URL:
+*(If it asks which editor, choose **nano** — it's the simplest.)*
+
+**2.** You'll see lines like this:
+
+```
+*/10 * * * * ~/SIH/airfare-scraper/run-scheduled.sh hot
+0 2 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index
+```
+
+**3.** Add ONE new line **above** them, using your real Render address:
 
 ```
 APIX_URL=https://apix-api.onrender.com
 ```
 
-`run-scheduled.sh` already pings `/api/v1/health` when that is set.
+**4.** Save and exit. In nano: **Ctrl+O**, then **Enter**, then **Ctrl+X**.
 
-**Before any demo, load the URL once by hand anyway.** Belt and braces.
+### How you know it worked
+
+```bash
+crontab -l
+```
+
+Your new `APIX_URL=` line should be there, above the two schedule lines.
+
+**Also:** on the day of your presentation, open the API address in a browser a
+few minutes beforehand anyway. Belt and braces.
 
 ---
 
-## 🟡 IMPORTANT — needed for a good submission
+# TASK 4 — Put the portal online
 
-### 4. Host the portal  ·  10 minutes
+⏱️ 10 minutes · 🟡 Important
 
-`portal/index.html` is one file, no build step.
+### What is "the portal"?
 
-**Cloudflare Pages** (recommended — free, no card, no cold start)
-1. dash.cloudflare.com → **Workers & Pages** → **Create** → **Pages**
-2. **Connect to Git** → pick the repo
-3. Build command: **leave empty**. Output directory: `portal`
-4. Deploy
+The webpage a person looks at — showing the APIx number, the charts, the
+methodology. It's a single file, `portal/index.html`.
 
-**Or Netlify:** drag the `portal/` folder onto app.netlify.com/drop.
+### Steps (Cloudflare Pages — free, no card needed)
 
-> The old consumer dashboard at real-time-airfare.vercel.app is superseded by
-> the portal. Delete that Vercel project once the new URL works, so nobody
-> demos the wrong thing.
+**1.** Go to **https://dash.cloudflare.com** and create a free account (or
+sign in).
 
-### 5. Fill in the team name and ID  ·  2 minutes
+**2.** In the left sidebar, click **Workers & Pages**.
 
-The deck has `‹TEAM NAME›` in six places and `‹TEAM ID›` in one. **Tell me and
-I'll do it**, or edit `tools/build_deck.py` (the `TEAM` constant near the top)
-and re-run `python3 tools/build_deck.py`.
+**3.** Click **Create** → choose the **Pages** tab → **Connect to Git**.
 
-### 6. Export the deck to PDF  ·  2 minutes
+**4.** Connect your GitHub and pick **`sih-2026-airfare-index`**.
 
-The SIH portal accepts **PDF only**. Open
-`SIH26056-Idea-Presentation.pptx` in PowerPoint → File → Export → PDF.
-There's no LibreOffice on this machine, so this one is yours.
+**5.** On the settings screen, three fields matter:
 
-### 7. Decide repo visibility  ·  1 minute
+| Field | What to put |
+|---|---|
+| Framework preset | **None** |
+| Build command | **leave completely empty** |
+| Build output directory | `portal` |
 
-Currently **private**. Public lets judges read the code — usually a plus when
-the code is this defensible — and gives unlimited Actions minutes.
+> Leaving the build command empty is deliberate. Your portal is a finished
+> file — there's nothing to build. Filling this in is the usual way this goes
+> wrong.
+
+**6.** Click **Save and Deploy**. Takes about a minute.
+
+### How you know it worked
+
+Cloudflare gives you an address like
+`https://sih-2026-airfare-index.pages.dev`. Open it. You should see the APIx
+portal with a green **"Live"** banner at the top.
+
+If the banner is amber and says "Sample data", the page couldn't reach your
+database — tell me and I'll look.
+
+---
+
+# TASK 5 — Things only you can give me
+
+⏱️ 2 minutes · 🟡
+
+### Your team name and team ID
+
+The presentation has `‹TEAM NAME›` written in six places and `‹TEAM ID›` in one,
+because I don't know them.
+
+**Just tell me in chat** — "team name is X, ID is Y" — and I'll put them in and
+rebuild the deck. Takes me under a minute.
+
+### Export the presentation to PDF
+
+The SIH website only accepts PDF, not PowerPoint.
+
+1. Open `~/SIH/SIH26056-Idea-Presentation.pptx` in PowerPoint
+2. **File → Export → Create PDF/XPS** (or **Save As** → choose PDF)
+3. Upload that PDF to the SIH portal
+
+I can't do this one — there's no PowerPoint on this machine.
+
+---
+
+# TASK 6 — Should the code be public?
+
+⏱️ 1 minute · 🟢 Your call
+
+Your code is currently **private** — only you can see it. Making it public
+means judges can read it, which usually helps when the code is solid.
+
+If you want that:
 
 ```bash
 gh repo edit BradCage-afk/sih-2026-airfare-index --visibility public
 ```
 
----
-
-## 🟢 WORTH DOING — improves the result
-
-### 8. Rebase the index once all 15 routes have a full day
-
-Right now the base period (1 Sep) only had 6 routes, so the index compares a
-matched sample of 6 — correct, but under-covered. After tonight's 02:00 run,
-all 15 routes will have all 5 windows on the same day. Then:
-
-```bash
-cd ~/SIH/engine && python3 engine.py --base 2026-09-04 --write
-```
-
-That lifts basket coverage from ~46% toward 100% and the headline stops being
-provisional.
-
-### 9. Let me update the deck and prep doc
-
-Both still describe the old framing — they mention the traveller view and say
-nothing about the Jevons engine or the export API, which are now the strongest
-parts. **This is the biggest remaining gap between what you built and what the
-documents claim.** Ask me and I'll rewrite both.
-
-### 10. Tidy up
-
-- Delete `dashboard/` — superseded by `portal/`
-- Delete the stale Vercel projects `sih-2026` and `airfare-index-2`
-- `airfare-scraper/logs/engine.log` will stop growing once step 1 is done
+There are no passwords or keys in the code — I checked before every commit —
+so making it public is safe.
 
 ---
 
-## ✅ Already working — don't touch
+# TASK 7 — Let me fix the presentation
 
-| | Evidence |
-|---|---|
-| Collector on a 10-min schedule | 35,297 fares; last runs 18:20, 18:10, 18:00, all `ok` |
-| All 15 routes collecting | every configured pair has data |
-| Database + RLS | anon reads, writes blocked (verified HTTP 401) |
-| Calculation engine | APIx 98.59 on 3 Sep — full coverage, not provisional |
-| Export API | verified locally: health, month query, 401 without a key |
-| Portal | live figures, matches `engine.py` exactly |
-| Self-test | 13/13 passing |
+⏱️ Ask me · 🟢 But genuinely worth it
+
+Your presentation still describes the **old** version of this project. It
+mentions the traveller/consumer feature we deleted, and says nothing about the
+two best things you now have:
+
+- the **calculation engine** (the proper statistical method — Jevons averaging,
+  weighted by passenger numbers)
+- the **export API** for MoSPI
+
+Judges read the presentation. Right now it undersells you.
+
+**Say "update the deck" and I'll rewrite it.**
 
 ---
 
-## The one-minute demo script
+# Summary — the shortest path
 
-1. Portal → point at the headline **APIx** and the `provisional` badge
-2. Expand **Methodology & pipeline** → show the run log and the method panel
-3. `curl` the API in a terminal → show the JSON MoSPI would ingest
-4. If the network dies: `cd ~/SIH/airfare-scraper && python3 selftest.py`
-   runs 13 checks entirely offline
+| Order | Task | Time | Who |
+|---|---|---|---|
+| 1 | Run the SQL (Task 1) | 3 min | You |
+| 2 | Deploy API to Render (Task 2) | 15 min | You |
+| 3 | Add `APIX_URL` to crontab (Task 3) | 2 min | You |
+| 4 | Host portal on Cloudflare (Task 4) | 10 min | You |
+| 5 | Tell me team name + ID | 1 min | You → me |
+| 6 | Say "update the deck" | — | Me |
+| 7 | Export PDF, upload to SIH | 5 min | You |
 
-**Say the provisional thing out loud.** An index that admits when its coverage
-is too thin is more convincing than one that always prints a confident number.
+**About 35 minutes of your time.** Do Task 1 now — it's three minutes and
+something is actively broken until you do.
+
+---
+
+# If you get stuck
+
+Paste the error into the chat. Don't retype it — copy the exact text. Almost
+every problem so far has been diagnosable from the exact message.
