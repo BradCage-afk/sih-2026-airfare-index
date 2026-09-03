@@ -76,6 +76,31 @@ SOURCES: dict[str, Source] = {
             "robots gate doing its job, not a bug."
         ),
     ),
+    "happyfares": Source(
+        key="happyfares",
+        name="HappyFares",
+        kind="ota",
+        url_template="https://www.happyfares.in/flights/{origin}-{destination}",
+        date_format="%Y-%m-%d",
+        settle_ms=9000,
+        scrolls=3,
+        notes=(
+            "SURVEYED 2026-09-03, NOT USABLE YET — and worth recording why.\n"
+            "robots.txt permits /flights/, and the page renders 142 fare rows "
+            "in headless Chromium, so access is not the problem.\n"
+            "The blocker is the departure date. The results URL ignores every "
+            "date parameter tried (?date=, ?departure=, ?depart_date=, and a "
+            "/YYYY-MM-DD path segment) and always returns the same departure, "
+            "so it cannot serve the T+1/7/15/30/45 lead-time buckets the index "
+            "is built on. The date control is an Angular component "
+            "(label.datepicker.search-date) that does not respond to a "
+            "programmatic or dispatched click.\n"
+            "Making it work means reverse-engineering one site's SPA — exactly "
+            "the brittle per-site coupling the structural extractor exists to "
+            "avoid, and it would break on their next deploy. Left configured "
+            "and excluded from DEFAULT_SOURCES so the finding is not lost."
+        ),
+    ),
     "indigo": Source(
         key="indigo",
         name="IndiGo",
