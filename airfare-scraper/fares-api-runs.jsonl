@@ -1,0 +1,1 @@
+{"started_at": "2026-09-03T19:51:35.716385+00:00", "tier": "api", "source": "travelpayouts", "model_used": "none (structured API)", "pages_fetched": 0, "flights_extracted": 0, "rows_written": 0, "skipped_robots": 0, "failed_fetch": 1, "failed_extract": 0, "duration_s": 2.3, "status": "failed"}

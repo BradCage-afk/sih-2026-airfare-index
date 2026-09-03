@@ -120,6 +120,31 @@ def real_nvidia_key() -> bool:
     return False
 
 
+def set_env_key(name: str, label: str, where: str) -> int:
+    """Write one key into .env without disturbing anything else."""
+    if not os.path.exists(ENV):
+        raise SystemExit(f"{BAD} {ENV} does not exist — run the full setup first")
+    print(f"  From {where}\n")
+    key = getpass.getpass(f"  {label}: ").strip()
+    if not key:
+        raise SystemExit(f"{BAD} nothing entered")
+    if any(ch.isspace() for ch in key):
+        raise SystemExit(f"{BAD} that contains whitespace — paste the token only")
+    lines, out, seen = open(ENV, encoding="utf-8").read().splitlines(), [], False
+    for line in lines:
+        if line.startswith(f"{name}="):
+            out.append(f"{name}={key}"); seen = True
+        else:
+            out.append(line)
+    if not seen:
+        out.append(f"{name}={key}")
+    with open(ENV, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(out) + "\n")
+    os.chmod(ENV, 0o600)
+    print(f"  {OK} {name} written to {ENV}")
+    return 0
+
+
 def set_nvidia_key() -> int:
     """Update just NVIDIA_API_KEY in .env, without touching anything else."""
     if not os.path.exists(ENV):
@@ -163,10 +188,15 @@ def main() -> int:
                     help="verify credentials and schema, change nothing")
     ap.add_argument("--nvidia", action="store_true",
                     help="only set NVIDIA_API_KEY in .env, leave Supabase alone")
+    ap.add_argument("--travelpayouts", action="store_true",
+                    help="only set TRAVELPAYOUTS_TOKEN in .env")
     args = ap.parse_args()
 
     if args.nvidia:
         return set_nvidia_key()
+    if args.travelpayouts:
+        return set_env_key("TRAVELPAYOUTS_TOKEN", "Travelpayouts API token",
+                           "travelpayouts.com -> Profile -> API token")
 
     print("\nSupabase → Settings → API is where all three of these live.\n")
     url = (args.url or input("  Project URL  : ")).strip().rstrip("/")
