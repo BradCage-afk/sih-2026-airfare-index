@@ -142,7 +142,11 @@ def compute(cells: dict, base_day: str, day: str) -> dict:
         by_route[f"{origin}-{destination}"] = round(100.0 * jevons(sub, weights), 2)
 
     windows_present = len({k[2] for k in relatives})
-    weight_share = sum(weights.values()) / sum(config.ROUTE_WEIGHTS.values())
+    # Coverage is a share of the BASKET, so count each route once. Summing the
+    # per-cell weights multiplies every route by its number of lead-time
+    # buckets and yields impossible figures like 256%.
+    covered = {(k[0], k[1]) for k in relatives}
+    weight_share = sum(route_weight(o, d) for o, d in covered)
     provisional = (weight_share < MIN_WEIGHT_COVERAGE or windows_present < MIN_WINDOWS)
     reasons = []
     if weight_share < MIN_WEIGHT_COVERAGE:
@@ -229,10 +233,15 @@ def main() -> int:
             if any(x.get("provisional") for x in last):
                 print("\n  * provisional — coverage below publication threshold")
     if args.write:
+        # The stored record must carry the provisional flag. Without it the
+        # published table asserts every figure is publishable, which is the
+        # opposite of what the calculation decided.
         payload = [{"day": r["day"], "base_day": r["base_day"], "apix": r.get("apix"),
+                    "provisional": bool(r.get("provisional")),
                     "by_window": r.get("by_window"), "by_route": r.get("by_route"),
                     "routes_covered": r.get("routes_covered"),
                     "observations": r.get("observations"),
+                    "weight_covered": r.get("weight_covered"),
                     "method": r.get("method")} for r in rows if r.get("apix")]
         client.table("apix_daily").upsert(payload, on_conflict="day").execute()
         print(f"\n  wrote {len(payload)} day(s) to apix_daily")
