@@ -3921,3 +3921,6 @@
   info  extracted          route=DEL-BOM window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=39 chunks=7 attempts=7 ms=119593
   info  written            route=DEL-BOM window=T+1 source=cleartrip records=39 target=supabase:ngywgselrypjcyagaast/fares
   info  fetched            route=DEL-BLR window=T+1 source=cleartrip rows_found=61 rows_used=40 chars=4660 depart=2026-09-04 ms=15670
+  info  extracted          route=DEL-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=40 chunks=7 attempts=7 ms=127348
+  info  written            route=DEL-BLR window=T+1 source=cleartrip records=40 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=BOM-BLR window=T+1 source=cleartrip rows_found=31 rows_used=31 chars=3651 depart=2026-09-04 ms=15560
