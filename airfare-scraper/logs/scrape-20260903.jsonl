@@ -1601,3 +1601,7 @@
 {"ts": "2026-09-03T19:20:18+00:00", "level": "info", "event": "fetched", "route": "DEL-BOM", "window": "T+1", "source": "cleartrip", "rows_found": 61, "rows_used": 40, "chars": 4694, "depart": "2026-09-04", "ms": 15789}
 {"ts": "2026-09-03T19:23:37+00:00", "level": "info", "event": "extracted", "route": "DEL-BOM", "window": "T+1", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 36, "chunks": 7, "attempts": 7, "ms": 198958, "error": null}
 {"ts": "2026-09-03T19:23:38+00:00", "level": "info", "event": "written", "route": "DEL-BOM", "window": "T+1", "source": "cleartrip", "records": 36, "target": "supabase:ngywgselrypjcyagaast/fares"}
+{"ts": "2026-09-03T19:23:57+00:00", "level": "info", "event": "fetched", "route": "DEL-BLR", "window": "T+1", "source": "cleartrip", "rows_found": 61, "rows_used": 40, "chars": 4658, "depart": "2026-09-04", "ms": 15630}
+{"ts": "2026-09-03T19:26:50+00:00", "level": "info", "event": "extracted", "route": "DEL-BLR", "window": "T+1", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 39, "chunks": 7, "attempts": 7, "ms": 172921, "error": null}
+{"ts": "2026-09-03T19:26:50+00:00", "level": "info", "event": "written", "route": "DEL-BLR", "window": "T+1", "source": "cleartrip", "records": 39, "target": "supabase:ngywgselrypjcyagaast/fares"}
+{"ts": "2026-09-03T19:27:10+00:00", "level": "info", "event": "fetched", "route": "BOM-BLR", "window": "T+1", "source": "cleartrip", "rows_found": 32, "rows_used": 32, "chars": 3770, "depart": "2026-09-04", "ms": 15486}
