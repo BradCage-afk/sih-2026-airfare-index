@@ -305,8 +305,8 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
     <section class="card c12">
       <div class="hero">
         <div class="hero-fig">
-          <div class="eyebrow">APIx &mdash; headline index</div>
-          <div class="hero-num" id="apix-val">&mdash;</div>
+          <div class="eyebrow">Airfare inflation &mdash; since base period</div>
+          <div class="hero-num" id="apix-infl">&mdash;</div>
           <div id="apix-flag"></div>
           <div class="hero-delta" id="apix-delta"></div>
           <div class="hero-base" id="apix-base"></div>
@@ -325,6 +325,16 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       </div>
     </section>
   </div>
+
+  <section class="card c12" style="margin-top:16px">
+    <div class="chead">
+      <div>
+        <h2>How this augments the Consumer Price Index</h2>
+        <p>An index is a measure of inflation. This states where the number goes.</p>
+      </div>
+    </div>
+    <div id="cpi-link" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:6px"></div>
+  </section>
 
   <div class="kpis" id="kpis"></div>
 
@@ -1300,11 +1310,19 @@ function apixSeries(){
 
 function drawApix(){
   const series = apixSeries();
+  window.__apixSeries = series;
   const el = v => document.getElementById(v);
   if (!series.length){ el("apix-val").textContent = "—"; return null; }
   const latest = series[series.length - 1];
 
-  el("apix-val").textContent = latest.apix.toFixed(2);
+  /* CPI measures a RATE OF CHANGE, not a level. An index of 105.8 is only
+     meaningful when stated as "airfares are 5.8% dearer than the base
+     period" — that percentage is airfare inflation, and it is what feeds a
+     consumer price index. Lead with it. */
+  const inflation = latest.apix - 100;
+  el("apix-infl").textContent = (inflation >= 0 ? "+" : "\u2212") +
+                                Math.abs(inflation).toFixed(1) + "%";
+  el("apix-infl").style.color = inflation >= 0 ? "var(--crit)" : "var(--good-text)";
 
   const flag = el("apix-flag"); flag.textContent = "";
   if (latest.provisional){
@@ -1315,13 +1333,12 @@ function drawApix(){
   }
 
   const d = el("apix-delta"); d.textContent = "";
-  const chg = latest.apix - 100;
   const sp = document.createElement("span");
-  sp.className = chg >= 0 ? "up" : "down";
-  sp.textContent = (chg >= 0 ? "▲ " : "▼ ") + pct(chg);
+  sp.style.cssText = "font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--ink)";
+  sp.textContent = "APIx " + latest.apix.toFixed(2);
   const sp2 = document.createElement("span");
   sp2.style.color = "var(--muted)";
-  sp2.textContent = "against base " + dayLab(0);
+  sp2.textContent = "index level, base = 100";
   d.append(sp, sp2);
 
   const b = el("apix-base"); b.textContent = "";
@@ -1444,6 +1461,51 @@ function drawCarriers(){
   });
 }
 
+/* States the chain from a scraped fare to a CPI figure. The final weight is
+   MoSPI's to set — we do not invent one, because a fabricated weight would
+   make every downstream number wrong in a way nobody could see. */
+function drawCpiLink(latest, series){
+  const host = document.getElementById("cpi-link");
+  if (!host) return;
+  host.textContent = "";
+  const infl = latest ? latest.apix - 100 : null;
+  const prev = series && series.length > 1 ? series[series.length - 2] : null;
+  const dayOnDay = (latest && prev) ? latest.apix - prev.apix : null;
+
+  const cards = [
+    ["1 · Observe",
+     "Minimum logical fares, every 10 minutes",
+     "35,000+ fares collected across 15 city pairs and 5 booking windows"],
+    ["2 · Index",
+     infl === null ? "—" : (infl >= 0 ? "+" : "\u2212") + Math.abs(infl).toFixed(1) + "% airfare inflation",
+     "Weighted Jevons on price relatives — the elementary-aggregate method Eurostat and ONS use"],
+    ["3 · Sub-index",
+     dayOnDay === null ? "day-on-day: —"
+       : "day-on-day " + (dayOnDay >= 0 ? "+" : "\u2212") + Math.abs(dayOnDay).toFixed(2) + "%",
+     "Feeds the air-fare item inside CPI's Transport group"],
+    ["4 · CPI contribution",
+     "weight \u00d7 inflation",
+     "The expenditure weight is MoSPI's to apply. We publish the price movement; " +
+     "the ministry owns the basket weights."],
+  ];
+  for (const [step, headline, note] of cards){
+    const box = document.createElement("div");
+    box.style.cssText = "background:var(--inset);border-radius:6px;padding:13px 15px";
+    const a = document.createElement("div");
+    a.style.cssText = "font-size:10.5px;font-weight:600;letter-spacing:.08em;" +
+                      "text-transform:uppercase;color:var(--muted)";
+    a.textContent = step;
+    const b = document.createElement("div");
+    b.style.cssText = "font-size:16px;font-weight:600;margin-top:6px;color:var(--ink)";
+    b.textContent = headline;
+    const c = document.createElement("div");
+    c.style.cssText = "font-size:11.5px;color:var(--ink-2);margin-top:6px;line-height:1.5";
+    c.textContent = note;
+    box.append(a, b, c);
+    host.appendChild(box);
+  }
+}
+
 function drawProvenance(latest){
   const host = document.getElementById("provenance");
   if (!host) return;
@@ -1481,6 +1543,7 @@ function renderAll(){
   drawSubIndex(latest);
   drawSpikes(latest);
   drawCarriers();
+  drawCpiLink(latest, window.__apixSeries);
   drawProvenance(latest);
   drawIndex(); drawCurve(); drawComp(); drawMatrix(); drawModels();
   drawKPIs(); drawRouteTable();
