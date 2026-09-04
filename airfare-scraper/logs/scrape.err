@@ -5832,3 +5832,32 @@
   info  written            route=BOM-BLR window=T+1 source=cleartrip records=38 target=supabase:ngywgselrypjcyagaast/fares
   info  run_end            tier=hot units=3 planned=3 fetched=3 flights=115 written=115 skipped_robots=0 failed_fetch=0 failed_extract=0 duration_s=362.3 per_source={'cleartrip': {'fetched': 3, 'flights': 115, 'written': 115}}
   info  run_logged         rows=1 target=supabase:ngywgselrypjcyagaast/fares
+  info  run_start          tier=hot routes=3 windows=1 sources=['cleartrip'] pages=3 estimate_s=60 period_s=600 deadline_s=510 model=meta/llama-3.2-11b-vision-instruct target=supabase:ngywgselrypjcyagaast/fares rpm_limit=40
+  info  robots_check       source=cleartrip allowed=True reason=robots.txt parsed (2 groups)
+  info  fetched            route=DEL-BOM window=T+1 source=cleartrip rows_found=60 rows_used=40 chars=4686 depart=2026-09-05 ms=15849
+  info  extracted          route=DEL-BOM window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=40 chunks=7 attempts=7 ms=91486
+  info  written            route=DEL-BOM window=T+1 source=cleartrip records=40 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=DEL-BLR window=T+1 source=cleartrip rows_found=171 rows_used=40 chars=4668 depart=2026-09-05 ms=15769
+  info  extracted          route=DEL-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=37 chunks=7 attempts=7 ms=93076
+  info  written            route=DEL-BLR window=T+1 source=cleartrip records=37 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=BOM-BLR window=T+1 source=cleartrip rows_found=29 rows_used=29 chars=3387 depart=2026-09-05 ms=15485
+  info  extracted          route=BOM-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=28 chunks=5 attempts=5 ms=53593
+  info  written            route=BOM-BLR window=T+1 source=cleartrip records=28 target=supabase:ngywgselrypjcyagaast/fares
+  info  run_end            tier=hot units=3 planned=3 fetched=3 flights=105 written=105 skipped_robots=0 failed_fetch=0 failed_extract=0 duration_s=295.8 per_source={'cleartrip': {'fetched': 3, 'flights': 105, 'written': 105}}
+  info  run_logged         rows=1 target=supabase:ngywgselrypjcyagaast/fares
+  info  run_start          tier=hot routes=3 windows=1 sources=['cleartrip'] pages=3 estimate_s=60 period_s=600 deadline_s=510 model=meta/llama-3.2-11b-vision-instruct target=supabase:ngywgselrypjcyagaast/fares rpm_limit=40
+  info  robots_check       source=cleartrip allowed=True reason=robots.txt parsed (2 groups)
+  info  fetched            route=DEL-BOM window=T+1 source=cleartrip rows_found=60 rows_used=40 chars=4686 depart=2026-09-05 ms=15856
+  info  extracted          route=DEL-BOM window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=40 chunks=7 attempts=7 ms=79425
+  info  written            route=DEL-BOM window=T+1 source=cleartrip records=40 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=DEL-BLR window=T+1 source=cleartrip rows_found=171 rows_used=40 chars=4668 depart=2026-09-05 ms=15815
+  info  extracted          route=DEL-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=37 chunks=7 attempts=7 ms=94591
+  info  written            route=DEL-BLR window=T+1 source=cleartrip records=37 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=BOM-BLR window=T+1 source=cleartrip rows_found=29 rows_used=29 chars=3387 depart=2026-09-05 ms=15652
+  info  extracted          route=BOM-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=28 chunks=5 attempts=5 ms=54575
+  info  written            route=BOM-BLR window=T+1 source=cleartrip records=28 target=supabase:ngywgselrypjcyagaast/fares
+  info  run_end            tier=hot units=3 planned=3 fetched=3 flights=105 written=105 skipped_robots=0 failed_fetch=0 failed_extract=0 duration_s=288.6 per_source={'cleartrip': {'fetched': 3, 'flights': 105, 'written': 105}}
+  info  run_logged         rows=1 target=supabase:ngywgselrypjcyagaast/fares
+  info  run_start          tier=hot routes=3 windows=1 sources=['cleartrip'] pages=3 estimate_s=60 period_s=600 deadline_s=510 model=meta/llama-3.2-11b-vision-instruct target=supabase:ngywgselrypjcyagaast/fares rpm_limit=40
+  info  robots_check       source=cleartrip allowed=True reason=robots.txt parsed (2 groups)
+  info  fetched            route=DEL-BOM window=T+1 source=cleartrip rows_found=58 rows_used=40 chars=4690 depart=2026-09-05 ms=15812

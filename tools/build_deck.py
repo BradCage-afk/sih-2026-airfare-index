@@ -225,49 +225,91 @@ for para in tb.text_frame.paragraphs:
 # =====================================================================  S2
 s2 = prs.slides[1]
 set_team_oval(s2)
-set_title(s2, "WHY WE STAND OUT", 28)
+set_title(s2, "PROPOSED SOLUTION", 28)
 remove(shape_by_name(s2, "TextBox 8"))
 
-textbox(s2, 0.45, 1.18, 8.6, 0.6, [
-    ("APIx  \u2014  a daily airfare inflation index for the CPI", 16, True, NAVY),
-    ("India's CPI prices air travel from monthly manual visits. We measure it every "
-     "ten minutes and publish it in a form MoSPI can ingest.", 13.5, False, GREY, 4)])
+textbox(s2, 0.45, 1.08, 8.45, 0.94, [
+    ("APIx  —  a daily airfare inflation index built for the CPI", 15, True, NAVY),
+    ("MoSPI prices air travel by hand, once a month, for one departure date. APIx reads "
+     "the same public fare pages every ten minutes, turns them into one weighted index "
+     "number, and delivers it to MoSPI through an API instead of a form.",
+     12, False, GREY, 5)])
+
+stat = panel(s2, 9.05, 1.08, 3.80, 0.90, fill=TINTS[1], line=None)
+write(stat.text_frame, [
+    ("BUILT AND RUNNING", 10.5, True, GREEN),
+    ("36,000+ fares collected · 15 city pairs × 5 lead times "
+     "· every 10 minutes · ₹0 a month to run", 10.5, False, INK, 4)])
+
+# --- what changes for the CPI -----------------------------------------
+panel(s2, 0.45, 2.10, 6.95, 1.90, fill=TINTS[0], line=None)
+textbox(s2, 0.60, 2.16, 4.2, 0.26, [("WHAT CHANGES FOR THE CPI", 10.5, True, BLUE)])
+textbox(s2, 2.35, 2.44, 2.10, 0.26, [("TODAY", 11, True, GREY)])
+textbox(s2, 4.55, 2.44, 2.70, 0.26, [("WITH APIx", 11, True, GREEN)])
+CHANGES = [("Frequency",   "once a month",        "every 10 minutes"),
+           ("Coverage",    "a handful of quotes", "75 priced cells"),
+           ("Price basis", "one quoted price",    "minimum logical fare"),
+           ("Delivery",    "typed into a form",   "authenticated REST API")]
+for i, (attr, today, ours) in enumerate(CHANGES):
+    yy = 2.74 + i * 0.29
+    textbox(s2, 0.60, yy, 1.75, 0.26, [(attr, 11, True, INK)])
+    textbox(s2, 2.35, yy, 2.10, 0.26, [(today, 10.5, False, GREY)])
+    textbox(s2, 4.55, yy, 2.70, 0.26, [(ours, 10.5, True, INK)])
+
+# --- the formula and the definitions behind it -------------------------
+panel(s2, 7.55, 2.10, 5.30, 0.96, fill=TINTS[3], line=None)
+textbox(s2, 7.70, 2.14, 5.00, 0.24, [("THE INDEX IN ONE LINE", 10.5, True, INDIGO)])
+textbox(s2, 7.70, 2.38, 5.00, 0.26, [
+    ("APIxₜ = 100 × exp( Σ wᵢ·ln(Pᵢ,ₜ/Pᵢ,₀) / Σ wᵢ )", 10.5, True, INK)])
+textbox(s2, 7.70, 2.64, 5.00, 0.36, [
+    ("Weighted Jevons — the elementary-aggregate formula Eurostat and the ONS "
+     "use for their own price indices.", 10, False, GREY)])
+
+panel(s2, 7.55, 3.10, 5.30, 0.90, fill=TINTS[4], line=None)
+textbox(s2, 7.70, 3.14, 5.00, 0.24, [("WHAT THE TERMS MEAN", 10.5, True, TEAL)])
+DEFS = [("Basket", "15 city pairs × 5 lead times = 75 cells"),
+        ("Price",  "minimum logical fare, no add-ons"),
+        ("Weight", "route seat share × lead-time share"),
+        ("Base",   "August 2026 = 100")]
+for i, (k, v) in enumerate(DEFS):
+    yy = 3.36 + i * 0.16
+    textbox(s2, 7.70, yy, 0.85, 0.16, [(k, 10, True, TEAL)])
+    textbox(s2, 8.55, yy, 4.20, 0.16, [(v, 10, False, INK)])
+
+# --- innovation and uniqueness ----------------------------------------
+heading(s2, 0.45, 4.08, 12.4, "Why it stands out", 14)
 
 CARDS = [
-    ("The standard method,\nnot a homemade average",
-     "Weighted Jevons on minimum logical fares \u2014 the elementary-aggregate method "
+    ("The standard method",
+     "Weighted Jevons on minimum logical fares — the elementary-aggregate method "
      "Eurostat and ONS use for their own price indices."),
-    ("Weighting is a matrix,\nnot a guess",
-     "Every cell is weighted by route share of scheduled seats \u00d7 booking lead "
-     "time, so Delhi\u2013Mumbai moves the index three times as much as Delhi\u2013Srinagar."),
-    ("It knows when not\nto publish",
-     "Below 60% basket coverage a figure is marked provisional with the reason. "
-     "An index that admits thin coverage is worth more than one that never does."),
-    ("Machine-readable\nfor MoSPI",
-     "An authenticated REST endpoint returns the index with its method, coverage "
-     "and revision history. Nobody retypes a number from a screen."),
-    ("Compliance by\nconstruction",
-     "robots.txt is checked to RFC 9309 before every single request. We wrote our "
-     "own parser because Python's standard one gets it wrong."),
-    ("It never\nestimates",
-     "Fields a portal does not publish stay NULL. Cells with too few observations "
-     "are excluded, not filled in. The system says when it does not know."),
+    ("Weighting is a matrix",
+     "Every cell carries route seat share × booking lead time, so Delhi–Mumbai "
+     "moves the index three times as hard as Delhi–Srinagar."),
+    ("It knows when not to publish",
+     "Below 60% basket coverage the figure ships marked provisional, with the reason "
+     "attached. An index that admits thin coverage beats one that never does."),
+    ("Machine-readable for MoSPI",
+     "One authenticated REST call returns the index with its method, coverage and "
+     "revision history. Nobody retypes a number off a screen."),
+    ("Compliance by construction",
+     "robots.txt is re-checked to RFC 9309 before every request. We wrote the parser "
+     "ourselves because Python's standard one gets it wrong."),
+    ("It never estimates",
+     "Fields a portal does not publish stay NULL. Cells with too few observations are "
+     "excluded, not filled in — the system says when it does not know."),
 ]
-cw, ch, gx, gy = 4.05, 1.62, 0.28, 0.18
+cw, ch, gx, gy = 3.96, 1.16, 0.26, 0.12
 for i, (title, body) in enumerate(CARDS):
     x = 0.45 + (i % 3) * (cw + gx)
-    y = 2.24 + (i // 3) * (ch + gy)
+    y = 4.46 + (i // 3) * (ch + gy)
     card = panel(s2, x, y, cw, ch, fill=TINTS[i], line=None)
     bar = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
                               Inches(cw), Inches(0.07))
     bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    write(card.text_frame, [(title, 14, True, ACCENTS[i]), (body, 12, False, INK, 5)])
-
-run = panel(s2, 0.45, 5.78, 12.4, 0.70, fill=RGBColor(0xE4,0xF4,0xEC), line=None)
-write(run.text_frame, [
-    ("BUILT AND RUNNING \u00b7 36,000+ fares \u00b7 15 city pairs \u00d7 5 lead times "
-     "\u00b7 every 10 minutes \u00b7 \u20b90 a month", 14, True, GREEN)])
+    write(card.text_frame, [(title, 12.5, True, ACCENTS[i]), (body, 11, False, INK, 5)])
+    card.text_frame.margin_top = Inches(0.12)
 
 # =====================================================================  S3
 s3 = prs.slides[2]
