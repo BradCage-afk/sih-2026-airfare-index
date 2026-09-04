@@ -142,22 +142,22 @@ def chip(slide, x, y, w, h, text, fill=NAVY, fg=WHITE, size=10.5, bold=True):
     return shp
 
 
-def linkbutton(slide, x, y, w, h, text, url, fill=NAVY, fg=WHITE, size=10):
-    """A filled, clickable button. The hyperlink sits on the SHAPE, not the run,
-    so PowerPoint cannot repaint the label with its theme hyperlink colour."""
-    shp = panel(slide, x, y, w, h, fill=fill, line=None)
-    tf = shp.text_frame
+def textlink(slide, x, y, w, text, url, size=10.5, colour=BLUE,
+             align=PP_ALIGN.RIGHT, h=0.24):
+    """An underlined text hyperlink, the way the reference deck marks its sources."""
+    tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    tf = tb.text_frame
     tf.word_wrap = False
-    tf.margin_left = tf.margin_right = Inches(0.06)
+    tf.margin_left = tf.margin_right = 0
     tf.margin_top = tf.margin_bottom = 0
-    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     para = tf.paragraphs[0]
-    para.alignment = PP_ALIGN.CENTER
+    para.alignment = align
     r = para.add_run(); r.text = text
     r.font.name = "Arial"; r.font.size = Pt(size); r.font.bold = True
-    r.font.color.rgb = fg
-    shp.click_action.hyperlink.address = url
-    return shp
+    r.font.underline = True
+    r.font.color.rgb = colour
+    r.hyperlink.address = url
+    return tb
 
 
 def heading(slide, x, y, w, text, size=13.5):
@@ -586,19 +586,24 @@ REFS = [
      "Open the repo",
      "https://github.com/BradCage-afk/sih-2026-airfare-index"),
 ]
-cw2, ch2, gx2, gy2 = 4.05, 1.86, 0.28, 0.18
+textbox(s6, 0.45, 1.16, 6.0, 0.24,
+        [("EVERY CARD IS CLICKABLE \u2014 THE UNDERLINED LINK OPENS THE SOURCE",
+          9.5, True, GREY)])
+
+cw2, ch2, gx2, gy2 = 4.05, 1.78, 0.28, 0.16
 for i, (title, body, linktext, url) in enumerate(REFS):
     x = 0.45 + (i % 3) * (cw2 + gx2)
-    y = 1.24 + (i // 3) * (ch2 + gy2)
-    panel(s6, x, y, cw2, ch2, fill=TINTS[i], line=None)
+    y = 1.46 + (i // 3) * (ch2 + gy2)
+    card = panel(s6, x, y, cw2, ch2, fill=TINTS[i], line=None)
+    card.click_action.hyperlink.address = url      # the whole card is the link
     bar = s6.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
                               Inches(cw2), Inches(0.07))
     bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    textbox(s6, x + 0.16, y + 0.16, cw2 - 0.32, ch2 - 0.72,
+    textbox(s6, x + 0.16, y + 0.14, cw2 - 0.32, ch2 - 0.46,
             [(title, 13.5, True, ACCENTS[i]), (body, 11.5, False, INK, 4)])
-    linkbutton(s6, x + 0.16, y + ch2 - 0.46, 1.95, 0.30, linktext, url,
-               fill=ACCENTS[i], size=10)
+    textlink(s6, x + cw2 - 2.36, y + ch2 - 0.28, 2.20, linktext, url,
+             size=10.5, colour=ACCENTS[i])
 
 s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.20), width=Inches(4.55))
 linkbox(s6, 5.25, 5.24, 7.60, 1.3, [
@@ -613,11 +618,11 @@ linkbox(s6, 5.25, 5.24, 7.60, 1.3, [
 OPEN = [("Live API docs", "https://apix-api-n5ux.onrender.com/docs", NAVY),
         ("Release portal", "https://apix-portal.pages.dev", GREEN),
         ("README + method", "https://github.com/BradCage-afk/sih-2026-airfare-index#readme", INDIGO),
-        ("Market data", "https://www.ibef.org/industry/indian-aviation", TEAL)]
-bwid = (7.60 - 3 * 0.16) / 4
+        ("Aviation market", "https://www.ibef.org/industry/indian-aviation", TEAL)]
+lw = (7.60 - 3 * 0.14) / 4
 for i, (txt, url, col) in enumerate(OPEN):
-    linkbutton(s6, 5.25 + i * (bwid + 0.16), 6.42, bwid, 0.34, txt, url,
-               fill=col, size=10.5)
+    textlink(s6, 5.25 + i * (lw + 0.14), 6.46, lw, txt, url,
+             size=10.5, colour=col, align=PP_ALIGN.LEFT)
 
 drop_slide(prs, 6)
 prs.save(OUT)
