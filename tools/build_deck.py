@@ -408,8 +408,8 @@ KEEP = [
      "the price a traveller actually pays", GREEN),
     ("\u20b9480 off with CTFKSBIC", "dropped",
      "a coupon is not a published fare", RED),
-    ("base fare not shown", "base_fare = NULL",
-     "we never estimate what a page omits", AMBER),
+    ("no tax or fee breakdown", "stored NULL, never derived",
+     "a CPI prices the total a household pays", AMBER),
     ("\u2014 nothing on the page \u2014", "source \u00b7 scraped_at \u00b7 model_used",
      "so any index figure traces back", INDIGO),
 ]

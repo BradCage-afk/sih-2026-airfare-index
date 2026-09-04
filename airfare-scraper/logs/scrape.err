@@ -6040,3 +6040,10 @@
   info  fetched            route=CCU-BOM window=T+1 source=cleartrip rows_found=137 rows_used=40 chars=4618 depart=2026-09-05 ms=15536
   info  extracted          route=CCU-BOM window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=31 chunks=7 attempts=7 ms=69412
   info  written            route=CCU-BOM window=T+1 source=cleartrip records=31 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=CCU-BOM window=T+7 source=cleartrip rows_found=15 rows_used=15 chars=1747 depart=2026-09-11 ms=15504
+  info  extracted          route=CCU-BOM window=T+7 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=13 chunks=3 attempts=3 ms=62444
+  info  written            route=CCU-BOM window=T+7 source=cleartrip records=13 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=CCU-BOM window=T+15 source=cleartrip rows_found=14 rows_used=14 chars=1651 depart=2026-09-19 ms=15465
+  info  extracted          route=CCU-BOM window=T+15 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=12 chunks=3 attempts=3 ms=11817
+  info  written            route=CCU-BOM window=T+15 source=cleartrip records=12 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=CCU-BOM window=T+30 source=cleartrip rows_found=161 rows_used=40 chars=4591 depart=2026-10-04 ms=15632
