@@ -17,6 +17,7 @@ MAP   = TMP + "/chart-map.png"
 CAD   = TMP + "/chart-cadence.png"
 APIXC = TMP + "/chart-apix.png"
 SURV  = TMP + "/chart-survey.png"
+SHOT  = TMP + "/portal-shot.png"
 REC   = TMP + "/chart-record.png"
 
 NAVY   = RGBColor(0x1F, 0x49, 0x7D)
@@ -26,7 +27,16 @@ PALER  = RGBColor(0xEE, 0xF3, 0xF9)
 INK    = RGBColor(0x26, 0x2B, 0x33)
 GREY   = RGBColor(0x5A, 0x62, 0x6C)
 RED    = RGBColor(0xC0, 0x50, 0x4D)
-GREEN  = RGBColor(0x4F, 0x7A, 0x3A)
+GREEN  = RGBColor(0x1B, 0x8A, 0x5A)
+TEAL   = RGBColor(0x0E, 0x7C, 0x86)
+AMBER  = RGBColor(0xC7, 0x77, 0x00)
+PLUM   = RGBColor(0x7A, 0x3E, 0x6B)
+INDIGO = RGBColor(0x4B, 0x3F, 0x8C)
+MAROON = RGBColor(0xA6, 0x3A, 0x3A)
+ACCENTS = [BLUE, GREEN, AMBER, INDIGO, TEAL, PLUM]
+TINTS = [RGBColor(0xE8,0xF0,0xF9), RGBColor(0xE4,0xF4,0xEC), RGBColor(0xFBF,0xF0,0xDD)
+         if False else RGBColor(0xFB,0xF0,0xDD), RGBColor(0xEC,0xEA,0xF7),
+         RGBColor(0xE2,0xF2,0xF3), RGBColor(0xF4,0xEA,0xF1)]
 WHITE  = RGBColor(0xFF, 0xFF, 0xFF)
 LINE   = RGBColor(0xC7, 0xD3, 0xE3)
 
@@ -77,6 +87,25 @@ def write(tf, blocks, wrap=True, margin=0.04):
         r.font.bold = bold
         r.font.color.rgb = color
     return tf
+
+
+def linkbox(slide, x, y, w, h, blocks, links=None):
+    """Like textbox, but any block carrying a URL becomes a real hyperlink."""
+    tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    tf = tb.text_frame
+    tf.word_wrap = True
+    tf.margin_left = tf.margin_right = Inches(0.04)
+    tf.clear()
+    for i, b in enumerate(blocks):
+        text, size, bold, colour, before, url = (list(b) + [0, None])[:6]
+        p_ = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p_.space_before = Pt(before); p_.space_after = Pt(0); p_.line_spacing = 1.0
+        r = p_.add_run(); r.text = text
+        r.font.name = "Arial"; r.font.size = Pt(size); r.font.bold = bold
+        r.font.color.rgb = colour
+        if url:
+            r.hyperlink.address = url
+    return tb
 
 
 def textbox(slide, x, y, w, h, blocks, **kw):
@@ -200,10 +229,9 @@ set_title(s2, "WHY WE STAND OUT", 28)
 remove(shape_by_name(s2, "TextBox 8"))
 
 textbox(s2, 0.45, 1.18, 8.6, 0.6, [
-    ("APIx  \u2014  a daily airfare inflation index for the CPI", 15, True, NAVY),
-    ("India's CPI still prices air travel from monthly manual visits. We measure it "
-     "every ten minutes and publish it in the form a statistical office can ingest.",
-     12.5, False, GREY, 4)])
+    ("APIx  \u2014  a daily airfare inflation index for the CPI", 16, True, NAVY),
+    ("India's CPI prices air travel from monthly manual visits. We measure it every "
+     "ten minutes and publish it in a form MoSPI can ingest.", 13.5, False, GREY, 4)])
 
 CARDS = [
     ("The standard method,\nnot a homemade average",
@@ -225,22 +253,21 @@ CARDS = [
      "Fields a portal does not publish stay NULL. Cells with too few observations "
      "are excluded, not filled in. The system says when it does not know."),
 ]
-cw, ch, gx, gy = 4.05, 1.46, 0.28, 0.18
+cw, ch, gx, gy = 4.05, 1.62, 0.28, 0.18
 for i, (title, body) in enumerate(CARDS):
     x = 0.45 + (i % 3) * (cw + gx)
-    y = 2.28 + (i // 3) * (ch + gy)
-    card = panel(s2, x, y, cw, ch, fill=PALER, line=LINE)
+    y = 2.24 + (i // 3) * (ch + gy)
+    card = panel(s2, x, y, cw, ch, fill=TINTS[i], line=None)
     bar = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
-                              Inches(cw), Inches(0.05))
-    bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
+                              Inches(cw), Inches(0.07))
+    bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    write(card.text_frame, [(title, 13, True, NAVY), (body, 10.5, False, INK, 5)])
+    write(card.text_frame, [(title, 14, True, ACCENTS[i]), (body, 12, False, INK, 5)])
 
-run = panel(s2, 0.45, 5.62, 12.4, 0.74, fill=PALE, line=None)
+run = panel(s2, 0.45, 5.78, 12.4, 0.70, fill=RGBColor(0xE4,0xF4,0xEC), line=None)
 write(run.text_frame, [
-    ("BUILT AND RUNNING  \u00b7  36,000+ fares collected  \u00b7  15 busiest city pairs "
-     "\u00d7 5 booking lead times  \u00b7  every 10 minutes  \u00b7  \u20b90 a month",
-     13, True, NAVY)])
+    ("BUILT AND RUNNING \u00b7 36,000+ fares \u00b7 15 city pairs \u00d7 5 lead times "
+     "\u00b7 every 10 minutes \u00b7 \u20b90 a month", 14, True, GREEN)])
 
 # =====================================================================  S3
 s3 = prs.slides[2]
@@ -311,17 +338,20 @@ FEAS = [
      "explicitly. ONS has done it since 2014. The method is precedented in official "
      "statistics, not experimental."),
 ]
+FEAS_COLOURS = [BLUE, GREEN, AMBER, INDIGO]
+FEAS_TINTS = [TINTS[0], TINTS[1], TINTS[2], TINTS[3]]
 y = 1.24
-for title, body in FEAS:
-    card = panel(s4, 0.45, y, 6.15, 1.28, fill=PALER, line=LINE)
+for i, (title, body) in enumerate(FEAS):
+    card = panel(s4, 0.45, y, 6.15, 1.30, fill=FEAS_TINTS[i], line=None)
     bar = s4.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.45), Inches(y),
-                              Inches(0.055), Inches(1.28))
-    bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
+                              Inches(0.075), Inches(1.30))
+    bar.fill.solid(); bar.fill.fore_color.rgb = FEAS_COLOURS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    write(card.text_frame, [(title, 13.5, True, NAVY), (body, 11, False, INK, 4)])
-    y += 1.40
+    write(card.text_frame, [(title, 14.5, True, FEAS_COLOURS[i]),
+                            (body, 12, False, INK, 4)])
+    y += 1.41
 
-heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did about them", 14)
+heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did about them", 15)
 RISKS = [("16 portals surveyed, one is usable",
           "Ten disallow us, four block us, airlines refuse automation entirely."),
          ("Cloud IPs are blocked too",
@@ -332,13 +362,13 @@ RISKS = [("16 portals surveyed, one is usable",
           "Days below 60% basket weight publish as provisional, with the reason.")]
 y = 1.70
 for risk, fix in RISKS:
-    panel(s4, 7.0, y, 5.9, 0.95, fill=PALER, line=LINE)
+    panel(s4, 7.0, y, 5.9, 0.95, fill=RGBColor(0xFA, 0xEE, 0xEE), line=None)
     bar = s4.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(7.0), Inches(y),
                               Inches(0.055), Inches(0.95))
     bar.fill.solid(); bar.fill.fore_color.rgb = RED
     bar.line.fill.background(); bar.shadow.inherit = False
-    textbox(s4, 7.2, y + 0.12, 5.6, 0.75,
-            [(risk, 13, True, NAVY), (fix, 11.5, False, INK, 4)])
+    textbox(s4, 7.2, y + 0.11, 5.6, 0.78,
+            [(risk, 14, True, MAROON), (fix, 12, False, INK, 4)])
     y += 1.03
 
 
@@ -348,7 +378,7 @@ set_team_oval(s5)
 set_title(s5, "IMPACT AND BENEFITS", 28)
 remove(shape_by_name(s5, "TextBox 8"))
 
-heading(s5, 0.45, 1.20, 12.4, "From a fare on a screen to a figure in the CPI", 14)
+heading(s5, 0.45, 1.20, 12.4, "From a fare on a screen to a figure in the CPI", 15)
 JOURNEY = [
     ("A fare is published", "A portal shows a price for one route\non one departure date"),
     ("We observe it", "Collected every 10 minutes,\nrobots-checked, timestamped"),
@@ -360,9 +390,9 @@ JOURNEY = [
 bw, gap = 1.86, 0.24
 for i, (t, d) in enumerate(JOURNEY):
     x = 0.45 + i * (bw + gap)
-    box = panel(s5, x, 1.70, bw, 1.36, fill=PALER, line=LINE)
-    write(box.text_frame, [(str(i + 1), 11.5, True, BLUE),
-                           (t, 12.5, True, NAVY, 2), (d, 9.5, False, GREY, 4)])
+    box = panel(s5, x, 1.70, bw, 1.42, fill=TINTS[i % len(TINTS)], line=None)
+    write(box.text_frame, [(str(i + 1), 12, True, ACCENTS[i % len(ACCENTS)]),
+                           (t, 13, True, NAVY, 2), (d, 10.5, False, GREY, 4)])
     box.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
     if i < len(JOURNEY) - 1:
         ar = s5.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, Inches(x + bw + 0.02),
@@ -370,24 +400,29 @@ for i, (t, d) in enumerate(JOURNEY):
         ar.fill.solid(); ar.fill.fore_color.rgb = BLUE
         ar.line.fill.background(); ar.shadow.inherit = False
 
-s5.shapes.add_picture(APIXC, Inches(0.45), Inches(3.32), width=Inches(6.2))
+s5.shapes.add_picture(SHOT, Inches(0.45), Inches(3.36), width=Inches(6.2))
+linkbox(s5, 0.45, 6.42, 6.2, 0.44, [
+    ("Live: apix-portal.pages.dev", 12, True, BLUE, 0, "https://apix-portal.pages.dev"),
+    ("Headline inflation, release status and the method, stated on the page.",
+     11, False, GREY, 2)])
 
-heading(s5, 7.0, 3.32, 5.9, "Who benefits, and how", 14)
+heading(s5, 7.0, 3.32, 5.9, "Who benefits, and how", 15)
 BEN = [("MoSPI / NSO", "A defensible transport input, recomputable from stored micro-data"),
        ("DGCA and policy", "Route-level fare behaviour nobody currently publishes"),
        ("Citizens", "A public record of what air travel actually costs over time"),
        ("Researchers", "An open, reproducible price series for a market that has none")]
 y = 3.76
 for who, what in BEN:
-    chip(s5, 7.0, y, 1.75, 0.30, who, fill=NAVY, size=10)
-    textbox(s5, 8.95, y - 0.02, 3.95, 0.5, [(what, 11.5, False, INK)])
-    y += 0.56
+    chip(s5, 7.0, y, 1.85, 0.32, who, fill=ACCENTS[BEN.index((who, what)) % len(ACCENTS)],
+         size=11)
+    textbox(s5, 9.05, y - 0.02, 3.85, 0.5, [(what, 12, False, INK)])
+    y += 0.60
 
-promise = panel(s5, 7.0, 6.06, 5.9, 0.80, fill=PALE, line=None)
+promise = panel(s5, 7.0, 6.02, 5.9, 0.84, fill=RGBColor(0xE4,0xF4,0xEC), line=None)
 write(promise.text_frame, [
-    ("OUR PROMISE", 10.5, True, NAVY),
+    ("OUR PROMISE", 11.5, True, GREEN),
     ("Replace one manual price visit a month with 144 automated observations a day "
-     "\u2014 at zero marginal cost.", 12, False, INK, 3)])
+     "\u2014 at zero marginal cost.", 13, False, INK, 3)])
 
 # =====================================================================  S6
 s6 = prs.slides[5]
@@ -398,45 +433,57 @@ remove(shape_by_name(s6, "TextBox 8"))
 REFS = [
     ("Method \u2014 why Jevons",
      "Eurostat, Practical guidelines on web scraping for the HICP (2020). Names air "
-     "fares explicitly as a scraped category. HICP is a chain-linked Laspeyres index "
-     "built on Jevons elementary aggregates."),
-    ("Precedent \u2014 it is already done",
+     "fares explicitly as a scraped category.",
+     "Eurostat HICP guidance \u2192",
+     "https://ec.europa.eu/eurostat/documents/272892/12032198/Guidelines-web-scraping-HICP-11-2020.pdf"),
+    ("Precedent \u2014 already done",
      "ONS ran a web-scraping programme for consumer prices from 2014, Eurostat-funded "
-     "from 2015. Kn\u00ed\u017eat (2023), Web scraped data in consumer price indices, "
-     "on aggregating daily scraped prices to monthly."),
+     "from 2015.",
+     "ONS research indices \u2192",
+     "https://www.ons.gov.uk/economy/inflationandpriceindices/articles/researchindicesusingwebscrapedpricedata/august2017update/previous/v1/pdf"),
     ("The Indian basket",
-     "DGCA monthly city-pair statistics: 164 million domestic passengers, IndiGo 64.2% "
-     "share. Our own 1,000-fare sample returned 68.2% IndiGo \u2014 arrived at "
-     "independently."),
-    ("Standards we hold ourselves to",
+     "DGCA city-pair statistics: 164 m domestic passengers, IndiGo 64.2%. Our own "
+     "1,000-fare sample returned 68.2% \u2014 arrived at independently.",
+     "DGCA monthly statistics \u2192",
+     "https://www.dgca.gov.in/digigov-portal/"),
+    ("Standards we hold to",
      "RFC 9309, the Robots Exclusion Protocol. We implemented it ourselves after "
-     "finding Python's standard parser reports disallowed paths as allowed."),
-    ("Our own field research",
-     "16 Indian portals surveyed: one usable. 56 free-tier models tested: six answered, "
-     "three reached end-of-life mid-build. Prompt chunking took a small model from 1 of "
-     "40 fares to 38."),
-    ("Live for inspection",
-     "Portal: apix-portal.pages.dev  \u00b7  API: apix-api-n5ux.onrender.com/docs  "
-     "\u00b7  Code and full method: github.com/BradCage-afk/sih-2026-airfare-index"),
+     "finding Python's standard parser reports disallowed paths as allowed.",
+     "RFC 9309 \u2192", "https://www.rfc-editor.org/rfc/rfc9309"),
+    ("CPI methodology",
+     "MoSPI CPI (Base 2012=100). Field collectors visit shops and markets monthly \u2014 "
+     "the process this augments.",
+     "MoSPI CPI series \u2192",
+     "https://www.cpi.mospi.gov.in/PDFile/CPI-Changes_in_the_Revised_Series.pdf"),
+    ("Our code and full method",
+     "Collector, index engine, export API and portal. The README documents the method, "
+     "the exclusion rules and the publication threshold.",
+     "github.com/BradCage-afk/sih-2026-airfare-index \u2192",
+     "https://github.com/BradCage-afk/sih-2026-airfare-index"),
 ]
-cw2, ch2, gx2, gy2 = 4.05, 1.82, 0.28, 0.20
-for i, (title, body) in enumerate(REFS):
+cw2, ch2, gx2, gy2 = 4.05, 1.86, 0.28, 0.18
+for i, (title, body, linktext, url) in enumerate(REFS):
     x = 0.45 + (i % 3) * (cw2 + gx2)
     y = 1.24 + (i // 3) * (ch2 + gy2)
-    card = panel(s6, x, y, cw2, ch2, fill=PALER, line=LINE)
+    panel(s6, x, y, cw2, ch2, fill=TINTS[i], line=None)
     bar = s6.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
-                              Inches(cw2), Inches(0.05))
-    bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
+                              Inches(cw2), Inches(0.07))
+    bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    write(card.text_frame, [(title, 12.5, True, NAVY), (body, 10, False, INK, 5)])
+    linkbox(s6, x + 0.16, y + 0.16, cw2 - 0.32, ch2 - 0.28, [
+        (title, 13.5, True, ACCENTS[i]),
+        (body, 11.5, False, INK, 4),
+        (linktext, 11, True, BLUE, 5, url)])
 
-s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.28), width=Inches(4.5))
-textbox(s6, 5.25, 5.34, 7.6, 1.4, [
-    ("Everything above is reproducible.", 12.5, True, NAVY),
-    ("The index, the charts in this deck and the figures on the portal are all "
-     "regenerated from the database by scripts in the repository \u2014 nothing here "
-     "is transcribed by hand, so no number in this presentation can drift from what "
-     "the system actually holds.", 11, False, INK, 4)])
+s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.26), width=Inches(4.4))
+linkbox(s6, 5.10, 5.32, 7.75, 1.5, [
+    ("Everything above is reproducible.", 13, True, NAVY),
+    ("The index, every chart in this deck and every figure on the portal are "
+     "regenerated from the database by scripts in the repository. Nothing is "
+     "transcribed by hand, so no number here can drift from what the system holds.",
+     11.5, False, INK, 4),
+    ("Live API and interactive documentation \u2192", 11.5, True, BLUE, 5,
+     "https://apix-api-n5ux.onrender.com/docs")])
 
 drop_slide(prs, 6)
 prs.save(OUT)
