@@ -33,24 +33,31 @@ fig.tight_layout(); fig.savefig(f"{OUT}/chart-apix.png", facecolor="white", bbox
 print("wrote chart-apix.png", [round(y,2) for y in ys])
 
 # ---- 2. the portal survey — a finding in its own right
+# Drawn at the aspect it is placed at on slide 6 (4.55 x 1.70 in) with the axes
+# positioned by hand, so nothing is scaled down afterwards and the category
+# labels stay legible in the deck.
 CATS = [("Permitted and usable", 1, "#1baf7a"),
         ("Permitted, no date control", 1, "#eda100"),
         ("Disallowed by robots.txt", 6, "#4F81BD"),
         ("Unreachable or blocked", 4, "#8fa8c4"),
-        ("Airline sites block automation", 4, "#C0504D")]
-fig, ax = plt.subplots(figsize=(7.0, 2.6), dpi=200)
+        ("Airlines block automation", 4, "#C0504D")]
+fig, ax = plt.subplots(figsize=(5.0, 1.866), dpi=300)
+fig.subplots_adjust(left=0.50, right=0.975, top=0.74, bottom=0.06)
 names = [c[0] for c in CATS][::-1]
 vals  = [c[1] for c in CATS][::-1]
 cols  = [c[2] for c in CATS][::-1]
 bars = ax.barh(names, vals, color=cols, height=.62)
 for b, v in zip(bars, vals):
-    ax.text(b.get_width() + .15, b.get_y() + b.get_height()/2, str(v),
-            va="center", fontsize=12, fontweight="bold", color=INK)
+    ax.text(b.get_width() + .18, b.get_y() + b.get_height()/2, str(v),
+            va="center", fontsize=10.5, fontweight="bold", color=INK)
 ax.set_xlim(0, max(vals) + 1.2)
 ax.set_xticks([])
-ax.tick_params(axis="y", length=0, labelsize=11)
+ax.tick_params(axis="y", length=0, labelsize=9.5)
+for lbl in ax.get_yticklabels():
+    lbl.set_fontweight("bold"); lbl.set_color(INK)
 for sp in ("top", "right", "bottom", "left"): ax.spines[sp].set_visible(False)
-ax.set_title(f"{sum(vals)} Indian travel portals surveyed — one is usable",
-             fontsize=12.5, fontweight="bold", color=NAVY, loc="left", pad=10)
-fig.tight_layout(); fig.savefig(f"{OUT}/chart-survey.png", facecolor="white", bbox_inches="tight")
+# the title belongs to the figure, not the axes, or it starts half way across
+fig.text(0.016, 0.955, f"{sum(vals)} Indian travel portals surveyed — one is usable",
+         ha="left", va="top", fontsize=9.5, fontweight="bold", color=NAVY)
+fig.savefig(f"{OUT}/chart-survey.png", facecolor="white")
 print("wrote chart-survey.png")

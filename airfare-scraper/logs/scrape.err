@@ -5936,3 +5936,9 @@
   info  extracted          route=DEL-HYD window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=40 chunks=7 attempts=7 ms=94098
   info  written            route=DEL-HYD window=T+1 source=cleartrip records=40 target=supabase:ngywgselrypjcyagaast/fares
   info  fetched            route=DEL-HYD window=T+7 source=cleartrip rows_found=150 rows_used=40 chars=4614 depart=2026-09-11 ms=15531
+  info  extracted          route=DEL-HYD window=T+7 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=38 chunks=7 attempts=7 ms=93448
+  info  written            route=DEL-HYD window=T+7 source=cleartrip records=38 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=DEL-HYD window=T+15 source=cleartrip rows_found=171 rows_used=40 chars=4543 depart=2026-09-19 ms=15746
+  info  extracted          route=DEL-HYD window=T+15 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=39 chunks=6 attempts=6 ms=122753
+  info  written            route=DEL-HYD window=T+15 source=cleartrip records=39 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=DEL-HYD window=T+30 source=cleartrip rows_found=171 rows_used=40 chars=4600 depart=2026-10-04 ms=15715
