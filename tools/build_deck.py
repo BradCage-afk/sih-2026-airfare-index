@@ -248,57 +248,56 @@ set_team_oval(s2)
 set_title(s2, "APIx \u2014 AIRFARE PRICE INDEX")
 remove(shape_by_name(s2, "TextBox 8"))
 
-textbox(s2, 0.45, 1.04, 8.45, 0.98, [
+textbox(s2, 0.45, 0.98, 8.45, 1.06, [
     ("PROPOSED SOLUTION", 10.5, True, BLUE),
     ("A daily airfare inflation index for the CPI", 14.5, True, NAVY, 2),
     ("MoSPI prices air travel by hand, once a month, for one departure date. APIx reads "
-     "the same public fare pages every ten minutes, turns them into one weighted index "
-     "number, and delivers it to MoSPI through an API instead of a form.",
-     12, False, GREY, 5)])
+     "the same public pages every ten minutes and delivers one weighted index number "
+     "to MoSPI through an API.", 12, False, GREY, 5)])
 
-stat = panel(s2, 9.05, 1.08, 3.80, 0.90, fill=TINTS[1], line=None)
+stat = panel(s2, 9.05, 1.02, 3.80, 0.90, fill=TINTS[1], line=None)
 write(stat.text_frame, [
     ("BUILT AND RUNNING", 10.5, True, GREEN),
     ("36,000+ fares collected · 15 city pairs × 5 lead times "
      "· every 10 minutes · ₹0 a month to run", 10.5, False, INK, 4)])
 
 # --- what changes for the CPI -----------------------------------------
-panel(s2, 0.45, 2.10, 6.95, 1.90, fill=TINTS[0], line=None)
-textbox(s2, 0.60, 2.16, 4.2, 0.26, [("WHAT CHANGES FOR THE CPI", 10.5, True, BLUE)])
-textbox(s2, 2.35, 2.44, 2.10, 0.26, [("TODAY", 11, True, GREY)])
-textbox(s2, 4.55, 2.44, 2.70, 0.26, [("WITH APIx", 11, True, GREEN)])
+panel(s2, 0.45, 2.08, 6.95, 1.88, fill=TINTS[0], line=None)
+textbox(s2, 0.60, 2.15, 4.2, 0.26, [("WHAT CHANGES FOR THE CPI", 10.5, True, BLUE)])
+textbox(s2, 2.35, 2.45, 2.10, 0.26, [("TODAY", 11, True, GREY)])
+textbox(s2, 4.55, 2.45, 2.70, 0.26, [("WITH APIx", 11, True, GREEN)])
 CHANGES = [("Frequency",   "once a month",        "every 10 minutes"),
            ("Coverage",    "a handful of quotes", "75 priced cells"),
            ("Price basis", "one quoted price",    "minimum logical fare"),
            ("Delivery",    "typed into a form",   "authenticated REST API")]
 for i, (attr, today, ours) in enumerate(CHANGES):
-    yy = 2.74 + i * 0.29
+    yy = 2.77 + i * 0.29
     textbox(s2, 0.60, yy, 1.75, 0.26, [(attr, 11, True, INK)])
     textbox(s2, 2.35, yy, 2.10, 0.26, [(today, 10.5, False, GREY)])
     textbox(s2, 4.55, yy, 2.70, 0.26, [(ours, 10.5, True, INK)])
 
 # --- the formula and the definitions behind it -------------------------
-panel(s2, 7.55, 2.10, 5.30, 0.96, fill=TINTS[3], line=None)
-textbox(s2, 7.70, 2.14, 5.00, 0.24, [("THE INDEX IN ONE LINE", 10.5, True, INDIGO)])
-textbox(s2, 7.70, 2.38, 5.00, 0.26, [
+panel(s2, 7.55, 2.08, 5.30, 0.98, fill=TINTS[3], line=None)
+textbox(s2, 7.70, 2.13, 5.00, 0.24, [("THE INDEX IN ONE LINE", 10.5, True, INDIGO)])
+textbox(s2, 7.70, 2.39, 5.00, 0.26, [
     ("APIxₜ = 100 × exp( Σ wᵢ·ln(Pᵢ,ₜ/Pᵢ,₀) / Σ wᵢ )", 10.5, True, INK)])
-textbox(s2, 7.70, 2.64, 5.00, 0.36, [
+textbox(s2, 7.70, 2.66, 5.00, 0.36, [
     ("Weighted Jevons — the elementary-aggregate formula Eurostat and the ONS "
      "use for their own price indices.", 10, False, GREY)])
 
-panel(s2, 7.55, 3.10, 5.30, 0.90, fill=TINTS[4], line=None)
-textbox(s2, 7.70, 3.14, 5.00, 0.24, [("WHAT THE TERMS MEAN", 10.5, True, TEAL)])
+panel(s2, 7.55, 3.10, 5.30, 0.86, fill=TINTS[4], line=None)
+textbox(s2, 7.70, 3.13, 5.00, 0.24, [("WHAT THE TERMS MEAN", 10.5, True, TEAL)])
 DEFS = [("Basket", "15 city pairs × 5 lead times = 75 cells"),
         ("Price",  "minimum logical fare, no add-ons"),
         ("Weight", "route seat share × lead-time share"),
         ("Base",   "August 2026 = 100")]
 for i, (k, v) in enumerate(DEFS):
-    yy = 3.36 + i * 0.16
+    yy = 3.33 + i * 0.15
     textbox(s2, 7.70, yy, 0.85, 0.16, [(k, 10, True, TEAL)])
     textbox(s2, 8.55, yy, 4.20, 0.16, [(v, 10, False, INK)])
 
 # --- innovation and uniqueness ----------------------------------------
-heading(s2, 0.45, 4.08, 12.4, "Why it stands out", 14)
+heading(s2, 0.45, 4.06, 12.4, "Why it stands out", 14)
 
 CARDS = [
     ("The standard method",
@@ -320,10 +319,10 @@ CARDS = [
      "Fields a portal does not publish stay NULL. Cells with too few observations are "
      "excluded, not filled in — the system says when it does not know."),
 ]
-cw, ch, gx, gy = 3.96, 1.16, 0.26, 0.12
+cw, ch, gx, gy = 3.96, 1.16, 0.26, 0.16
 for i, (title, body) in enumerate(CARDS):
     x = 0.45 + (i % 3) * (cw + gx)
-    y = 4.46 + (i // 3) * (ch + gy)
+    y = 4.44 + (i // 3) * (ch + gy)
     card = panel(s2, x, y, cw, ch, fill=TINTS[i], line=None)
     bar = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
                               Inches(cw), Inches(0.07))
@@ -555,73 +554,86 @@ set_title(s6, "RESEARCH AND REFERENCES")
 remove(shape_by_name(s6, "TextBox 8"))
 
 REFS = [
-    ("Method \u2014 why Jevons",
+    ("Method — why Jevons",
      "Eurostat, Practical guidelines on web scraping for the HICP (2020). Names air "
      "fares explicitly as a scraped category.",
      "Eurostat guidance",
      "https://ec.europa.eu/eurostat/documents/272892/12032198/Guidelines-web-scraping-HICP-11-2020.pdf"),
-    ("Precedent \u2014 already done",
-     "ONS ran a web-scraping programme for consumer prices from 2014, Eurostat-funded "
-     "from 2015.",
-     "ONS study",
+    ("The international standard",
+     "CPI Manual: Concepts and Methods (ILO, IMF, OECD, UN, World Bank, 2020). Sets out "
+     "elementary aggregates and why Jevons is preferred.",
+     "CPI Manual 2020",
+     "https://www.ilo.org/publications/consumer-price-index-manual-concepts-and-methods-2020"),
+    ("Precedent — already done",
+     "The ONS ran a web-scraping programme for consumer prices from 2014, Eurostat-funded "
+     "from 2015. This is not an untried method.",
+     "ONS research indices",
      "https://www.ons.gov.uk/economy/inflationandpriceindices/articles/researchindicesusingwebscrapedpricedata/august2017update/previous/v1/pdf"),
+    ("The series we augment",
+     "MoSPI moved the CPI to base 2024=100 in February 2026, aligned to COICOP 2018 — "
+     "358 weighted items, 50 of them services. Air travel sits in Transport.",
+     "2024=100 release",
+     "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2227012&reg=3&lang=1"),
+    ("How fares are priced now",
+     "Field staff price items in sampled villages and urban markets on a weekly "
+     "roster. Air travel is collected by hand.",
+     "CPI 2024 series FAQs",
+     "https://www.mospi.gov.in/uploads/documents/documents/1770891066052-Annexure_V.pdf"),
     ("The Indian basket",
      "DGCA city-pair statistics: 164 m domestic passengers, IndiGo 64.2%. Our own "
-     "1,000-fare sample returned 68.2% \u2014 arrived at independently.",
+     "1,000-fare sample returned 68.2% — arrived at independently.",
      "DGCA statistics",
      "https://www.dgca.gov.in/digigov-portal/"),
     ("Standards we hold to",
-     "RFC 9309, the Robots Exclusion Protocol. We implemented it ourselves after "
-     "finding Python's standard parser reports disallowed paths as allowed.",
-     "RFC 9309", "https://www.rfc-editor.org/rfc/rfc9309"),
-    ("CPI methodology",
-     "MoSPI CPI (Base 2012=100). Field collectors visit shops and markets monthly \u2014 "
-     "the process this augments.",
-     "MoSPI CPI series",
-     "https://www.cpi.mospi.gov.in/PDFile/CPI-Changes_in_the_Revised_Series.pdf"),
+     "RFC 9309, the Robots Exclusion Protocol. We implemented it ourselves after finding "
+     "Python's standard parser reports disallowed paths as allowed.",
+     "RFC 9309",
+     "https://www.rfc-editor.org/rfc/rfc9309"),
+    ("The market we measure",
+     "India is the world's fifth-largest aviation market, worth USD 18.1 bn in 2026 and "
+     "growing 11.7% a year. Fares move daily; the CPI reads them monthly.",
+     "Aviation market",
+     "https://www.ibef.org/industry/indian-aviation"),
     ("Our code and full method",
-     "Collector, index engine, export API and portal. The README documents the "
-     "method and the publication threshold.\n"
-     "github.com/BradCage-afk/sih-2026-airfare-index",
-     "Open the repo",
+     "Collector, index engine, export API and portal. The README documents the method, "
+     "the exclusion rules and the publication threshold.",
+     "Open the repository",
      "https://github.com/BradCage-afk/sih-2026-airfare-index"),
 ]
-textbox(s6, 0.45, 1.16, 6.0, 0.24,
-        [("EVERY CARD IS CLICKABLE \u2014 THE UNDERLINED LINK OPENS THE SOURCE",
+
+textbox(s6, 0.45, 1.08, 7.0, 0.24,
+        [("EVERY CARD IS CLICKABLE — THE UNDERLINED LINK OPENS THE SOURCE",
           9.5, True, GREY)])
 
-cw2, ch2, gx2, gy2 = 4.05, 1.78, 0.28, 0.16
+cw2, ch2, gx2, gy2 = 4.05, 1.42, 0.28, 0.14
 for i, (title, body, linktext, url) in enumerate(REFS):
     x = 0.45 + (i % 3) * (cw2 + gx2)
-    y = 1.46 + (i // 3) * (ch2 + gy2)
-    card = panel(s6, x, y, cw2, ch2, fill=TINTS[i], line=None)
+    y = 1.36 + (i // 3) * (ch2 + gy2)
+    card = panel(s6, x, y, cw2, ch2, fill=TINTS[i % len(TINTS)], line=None)
     card.click_action.hyperlink.address = url      # the whole card is the link
     bar = s6.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
-                              Inches(cw2), Inches(0.07))
-    bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
+                              Inches(cw2), Inches(0.06))
+    bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i % len(ACCENTS)]
     bar.line.fill.background(); bar.shadow.inherit = False
-    textbox(s6, x + 0.16, y + 0.14, cw2 - 0.32, ch2 - 0.46,
-            [(title, 13.5, True, ACCENTS[i]), (body, 11.5, False, INK, 4)])
-    textlink(s6, x + cw2 - 2.36, y + ch2 - 0.28, 2.20, linktext, url,
-             size=10.5, colour=ACCENTS[i])
+    textbox(s6, x + 0.16, y + 0.12, cw2 - 0.32, ch2 - 0.44,
+            [(title, 12.5, True, ACCENTS[i % len(ACCENTS)]),
+             (body, 10.5, False, INK, 4)])
+    textlink(s6, x + cw2 - 2.36, y + ch2 - 0.26, 2.20, linktext, url,
+             size=10, colour=ACCENTS[i % len(ACCENTS)])
 
-s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.20), width=Inches(4.55))
-linkbox(s6, 5.25, 5.24, 7.60, 1.3, [
-    ("Everything above is reproducible.", 13, True, NAVY),
-    ("The index, every chart in this deck and every figure on the portal are "
-     "regenerated from the database by scripts in the repository. Nothing is "
-     "transcribed by hand, so no number here can drift from what the system holds.",
-     11.5, False, INK, 4),
-    ("Everything in this deck is checkable against a live system:",
-     11.5, True, NAVY, 6)])
-
+# --- the live system, as one strip -----------------------------------------
+panel(s6, 0.45, 6.02, 12.4, 0.80, fill=TINTS[1], line=None)
+textbox(s6, 0.62, 6.08, 12.1, 0.24, [
+    ("Everything above is reproducible — every figure in this deck and on the portal "
+     "regenerates from the database by scripts in the repository, none typed by hand.",
+     11, False, INK)])
+textbox(s6, 0.62, 6.42, 1.3, 0.24, [("LIVE SYSTEM", 9.5, True, GREY)])
 OPEN = [("Live API docs", "https://apix-api-n5ux.onrender.com/docs", NAVY),
         ("Release portal", "https://apix-portal.pages.dev", GREEN),
         ("README + method", "https://github.com/BradCage-afk/sih-2026-airfare-index#readme", INDIGO),
         ("Aviation market", "https://www.ibef.org/industry/indian-aviation", TEAL)]
-lw = (7.60 - 3 * 0.14) / 4
 for i, (txt, url, col) in enumerate(OPEN):
-    textlink(s6, 5.25 + i * (lw + 0.14), 6.46, lw, txt, url,
+    textlink(s6, 1.95 + i * 2.60, 6.42, 2.50, txt, url,
              size=10.5, colour=col, align=PP_ALIGN.LEFT)
 
 drop_slide(prs, 6)

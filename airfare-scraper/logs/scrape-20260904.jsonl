@@ -1626,3 +1626,12 @@
 {"ts": "2026-09-04T20:59:21+00:00", "level": "info", "event": "written", "route": "DEL-BLR", "window": "T+7", "source": "cleartrip", "records": 37, "target": "supabase:ngywgselrypjcyagaast/fares"}
 {"ts": "2026-09-04T20:59:42+00:00", "level": "info", "event": "fetched", "route": "DEL-BLR", "window": "T+15", "source": "cleartrip", "rows_found": 171, "rows_used": 40, "chars": 4686, "depart": "2026-09-19", "ms": 15878}
 {"ts":"2026-09-04T21:00:01+00:00","event":"skipped","tier":"hot","reason":"a scrape is already running"}
+{"ts": "2026-09-04T21:01:53+00:00", "level": "info", "event": "extracted", "route": "DEL-BLR", "window": "T+15", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 38, "chunks": 7, "attempts": 7, "ms": 131239, "error": null}
+{"ts": "2026-09-04T21:01:54+00:00", "level": "info", "event": "written", "route": "DEL-BLR", "window": "T+15", "source": "cleartrip", "records": 38, "target": "supabase:ngywgselrypjcyagaast/fares"}
+{"ts": "2026-09-04T21:02:14+00:00", "level": "info", "event": "fetched", "route": "DEL-BLR", "window": "T+30", "source": "cleartrip", "rows_found": 171, "rows_used": 40, "chars": 4735, "depart": "2026-10-04", "ms": 15934}
+{"ts": "2026-09-04T21:05:24+00:00", "level": "info", "event": "extracted", "route": "DEL-BLR", "window": "T+30", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 35, "chunks": 7, "attempts": 8, "ms": 190798, "error": null}
+{"ts": "2026-09-04T21:05:25+00:00", "level": "info", "event": "written", "route": "DEL-BLR", "window": "T+30", "source": "cleartrip", "records": 35, "target": "supabase:ngywgselrypjcyagaast/fares"}
+{"ts": "2026-09-04T21:05:45+00:00", "level": "info", "event": "fetched", "route": "DEL-BLR", "window": "T+45", "source": "cleartrip", "rows_found": 171, "rows_used": 40, "chars": 4723, "depart": "2026-10-19", "ms": 15975}
+{"ts": "2026-09-04T21:08:29+00:00", "level": "info", "event": "extracted", "route": "DEL-BLR", "window": "T+45", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 40, "chunks": 7, "attempts": 8, "ms": 163703, "error": null}
+{"ts": "2026-09-04T21:08:29+00:00", "level": "info", "event": "written", "route": "DEL-BLR", "window": "T+45", "source": "cleartrip", "records": 40, "target": "supabase:ngywgselrypjcyagaast/fares"}
+{"ts": "2026-09-04T21:08:49+00:00", "level": "info", "event": "fetched", "route": "BOM-BLR", "window": "T+1", "source": "cleartrip", "rows_found": 28, "rows_used": 28, "chars": 3270, "depart": "2026-09-05", "ms": 15578}
