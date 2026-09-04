@@ -6047,3 +6047,30 @@
   info  extracted          route=CCU-BOM window=T+15 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=12 chunks=3 attempts=3 ms=11817
   info  written            route=CCU-BOM window=T+15 source=cleartrip records=12 target=supabase:ngywgselrypjcyagaast/fares
   info  fetched            route=CCU-BOM window=T+30 source=cleartrip rows_found=161 rows_used=40 chars=4591 depart=2026-10-04 ms=15632
+  info  extracted          route=CCU-BOM window=T+30 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=31 chunks=6 attempts=6 ms=61399
+  info  written            route=CCU-BOM window=T+30 source=cleartrip records=31 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=CCU-BOM window=T+45 source=cleartrip rows_found=22 rows_used=22 chars=2605 depart=2026-10-19 ms=15411
+  info  extracted          route=CCU-BOM window=T+45 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=21 chunks=4 attempts=4 ms=36987
+  info  written            route=CCU-BOM window=T+45 source=cleartrip records=21 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=HYD-BLR window=T+1 source=cleartrip rows_found=13 rows_used=13 chars=1564 depart=2026-09-05 ms=15467
+  info  extracted          route=HYD-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=13 chunks=3 attempts=3 ms=63057
+  info  written            route=HYD-BLR window=T+1 source=cleartrip records=13 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=HYD-BLR window=T+7 source=cleartrip rows_found=13 rows_used=13 chars=1562 depart=2026-09-11 ms=17650
+  info  extracted          route=HYD-BLR window=T+7 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=12 chunks=3 attempts=3 ms=37989
+  info  written            route=HYD-BLR window=T+7 source=cleartrip records=12 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=HYD-BLR window=T+15 source=cleartrip rows_found=121 rows_used=40 chars=4385 depart=2026-09-19 ms=15512
+  info  extracted          route=HYD-BLR window=T+15 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=37 chunks=6 attempts=6 ms=50766
+  info  written            route=HYD-BLR window=T+15 source=cleartrip records=37 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=HYD-BLR window=T+30 source=cleartrip rows_found=14 rows_used=14 chars=1521 depart=2026-10-04 ms=15424
+  info  extracted          route=HYD-BLR window=T+30 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=14 chunks=3 attempts=3 ms=26527
+  info  written            route=HYD-BLR window=T+30 source=cleartrip records=14 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=HYD-BLR window=T+45 source=cleartrip rows_found=119 rows_used=40 chars=4379 depart=2026-10-19 ms=16054
+  info  extracted          route=HYD-BLR window=T+45 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=36 chunks=6 attempts=6 ms=70309
+  info  written            route=HYD-BLR window=T+45 source=cleartrip records=36 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=MAA-BOM window=T+1 source=cleartrip rows_found=14 rows_used=14 chars=1635 depart=2026-09-05 ms=15532
+  info  extracted          route=MAA-BOM window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=14 chunks=3 attempts=3 ms=19241
+  info  written            route=MAA-BOM window=T+1 source=cleartrip records=14 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=MAA-BOM window=T+7 source=cleartrip rows_found=18 rows_used=18 chars=2103 depart=2026-09-11 ms=15467
+  info  extracted          route=MAA-BOM window=T+7 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=17 chunks=3 attempts=3 ms=84616
+  info  written            route=MAA-BOM window=T+7 source=cleartrip records=17 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=MAA-BOM window=T+15 source=cleartrip rows_found=130 rows_used=40 chars=4620 depart=2026-09-19 ms=15507
