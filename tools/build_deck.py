@@ -275,66 +275,85 @@ set_team_oval(s3)
 set_title(s3, "TECHNICAL APPROACH", 28)
 remove(shape_by_name(s3, "TextBox 8"))
 
-heading(s3, 0.45, 1.20, 12.4, "How a published fare becomes a published index", 15)
+heading(s3, 0.45, 1.16, 12.4, "How a published fare becomes a published index", 15)
 
-STEPS = [("1", "Collect", "Robots-gated fetch,\nevery 10 minutes"),
-         ("2", "Extract", "LLM \u2192 strict JSON,\nretry then fail over"),
-         ("3", "Validate", "Schema and range,\nnever estimates"),
-         ("4", "Clean", "Min 3 observations,\nexclusions published"),
-         ("5", "Index", "Weighted Jevons,\nroute \u00d7 lead time"),
-         ("6", "Publish", "Portal and REST API\nfor MoSPI")]
+# each step carries the number that makes it real
+STEPS = [("1", "Collect", "every 10 min", "robots-gated"),
+         ("2", "Extract", "13,000 \u2192 3,700", "chars per page"),
+         ("3", "Validate", "38 of 40", "flights kept"),
+         ("4", "Clean", "min 3 obs", "per priced cell"),
+         ("5", "Index", "75 cells", "weighted Jevons"),
+         ("6", "Publish", "2 endpoints", "portal + API")]
 bw, gap = 1.88, 0.22
-for i, (n, t, d) in enumerate(STEPS):
+for i, (n, t, big, sub) in enumerate(STEPS):
     x = 0.45 + i * (bw + gap)
-    box = panel(s3, x, 1.68, bw, 1.52, fill=TINTS[i], line=None)
-    bar = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(1.68),
+    box = panel(s3, x, 1.58, bw, 1.30, fill=TINTS[i], line=None)
+    bar = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(1.58),
                               Inches(bw), Inches(0.07))
     bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    write(box.text_frame, [(n, 12, True, ACCENTS[i]),
-                           (t, 14.5, True, NAVY, 2), (d, 11.5, False, GREY, 4)])
+    write(box.text_frame, [(f"{n}  {t}", 13.5, True, ACCENTS[i]),
+                           (big, 14, True, NAVY, 4), (sub, 10.5, False, GREY, 1)])
     box.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
     if i < 5:
         ar = s3.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, Inches(x + bw + 0.015),
-                                 Inches(2.34), Inches(gap - 0.03), Inches(0.20))
+                                 Inches(2.13), Inches(gap - 0.03), Inches(0.20))
         ar.fill.solid(); ar.fill.fore_color.rgb = ACCENTS[i]
         ar.line.fill.background(); ar.shadow.inherit = False
 
-ev = panel(s3, 0.45, 3.40, 12.4, 0.80, fill=RGBColor(0xE4, 0xF4, 0xEC), line=None)
-write(ev.text_frame, [
-    ("BUILT AND RUNNING", 11.5, True, GREEN),
-    ("36,076 fares \u00b7 298 runs, 98.7% clean \u00b7 APIx published daily and monthly "
-     "\u00b7 portal and authenticated REST API, both reading Postgres directly.",
-     13, False, INK, 3)])
+heading(s3, 0.45, 3.02, 12.4, "What actually happens to one results page", 14)
 
-# two blocks, not three — the slide was cramped because everything competed
-left = panel(s3, 0.45, 4.44, 6.15, 2.36, fill=TINTS[0], line=None)
-bar = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.45), Inches(4.44),
-                          Inches(6.15), Inches(0.07))
-bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
-bar.line.fill.background(); bar.shadow.inherit = False
-write(left.text_frame, [("What one stored fare looks like", 14, True, BLUE)])
-s3.shapes.add_picture(REC, Inches(0.72), Inches(4.92), width=Inches(5.6))
+MONO = "Consolas"
+STAGES = [
+    (BLUE, "1 \u00b7 WHAT THE PAGE GIVES US",
+     "IndiGo | 6E-955 | 20:20 | 2h |\n"
+     "Non-stop | 22:20 | \u20b96,529 |\n"
+     "\u20b9480 off with CTFKSBIC | Book",
+     "Found by structure \u2014 a time beside a price \u2014 not by CSS class names, "
+     "so a redesign cannot break it."),
+    (GREEN, "2 \u00b7 WHAT THE MODEL RETURNS",
+     '{"carrier": "IndiGo",\n'
+     ' "flight_number": "6E-955",\n'
+     ' "departure_time": "20:20",\n'
+     ' "total_fare": 6529,\n'
+     ' "base_fare": null}',
+     "Strict JSON only. Coupons and struck-through prices are ignored; "
+     "unpublished fields stay null."),
+    (INDIGO, "3 \u00b7 WHAT POSTGRES STORES",
+     "DEL \u2192 BOM  \u00b7  T+1\n"
+     "total_fare  \u20b96,529\n"
+     "source      cleartrip\n"
+     "model_used  llama-3.2-11b\n"
+     "scraped_at  2026-09-04 19:54Z",
+     "Every fare records its source, the moment it was seen and the model that "
+     "read it \u2014 so any figure traces back."),
+]
+pw2, pgap = 4.05, 0.28
+for i, (accent, title, code, note) in enumerate(STAGES):
+    x = 0.45 + i * (pw2 + pgap)
+    panel(s3, x, 3.44, pw2, 2.56, fill=TINTS[i * 2 % len(TINTS)], line=None)
+    bar = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(3.44),
+                              Inches(pw2), Inches(0.07))
+    bar.fill.solid(); bar.fill.fore_color.rgb = accent
+    bar.line.fill.background(); bar.shadow.inherit = False
+    textbox(s3, x + 0.16, 3.60, pw2 - 0.32, 0.26, [(title, 11, True, accent)])
+    code_box = panel(s3, x + 0.16, 3.90, pw2 - 0.32, 1.04, fill=WHITE, line=LINE)
+    tf = code_box.text_frame
+    tf.word_wrap = False
+    tf.margin_left = tf.margin_right = Inches(0.09)
+    tf.margin_top = Inches(0.07)
+    tf.clear()
+    for j, line in enumerate(code.split("\n")):
+        para = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
+        para.space_before = Pt(0); para.space_after = Pt(0); para.line_spacing = 1.05
+        r = para.add_run(); r.text = line
+        r.font.name = MONO; r.font.size = Pt(9.5); r.font.color.rgb = INK
+    textbox(s3, x + 0.16, 5.02, pw2 - 0.32, 0.92, [(note, 11.5, False, INK)])
 
-right = panel(s3, 7.0, 4.44, 5.85, 2.36, fill=TINTS[3], line=None)
-bar = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(7.0), Inches(4.44),
-                          Inches(5.85), Inches(0.07))
-bar.fill.solid(); bar.fill.fore_color.rgb = INDIGO
-bar.line.fill.background(); bar.shadow.inherit = False
-write(right.text_frame, [("Technologies", 14, True, INDIGO)])
-
-TECH = [("Collection", "Python 3.11 \u00b7 Playwright Chromium"),
-        ("Extraction", "OpenAI-compatible LLM, with failover"),
-        ("Validation", "Pydantic v2 \u2014 schema and ranges"),
-        ("Storage", "Supabase PostgreSQL, insert-only"),
-        ("Index", "Jevons engine, weights in config"),
-        ("Delivery", "FastAPI on Render \u00b7 Cloudflare Pages"),
-        ("Scheduling", "cron, flock-guarded, residential host")]
-y = 4.94
-for label, what in TECH:
-    chip(s3, 7.22, y, 1.28, 0.23, label, fill=INDIGO, size=9)
-    textbox(s3, 8.62, y - 0.015, 4.12, 0.26, [(what, 11, False, INK)])
-    y += 0.26
+TECHSTRIP = ("Python \u00b7 Playwright \u00b7 OpenAI-compatible LLM with failover \u00b7 "
+             "Pydantic v2 \u00b7 Supabase PostgreSQL \u00b7 FastAPI \u00b7 Cloudflare \u00b7 cron")
+strip = panel(s3, 0.45, 6.12, 12.4, 0.58, fill=RGBColor(0xEC, 0xEA, 0xF7), line=None)
+write(strip.text_frame, [("STACK   " + TECHSTRIP, 11.5, True, INDIGO)])
 
 # =====================================================================  S4
 s4 = prs.slides[3]
