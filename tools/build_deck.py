@@ -142,6 +142,24 @@ def chip(slide, x, y, w, h, text, fill=NAVY, fg=WHITE, size=10.5, bold=True):
     return shp
 
 
+def linkbutton(slide, x, y, w, h, text, url, fill=NAVY, fg=WHITE, size=10):
+    """A filled, clickable button. The hyperlink sits on the SHAPE, not the run,
+    so PowerPoint cannot repaint the label with its theme hyperlink colour."""
+    shp = panel(slide, x, y, w, h, fill=fill, line=None)
+    tf = shp.text_frame
+    tf.word_wrap = False
+    tf.margin_left = tf.margin_right = Inches(0.06)
+    tf.margin_top = tf.margin_bottom = 0
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+    para = tf.paragraphs[0]
+    para.alignment = PP_ALIGN.CENTER
+    r = para.add_run(); r.text = text
+    r.font.name = "Arial"; r.font.size = Pt(size); r.font.bold = True
+    r.font.color.rgb = fg
+    shp.click_action.hyperlink.address = url
+    return shp
+
+
 def heading(slide, x, y, w, text, size=13.5):
     """Section heading = the template's required pointer, kept verbatim."""
     tb = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(0.3))
@@ -179,12 +197,14 @@ def set_team_oval(slide):
                 r = p.add_run(); r.text = TEAM
                 r.font.size = Pt(11)
             p.alignment = PP_ALIGN.CENTER
+            tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+            tf.word_wrap = True
             for r in p.runs:
                 r.font.size = Pt(10.5)
                 r.font.bold = True
 
 
-def set_title(slide, text, size=30):
+def set_title(slide, text, size=36):
     t = shape_by_name(slide, "Title 1")
     tf = t.text_frame
     tf.clear()
@@ -202,7 +222,7 @@ sub = shape_by_name(s1, "Subtitle 3")
 if sub:
     remove(sub)
 tb = shape_by_name(s1, "TextBox 9")
-tb.left, tb.top, tb.width, tb.height = Inches(0.42), Inches(2.15), Inches(6.35), Inches(4.95)
+tb.left, tb.top, tb.width, tb.height = Inches(0.36), Inches(2.27), Inches(6.48), Inches(5.14)
 FIELDS = [
     ("Problem Statement ID", "SIH26056"),
     ("Problem Statement Title",
@@ -216,7 +236,7 @@ FIELDS = [
 ]
 blocks = []
 for i, (label, value) in enumerate(FIELDS):
-    blocks.append((f"{label} - {value}", 16, True, INK, 0 if i == 0 else 11))
+    blocks.append((f"{label} - {value}", 20, True, INK, 0 if i == 0 else 8))
 write(tb.text_frame, blocks)
 for para in tb.text_frame.paragraphs:
     para.alignment = PP_ALIGN.JUSTIFY
@@ -225,11 +245,12 @@ for para in tb.text_frame.paragraphs:
 # =====================================================================  S2
 s2 = prs.slides[1]
 set_team_oval(s2)
-set_title(s2, "PROPOSED SOLUTION", 28)
+set_title(s2, "APIx \u2014 AIRFARE PRICE INDEX")
 remove(shape_by_name(s2, "TextBox 8"))
 
-textbox(s2, 0.45, 1.08, 8.45, 0.94, [
-    ("APIx  —  a daily airfare inflation index built for the CPI", 15, True, NAVY),
+textbox(s2, 0.45, 1.04, 8.45, 0.98, [
+    ("PROPOSED SOLUTION", 10.5, True, BLUE),
+    ("A daily airfare inflation index for the CPI", 14.5, True, NAVY, 2),
     ("MoSPI prices air travel by hand, once a month, for one departure date. APIx reads "
      "the same public fare pages every ten minutes, turns them into one weighted index "
      "number, and delivers it to MoSPI through an API instead of a form.",
@@ -314,7 +335,7 @@ for i, (title, body) in enumerate(CARDS):
 # =====================================================================  S3
 s3 = prs.slides[2]
 set_team_oval(s3)
-set_title(s3, "TECHNICAL APPROACH", 28)
+set_title(s3, "TECHNICAL APPROACH")
 remove(shape_by_name(s3, "TextBox 8"))
 
 heading(s3, 0.45, 1.16, 12.4, "How a published fare becomes a published index", 15)
@@ -400,7 +421,7 @@ write(strip.text_frame, [("STACK   " + TECHSTRIP, 11.5, True, INDIGO)])
 # =====================================================================  S4
 s4 = prs.slides[3]
 set_team_oval(s4)
-set_title(s4, "FEASIBILITY AND VIABILITY", 28)
+set_title(s4, "FEASIBILITY AND VIABILITY")
 remove(shape_by_name(s4, "TextBox 8"))
 
 FEAS = [
@@ -468,7 +489,7 @@ for i, (item, cost, bold) in enumerate(COST):
 # =====================================================================  S5
 s5 = prs.slides[4]
 set_team_oval(s5)
-set_title(s5, "IMPACT AND BENEFITS", 28)
+set_title(s5, "IMPACT AND BENEFITS")
 remove(shape_by_name(s5, "TextBox 8"))
 
 heading(s5, 0.45, 1.20, 12.4, "From a fare on a screen to a figure in the CPI", 15)
@@ -530,38 +551,39 @@ promise.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
 # =====================================================================  S6
 s6 = prs.slides[5]
 set_team_oval(s6)
-set_title(s6, "RESEARCH AND REFERENCES", 28)
+set_title(s6, "RESEARCH AND REFERENCES")
 remove(shape_by_name(s6, "TextBox 8"))
 
 REFS = [
     ("Method \u2014 why Jevons",
      "Eurostat, Practical guidelines on web scraping for the HICP (2020). Names air "
      "fares explicitly as a scraped category.",
-     "Eurostat HICP guidance \u2192",
+     "Eurostat guidance",
      "https://ec.europa.eu/eurostat/documents/272892/12032198/Guidelines-web-scraping-HICP-11-2020.pdf"),
     ("Precedent \u2014 already done",
      "ONS ran a web-scraping programme for consumer prices from 2014, Eurostat-funded "
      "from 2015.",
-     "ONS research indices \u2192",
+     "ONS study",
      "https://www.ons.gov.uk/economy/inflationandpriceindices/articles/researchindicesusingwebscrapedpricedata/august2017update/previous/v1/pdf"),
     ("The Indian basket",
      "DGCA city-pair statistics: 164 m domestic passengers, IndiGo 64.2%. Our own "
      "1,000-fare sample returned 68.2% \u2014 arrived at independently.",
-     "DGCA monthly statistics \u2192",
+     "DGCA statistics",
      "https://www.dgca.gov.in/digigov-portal/"),
     ("Standards we hold to",
      "RFC 9309, the Robots Exclusion Protocol. We implemented it ourselves after "
      "finding Python's standard parser reports disallowed paths as allowed.",
-     "RFC 9309 \u2192", "https://www.rfc-editor.org/rfc/rfc9309"),
+     "RFC 9309", "https://www.rfc-editor.org/rfc/rfc9309"),
     ("CPI methodology",
      "MoSPI CPI (Base 2012=100). Field collectors visit shops and markets monthly \u2014 "
      "the process this augments.",
-     "MoSPI CPI series \u2192",
+     "MoSPI CPI series",
      "https://www.cpi.mospi.gov.in/PDFile/CPI-Changes_in_the_Revised_Series.pdf"),
     ("Our code and full method",
-     "Collector, index engine, export API and portal. The README documents the method, "
-     "the exclusion rules and the publication threshold.",
-     "github.com/BradCage-afk/sih-2026-airfare-index \u2192",
+     "Collector, index engine, export API and portal. The README documents the "
+     "method and the publication threshold.\n"
+     "github.com/BradCage-afk/sih-2026-airfare-index",
+     "Open the repo",
      "https://github.com/BradCage-afk/sih-2026-airfare-index"),
 ]
 cw2, ch2, gx2, gy2 = 4.05, 1.86, 0.28, 0.18
@@ -573,10 +595,10 @@ for i, (title, body, linktext, url) in enumerate(REFS):
                               Inches(cw2), Inches(0.07))
     bar.fill.solid(); bar.fill.fore_color.rgb = ACCENTS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    linkbox(s6, x + 0.16, y + 0.16, cw2 - 0.32, ch2 - 0.28, [
-        (title, 13.5, True, ACCENTS[i]),
-        (body, 11.5, False, INK, 4),
-        (linktext, 11, True, BLUE, 5, url)])
+    textbox(s6, x + 0.16, y + 0.16, cw2 - 0.32, ch2 - 0.72,
+            [(title, 13.5, True, ACCENTS[i]), (body, 11.5, False, INK, 4)])
+    linkbutton(s6, x + 0.16, y + ch2 - 0.46, 1.95, 0.30, linktext, url,
+               fill=ACCENTS[i], size=10)
 
 s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.20), width=Inches(4.55))
 linkbox(s6, 5.25, 5.24, 7.60, 1.3, [
@@ -585,17 +607,17 @@ linkbox(s6, 5.25, 5.24, 7.60, 1.3, [
      "regenerated from the database by scripts in the repository. Nothing is "
      "transcribed by hand, so no number here can drift from what the system holds.",
      11.5, False, INK, 4),
-    ("Live API and interactive documentation \u2192", 11.5, True, BLUE, 5,
-     "https://apix-api-n5ux.onrender.com/docs")])
+    ("Everything in this deck is checkable against a live system:",
+     11.5, True, NAVY, 6)])
 
-MORE = [("README and method notes \u2192",
-         "https://github.com/BradCage-afk/sih-2026-airfare-index#readme"),
-        ("Statistical release portal \u2192", "https://apix-portal.pages.dev"),
-        ("Indian aviation market size \u2192",
-         "https://www.ibef.org/industry/indian-aviation")]
-textbox(s6, 5.25, 6.48, 0.8, 0.24, [("ALSO", 9.5, True, GREY)])
-for i, (txt, url) in enumerate(MORE):
-    linkbox(s6, 6.05 + i * 2.30, 6.48, 2.25, 0.24, [(txt, 10, True, BLUE, 0, url)])
+OPEN = [("Live API docs", "https://apix-api-n5ux.onrender.com/docs", NAVY),
+        ("Release portal", "https://apix-portal.pages.dev", GREEN),
+        ("README + method", "https://github.com/BradCage-afk/sih-2026-airfare-index#readme", INDIGO),
+        ("Market data", "https://www.ibef.org/industry/indian-aviation", TEAL)]
+bwid = (7.60 - 3 * 0.16) / 4
+for i, (txt, url, col) in enumerate(OPEN):
+    linkbutton(s6, 5.25 + i * (bwid + 0.16), 6.42, bwid, 0.34, txt, url,
+               fill=col, size=10.5)
 
 drop_slide(prs, 6)
 prs.save(OUT)
