@@ -17,3 +17,8 @@ node_modules/
 *.pdf
 Screenshot*.png
 ss/
+
+# working notes, not part of the project
+questions.txt
+claude prompt.txt
+SIH scraper.txt
