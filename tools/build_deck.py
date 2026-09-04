@@ -419,7 +419,7 @@ REFS = [
      "Portal: apix-portal.pages.dev  \u00b7  API: apix-api-n5ux.onrender.com/docs  "
      "\u00b7  Code and full method: github.com/BradCage-afk/sih-2026-airfare-index"),
 ]
-cw2, ch2, gx2, gy2 = 4.05, 1.62, 0.28, 0.20
+cw2, ch2, gx2, gy2 = 4.05, 1.82, 0.28, 0.20
 for i, (title, body) in enumerate(REFS):
     x = 0.45 + (i % 3) * (cw2 + gx2)
     y = 1.24 + (i // 3) * (ch2 + gy2)
@@ -429,6 +429,14 @@ for i, (title, body) in enumerate(REFS):
     bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
     bar.line.fill.background(); bar.shadow.inherit = False
     write(card.text_frame, [(title, 12.5, True, NAVY), (body, 10, False, INK, 5)])
+
+s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.28), width=Inches(4.5))
+textbox(s6, 5.25, 5.34, 7.6, 1.4, [
+    ("Everything above is reproducible.", 12.5, True, NAVY),
+    ("The index, the charts in this deck and the figures on the portal are all "
+     "regenerated from the database by scripts in the repository \u2014 nothing here "
+     "is transcribed by hand, so no number in this presentation can drift from what "
+     "the system actually holds.", 11, False, INK, 4)])
 
 drop_slide(prs, 6)
 prs.save(OUT)
