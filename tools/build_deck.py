@@ -42,6 +42,29 @@ LINE   = RGBColor(0xC7, 0xD3, 0xE3)
 
 TEAM = "Fare Enough 101"
 
+
+def fare_count(fallback=51_000):
+    """Live row count, so the headline figure never drifts from the database.
+    Falls back to a stated floor when the deck is built offline."""
+    try:
+        import os
+        env = "/home/ajeet/SIH/airfare-scraper/.env"
+        for line in open(env):
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k, v.strip().strip('"').strip("'"))
+        from supabase import create_client
+        sb = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+        n = sb.table("fares").select("id", count="exact").limit(1).execute().count
+        return max(int(n), fallback)
+    except Exception:
+        return fallback
+
+
+FARES = fare_count()
+print(f"fares in database: {FARES:,}")
+
 prs = Presentation(SRC)
 
 
@@ -258,7 +281,7 @@ textbox(s2, 0.45, 0.98, 8.45, 1.06, [
 stat = panel(s2, 9.05, 1.02, 3.80, 0.90, fill=TINTS[1], line=None)
 write(stat.text_frame, [
     ("BUILT AND RUNNING", 10.5, True, GREEN),
-    ("36,000+ fares collected · 15 city pairs × 5 lead times "
+    (f"{FARES // 1000:,},000+ fares collected · 15 city pairs × 5 lead times "
      "· every 10 minutes · ₹0 a month to run", 10.5, False, INK, 4)])
 
 # --- what changes for the CPI -----------------------------------------
@@ -473,14 +496,14 @@ for risk, fix in RISKS:
 
 # --- viability: the running cost, itemised ----------------------------
 heading(s4, 7.0, 5.58, 5.9, "What it costs to run", 15)
-panel(s4, 7.0, 5.98, 5.9, 0.92, fill=TINTS[1], line=None)
+panel(s4, 7.0, 5.96, 5.9, 0.96, fill=TINTS[1], line=None)
 COST = [("Collection · Playwright", "₹0 · free tier", False),
         ("Extraction · NVIDIA NIM LLM", "₹0 · free tier", False),
         ("Storage · Supabase Postgres", "₹0 · free tier", False),
         ("Publication · Render + Cloudflare", "₹0 · free tier", False),
         ("Total · 144 cycles a day", "₹0 a month", True)]
 for i, (item, cost, bold) in enumerate(COST):
-    yy = 6.04 + i * 0.17
+    yy = 6.02 + i * 0.17
     textbox(s4, 7.16, yy, 3.60, 0.17, [(item, 10, bold, GREEN if bold else INK)])
     textbox(s4, 10.85, yy, 1.90, 0.17, [(cost, 10, bold, GREEN if bold else GREY)])
 

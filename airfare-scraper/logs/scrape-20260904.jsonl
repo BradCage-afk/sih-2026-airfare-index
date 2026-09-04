@@ -1635,3 +1635,7 @@
 {"ts": "2026-09-04T21:08:29+00:00", "level": "info", "event": "extracted", "route": "DEL-BLR", "window": "T+45", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 40, "chunks": 7, "attempts": 8, "ms": 163703, "error": null}
 {"ts": "2026-09-04T21:08:29+00:00", "level": "info", "event": "written", "route": "DEL-BLR", "window": "T+45", "source": "cleartrip", "records": 40, "target": "supabase:ngywgselrypjcyagaast/fares"}
 {"ts": "2026-09-04T21:08:49+00:00", "level": "info", "event": "fetched", "route": "BOM-BLR", "window": "T+1", "source": "cleartrip", "rows_found": 28, "rows_used": 28, "chars": 3270, "depart": "2026-09-05", "ms": 15578}
+{"ts": "2026-09-04T21:09:54+00:00", "level": "info", "event": "extracted", "route": "BOM-BLR", "window": "T+1", "source": "cleartrip", "model": "meta/llama-3.2-11b-vision-instruct", "flights": 28, "chunks": 5, "attempts": 5, "ms": 64833, "error": null}
+{"ts": "2026-09-04T21:09:55+00:00", "level": "info", "event": "written", "route": "BOM-BLR", "window": "T+1", "source": "cleartrip", "records": 28, "target": "supabase:ngywgselrypjcyagaast/fares"}
+{"ts":"2026-09-04T21:10:01+00:00","event":"skipped","tier":"hot","reason":"a scrape is already running"}
+{"ts": "2026-09-04T21:10:15+00:00", "level": "info", "event": "fetched", "route": "BOM-BLR", "window": "T+7", "source": "cleartrip", "rows_found": 36, "rows_used": 36, "chars": 3952, "depart": "2026-09-11", "ms": 15481}
