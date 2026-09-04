@@ -30,7 +30,7 @@ GREEN  = RGBColor(0x4F, 0x7A, 0x3A)
 WHITE  = RGBColor(0xFF, 0xFF, 0xFF)
 LINE   = RGBColor(0xC7, 0xD3, 0xE3)
 
-TEAM = "‹TEAM NAME›"
+TEAM = "Fare Enough"
 
 prs = Presentation(SRC)
 
@@ -196,40 +196,51 @@ write(tb.text_frame, blocks)
 # =====================================================================  S2
 s2 = prs.slides[1]
 set_team_oval(s2)
-set_title(s2, "MEASURING AIRFARE INFLATION FOR THE CPI", 26)
+set_title(s2, "WHY WE STAND OUT", 28)
 remove(shape_by_name(s2, "TextBox 8"))
 
-prob = panel(s2, 0.45, 1.22, 6.2, 0.82, fill=PALE, line=None)
-write(prob.text_frame, [
-    ("THE PROBLEM", 11, True, NAVY),
-    ("India's CPI prices air travel from occasional manual quotes. An airfare "
-     "is not one price — it depends on when you book — so a single quote "
-     "cannot represent it.", 14, False, INK, 4)])
+textbox(s2, 0.45, 1.18, 8.6, 0.6, [
+    ("APIx  \u2014  a daily airfare inflation index for the CPI", 15, True, NAVY),
+    ("India's CPI still prices air travel from monthly manual visits. We measure it "
+     "every ten minutes and publish it in the form a statistical office can ingest.",
+     12.5, False, GREY, 4)])
 
-textbox(s2, 0.45, 2.26, 6.2, 1.4, [
-    ("Proposed Solution", 15, True, NAVY),
-    ("APIx — a daily airfare inflation index, built by the method Eurostat "
-     "and ONS use and published for MoSPI to ingest.", 15, False, INK, 8),
-])
-ln = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.47), Inches(2.56),
-                         Inches(1.5), Inches(0.03))
-ln.fill.solid(); ln.fill.fore_color.rgb = BLUE; ln.line.fill.background()
-ln.shadow.inherit = False
+CARDS = [
+    ("The standard method,\nnot a homemade average",
+     "Weighted Jevons on minimum logical fares \u2014 the elementary-aggregate method "
+     "Eurostat and ONS use for their own price indices."),
+    ("Weighting is a matrix,\nnot a guess",
+     "Every cell is weighted by route share of scheduled seats \u00d7 booking lead "
+     "time, so Delhi\u2013Mumbai moves the index three times as much as Delhi\u2013Srinagar."),
+    ("It knows when not\nto publish",
+     "Below 60% basket coverage a figure is marked provisional with the reason. "
+     "An index that admits thin coverage is worth more than one that never does."),
+    ("Machine-readable\nfor MoSPI",
+     "An authenticated REST endpoint returns the index with its method, coverage "
+     "and revision history. Nobody retypes a number from a screen."),
+    ("Compliance by\nconstruction",
+     "robots.txt is checked to RFC 9309 before every single request. We wrote our "
+     "own parser because Python's standard one gets it wrong."),
+    ("It never\nestimates",
+     "Fields a portal does not publish stay NULL. Cells with too few observations "
+     "are excluded, not filled in. The system says when it does not know."),
+]
+cw, ch, gx, gy = 4.05, 1.46, 0.28, 0.18
+for i, (title, body) in enumerate(CARDS):
+    x = 0.45 + (i % 3) * (cw + gx)
+    y = 2.28 + (i // 3) * (ch + gy)
+    card = panel(s2, x, y, cw, ch, fill=PALER, line=LINE)
+    bar = s2.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
+                              Inches(cw), Inches(0.05))
+    bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
+    bar.line.fill.background(); bar.shadow.inherit = False
+    write(card.text_frame, [(title, 13, True, NAVY), (body, 10.5, False, INK, 5)])
 
-s2.shapes.add_picture(MAP, Inches(0.45), Inches(3.35), width=Inches(5.75))
-
-s2.shapes.add_picture(APIXC, Inches(7.0), Inches(1.24), width=Inches(5.9))
-textbox(s2, 7.0, 4.62, 5.9, 0.85, [
-    ("Published from live observations.", 13.5, True, NAVY),
-    ("36,000 fares across 298 runs. Days below the coverage threshold publish "
-     "as provisional, not as settled.", 13, False, GREY, 4),
-])
-
-heading(s2, 7.0, 5.58, 5.9, "Innovation", 14)
-bullets(s2, 7.0, 6.00, 5.9, 0.8, [
-    "Weighted Jevons — the international standard method.",
-    "Weights form a matrix: route seats × booking lead time.",
-], size=13, gap=6)
+run = panel(s2, 0.45, 5.62, 12.4, 0.74, fill=PALE, line=None)
+write(run.text_frame, [
+    ("BUILT AND RUNNING  \u00b7  36,000+ fares collected  \u00b7  15 busiest city pairs "
+     "\u00d7 5 booking lead times  \u00b7  every 10 minutes  \u00b7  \u20b90 a month",
+     13, True, NAVY)])
 
 # =====================================================================  S3
 s3 = prs.slides[2]
@@ -282,29 +293,41 @@ set_team_oval(s4)
 set_title(s4, "FEASIBILITY AND VIABILITY", 28)
 remove(shape_by_name(s4, "TextBox 8"))
 
-heading(s4, 0.45, 1.24, 6.0, "Feasibility", 15)
-bullets(s4, 0.45, 1.70, 6.0, 2.0, [
-    "A working prototype, collecting right now.",
-    "₹0 a month: free tiers end to end.",
-    "~2 minutes of compute per 10-minute cycle.",
-    "A new route is one line; a new portal, one entry.",
-], size=14, gap=9)
+FEAS = [
+    ("Technical feasibility",
+     "India is the world's fifth-largest aviation market, worth USD 18.14 bn in 2026 "
+     "and growing at 11.72% a year. The prices exist and change constantly \u2014 "
+     "what is missing is a systematic way to measure them."),
+    ("Operational feasibility",
+     "164 million domestic passengers a year across 148 operational airports, up from "
+     "74 in 2014. A fixed basket of the 15 busiest city pairs tracks the traffic that "
+     "actually matters."),
+    ("Economic feasibility",
+     "The pipeline runs on free tiers at \u20b90 a month and ~2 minutes of compute per "
+     "cycle. MoSPI's field collectors visit shops and markets monthly; this observes "
+     "144 times a day without leaving a desk."),
+    ("Regulatory feasibility",
+     "Eurostat publishes guidance on web-scraped prices for HICP and names air fares "
+     "explicitly. ONS has done it since 2014. The method is precedented in official "
+     "statistics, not experimental."),
+]
+y = 1.24
+for title, body in FEAS:
+    card = panel(s4, 0.45, y, 6.15, 1.28, fill=PALER, line=LINE)
+    bar = s4.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.45), Inches(y),
+                              Inches(0.055), Inches(1.28))
+    bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
+    bar.line.fill.background(); bar.shadow.inherit = False
+    write(card.text_frame, [(title, 13.5, True, NAVY), (body, 11, False, INK, 4)])
+    y += 1.40
 
-cost = panel(s4, 0.45, 3.95, 6.0, 0.95, fill=PALE, line=None)
-write(cost.text_frame, [
-    ("MANUAL COLLECTION vs THIS PIPELINE", 12, True, NAVY),
-    ("periodic → every 10 minutes  ·  one quoted price → 75 priced cells  ·  "
-     "field notes → source, timestamp and model stored per fare", 13, False, INK, 5)])
-
-s4.shapes.add_picture(SURV, Inches(0.45), Inches(4.92), width=Inches(5.6))
-
-heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did", 15)
+heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did about them", 14)
 RISKS = [("16 portals surveyed, one is usable",
           "Ten disallow us, four block us, airlines refuse automation entirely."),
          ("Cloud IPs are blocked too",
-          "Verified in CI — so collection runs from a residential host."),
+          "Verified in CI \u2014 so collection runs from a residential host."),
          ("Models get retired without notice",
-          "Three died during this build. Extraction now fails over."),
+          "Three died during this build. Extraction now fails over automatically."),
          ("Thin coverage would mislead",
           "Days below 60% basket weight publish as provisional, with the reason.")]
 y = 1.70
@@ -315,8 +338,9 @@ for risk, fix in RISKS:
     bar.fill.solid(); bar.fill.fore_color.rgb = RED
     bar.line.fill.background(); bar.shadow.inherit = False
     textbox(s4, 7.2, y + 0.12, 5.6, 0.75,
-            [(risk, 14, True, NAVY), (fix, 13, False, INK, 4)])
+            [(risk, 13, True, NAVY), (fix, 11.5, False, INK, 4)])
     y += 1.03
+
 
 # =====================================================================  S5
 s5 = prs.slides[4]
@@ -324,33 +348,46 @@ set_team_oval(s5)
 set_title(s5, "IMPACT AND BENEFITS", 28)
 remove(shape_by_name(s5, "TextBox 8"))
 
-s5.shapes.add_picture(PREM, Inches(0.45), Inches(1.30), width=Inches(6.3))
+heading(s5, 0.45, 1.20, 12.4, "From a fare on a screen to a figure in the CPI", 14)
+JOURNEY = [
+    ("A fare is published", "A portal shows a price for one route\non one departure date"),
+    ("We observe it", "Collected every 10 minutes,\nrobots-checked, timestamped"),
+    ("It becomes a price", "Cheapest fare per route \u00d7 lead time\n\u2014 what a traveller could transact at"),
+    ("It becomes an index", "Weighted Jevons across the basket\n\u2192 airfare inflation"),
+    ("MoSPI ingests it", "REST API with method, coverage\nand revision history attached"),
+    ("CPI reflects reality", "Transport sub-index priced from\n144 daily observations, not 1 visit"),
+]
+bw, gap = 1.86, 0.24
+for i, (t, d) in enumerate(JOURNEY):
+    x = 0.45 + i * (bw + gap)
+    box = panel(s5, x, 1.70, bw, 1.36, fill=PALER, line=LINE)
+    write(box.text_frame, [(str(i + 1), 11.5, True, BLUE),
+                           (t, 12.5, True, NAVY, 2), (d, 9.5, False, GREY, 4)])
+    box.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
+    if i < len(JOURNEY) - 1:
+        ar = s5.shapes.add_shape(MSO_SHAPE.RIGHT_ARROW, Inches(x + bw + 0.02),
+                                 Inches(2.28), Inches(gap - 0.04), Inches(0.20))
+        ar.fill.solid(); ar.fill.fore_color.rgb = BLUE
+        ar.line.fill.background(); ar.shadow.inherit = False
 
-heading(s5, 0.45, 4.62, 6.3, "Who it serves", 14)
-bullets(s5, 0.45, 5.05, 6.3, 1.2, [
-    "MoSPI / NSO — a defensible CPI transport input",
-    "DGCA and policy — evidence on fare behaviour",
-    "Citizens — when to book, and what is normal",
-], size=13.5, gap=7)
+s5.shapes.add_picture(APIXC, Inches(0.45), Inches(3.32), width=Inches(6.2))
 
-fut = panel(s5, 0.45, 6.10, 6.3, 0.72, fill=PALE, line=None)
-write(fut.text_frame, [
-    ("NEXT", 11, True, NAVY),
-    ("Official DGCA and CES weights, source access via the ministry, then "
-     "rail and bus on the same pipeline.", 13, False, INK, 3)])
+heading(s5, 7.0, 3.32, 5.9, "Who benefits, and how", 14)
+BEN = [("MoSPI / NSO", "A defensible transport input, recomputable from stored micro-data"),
+       ("DGCA and policy", "Route-level fare behaviour nobody currently publishes"),
+       ("Citizens", "A public record of what air travel actually costs over time"),
+       ("Researchers", "An open, reproducible price series for a market that has none")]
+y = 3.76
+for who, what in BEN:
+    chip(s5, 7.0, y, 1.75, 0.30, who, fill=NAVY, size=10)
+    textbox(s5, 8.95, y - 0.02, 3.95, 0.5, [(what, 11.5, False, INK)])
+    y += 0.56
 
-heading(s5, 7.0, 1.24, 5.9, "What changes", 15)
-bullets(s5, 7.0, 1.70, 5.9, 2.1, [
-    "A daily airfare inflation series for the CPI transport group.",
-    "The booking-window dimension a single quote cannot capture.",
-    "Machine-readable: MoSPI systems ingest it, nobody retypes it.",
-    "Every figure carries its method, coverage and revision history.",
-], size=13.5, gap=9)
-
-s5.shapes.add_picture(DASH, Inches(7.0), Inches(3.82), width=Inches(5.25))
-textbox(s5, 7.0, 6.44, 5.9, 0.5,
-        [("Portal: apix-portal.pages.dev", 12, True, NAVY),
-         ("API: apix-api-n5ux.onrender.com/docs", 12, True, NAVY, 2)])
+promise = panel(s5, 7.0, 6.06, 5.9, 0.80, fill=PALE, line=None)
+write(promise.text_frame, [
+    ("OUR PROMISE", 10.5, True, NAVY),
+    ("Replace one manual price visit a month with 144 automated observations a day "
+     "\u2014 at zero marginal cost.", 12, False, INK, 3)])
 
 # =====================================================================  S6
 s6 = prs.slides[5]
@@ -358,32 +395,40 @@ set_team_oval(s6)
 set_title(s6, "RESEARCH AND REFERENCES", 28)
 remove(shape_by_name(s6, "TextBox 8"))
 
-heading(s6, 0.45, 1.24, 6.1, "Methodology", 14)
-bullets(s6, 0.45, 1.67, 6.1, 1.9, [
-    "CPI Manual: Concepts and Methods (IMF / ILO, 2020)",
-    "MoSPI — CPI (Base 2012=100), Transport sub-index",
-    "Eurostat — web-scraped data in HICP compilation",
-    "ONS (UK) — web-scraped data in consumer prices",
-], size=13.5, gap=7)
-
-heading(s6, 0.45, 3.85, 6.1, "Standards", 14)
-bullets(s6, 0.45, 4.28, 6.1, 1.5, [
-    "RFC 9309 — Robots Exclusion Protocol",
-    "Each portal's robots.txt, re-checked at run time",
-    "DGCA monthly domestic traffic — basket selection",
-], size=13.5, gap=7)
-
-heading(s6, 7.0, 1.24, 5.9, "Our own field research", 14)
-bullets(s6, 7.0, 1.67, 5.9, 3.4, [
-    "Portal survey, 16 sites: one is usable. Ten disallow us in robots.txt, "
-    "four are unreachable, and every airline site blocks automation.",
-    "Python's standard robots parser wrongly permits paths "
-    "these sites disallow — we implemented RFC 9309.",
-    "Of 56 free-tier models, six answered; three reached end-of-life during "
-    "the build, one mid-run — hence automatic model failover.",
-    "Splitting the prompt into 800-character chunks took a "
-    "small model from 1 of 40 fares to 38.",
-], size=13.5, gap=9)
+REFS = [
+    ("Method \u2014 why Jevons",
+     "Eurostat, Practical guidelines on web scraping for the HICP (2020). Names air "
+     "fares explicitly as a scraped category. HICP is a chain-linked Laspeyres index "
+     "built on Jevons elementary aggregates."),
+    ("Precedent \u2014 it is already done",
+     "ONS ran a web-scraping programme for consumer prices from 2014, Eurostat-funded "
+     "from 2015. Kn\u00ed\u017eat (2023), Web scraped data in consumer price indices, "
+     "on aggregating daily scraped prices to monthly."),
+    ("The Indian basket",
+     "DGCA monthly city-pair statistics: 164 million domestic passengers, IndiGo 64.2% "
+     "share. Our own 1,000-fare sample returned 68.2% IndiGo \u2014 arrived at "
+     "independently."),
+    ("Standards we hold ourselves to",
+     "RFC 9309, the Robots Exclusion Protocol. We implemented it ourselves after "
+     "finding Python's standard parser reports disallowed paths as allowed."),
+    ("Our own field research",
+     "16 Indian portals surveyed: one usable. 56 free-tier models tested: six answered, "
+     "three reached end-of-life mid-build. Prompt chunking took a small model from 1 of "
+     "40 fares to 38."),
+    ("Live for inspection",
+     "Portal: apix-portal.pages.dev  \u00b7  API: apix-api-n5ux.onrender.com/docs  "
+     "\u00b7  Code and full method: github.com/BradCage-afk/sih-2026-airfare-index"),
+]
+cw2, ch2, gx2, gy2 = 4.05, 1.62, 0.28, 0.20
+for i, (title, body) in enumerate(REFS):
+    x = 0.45 + (i % 3) * (cw2 + gx2)
+    y = 1.24 + (i // 3) * (ch2 + gy2)
+    card = panel(s6, x, y, cw2, ch2, fill=PALER, line=LINE)
+    bar = s6.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
+                              Inches(cw2), Inches(0.05))
+    bar.fill.solid(); bar.fill.fore_color.rgb = BLUE
+    bar.line.fill.background(); bar.shadow.inherit = False
+    write(card.text_frame, [(title, 12.5, True, NAVY), (body, 10, False, INK, 5)])
 
 drop_slide(prs, 6)
 prs.save(OUT)
