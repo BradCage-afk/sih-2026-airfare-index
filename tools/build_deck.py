@@ -404,55 +404,65 @@ set_title(s4, "FEASIBILITY AND VIABILITY", 28)
 remove(shape_by_name(s4, "TextBox 8"))
 
 FEAS = [
-    ("Technical feasibility",
-     "India is the world's fifth-largest aviation market, worth USD 18.14 bn in 2026 "
-     "and growing at 11.72% a year. The prices exist and change constantly \u2014 "
-     "what is missing is a systematic way to measure them."),
-    ("Operational feasibility",
-     "164 million domestic passengers a year across 148 operational airports, up from "
-     "74 in 2014. A fixed basket of the 15 busiest city pairs tracks the traffic that "
-     "actually matters."),
-    ("Economic feasibility",
-     "The pipeline runs on free tiers at \u20b90 a month and ~2 minutes of compute per "
-     "cycle. MoSPI's field collectors visit shops and markets monthly; this observes "
-     "144 times a day without leaving a desk."),
-    ("Regulatory feasibility",
-     "Eurostat publishes guidance on web-scraped prices for HICP and names air fares "
-     "explicitly. ONS has done it since 2014. The method is precedented in official "
-     "statistics, not experimental."),
+    ("Technical feasibility", "USD 18.1 bn", "market size, 2026",
+     "Fares are published continuously on public pages and change all day. "
+     "The data exists; what is missing is a systematic way to read it."),
+    ("Operational feasibility", "164 million", "domestic passengers",
+     "A fixed basket of the 15 busiest city pairs across 148 operational "
+     "airports tracks the traffic that actually moves the index."),
+    ("Economic feasibility", "₹0", "a month to run",
+     "Free tiers throughout, about two minutes of compute per cycle. MoSPI "
+     "visits shops monthly; this observes 144 times a day."),
+    ("Regulatory feasibility", "since 2014", "ONS precedent",
+     "Eurostat's HICP guidance names air fares as a scrapeable category and "
+     "the ONS has published on it since 2014 — precedented, not experimental."),
 ]
 FEAS_COLOURS = [BLUE, GREEN, AMBER, INDIGO]
-FEAS_TINTS = [TINTS[0], TINTS[1], TINTS[2], TINTS[3]]
 y = 1.24
-for i, (title, body) in enumerate(FEAS):
-    card = panel(s4, 0.45, y, 6.15, 1.30, fill=FEAS_TINTS[i], line=None)
+for i, (title, stat, statlbl, body) in enumerate(FEAS):
+    card = panel(s4, 0.45, y, 6.30, 1.28, fill=TINTS[i], line=None)
     bar = s4.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.45), Inches(y),
-                              Inches(0.075), Inches(1.30))
+                              Inches(0.075), Inches(1.28))
     bar.fill.solid(); bar.fill.fore_color.rgb = FEAS_COLOURS[i]
     bar.line.fill.background(); bar.shadow.inherit = False
-    write(card.text_frame, [(title, 14.5, True, FEAS_COLOURS[i]),
-                            (body, 12, False, INK, 4)])
-    y += 1.41
+    textbox(s4, 0.70, y + 0.10, 4.20, 1.08,
+            [(title, 14, True, FEAS_COLOURS[i]), (body, 11.5, False, INK, 4)])
+    textbox(s4, 5.00, y + 0.34, 1.62, 0.62,
+            [(stat, 13.5, True, FEAS_COLOURS[i]), (statlbl, 9, False, GREY, 2)])
+    y += 1.36
 
 heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did about them", 15)
 RISKS = [("16 portals surveyed, one is usable",
           "Ten disallow us, four block us, airlines refuse automation entirely."),
          ("Cloud IPs are blocked too",
-          "Verified in CI \u2014 so collection runs from a residential host."),
+          "Verified in CI — so collection runs from a residential host."),
          ("Models get retired without notice",
           "Three died during this build. Extraction now fails over automatically."),
          ("Thin coverage would mislead",
           "Days below 60% basket weight publish as provisional, with the reason.")]
 y = 1.70
 for risk, fix in RISKS:
-    panel(s4, 7.0, y, 5.9, 0.95, fill=RGBColor(0xFA, 0xEE, 0xEE), line=None)
+    panel(s4, 7.0, y, 5.9, 0.88, fill=RGBColor(0xFA, 0xEE, 0xEE), line=None)
     bar = s4.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(7.0), Inches(y),
-                              Inches(0.055), Inches(0.95))
+                              Inches(0.055), Inches(0.88))
     bar.fill.solid(); bar.fill.fore_color.rgb = RED
     bar.line.fill.background(); bar.shadow.inherit = False
-    textbox(s4, 7.2, y + 0.11, 5.6, 0.78,
-            [(risk, 14, True, MAROON), (fix, 12, False, INK, 4)])
-    y += 1.03
+    textbox(s4, 7.2, y + 0.09, 5.6, 0.72,
+            [(risk, 13.5, True, MAROON), (fix, 11.5, False, INK, 4)])
+    y += 0.96
+
+# --- viability: the running cost, itemised ----------------------------
+heading(s4, 7.0, 5.58, 5.9, "What it costs to run", 15)
+panel(s4, 7.0, 5.98, 5.9, 0.92, fill=TINTS[1], line=None)
+COST = [("Collection · Playwright", "₹0 · free tier", False),
+        ("Extraction · NVIDIA NIM LLM", "₹0 · free tier", False),
+        ("Storage · Supabase Postgres", "₹0 · free tier", False),
+        ("Publication · Render + Cloudflare", "₹0 · free tier", False),
+        ("Total · 144 cycles a day", "₹0 a month", True)]
+for i, (item, cost, bold) in enumerate(COST):
+    yy = 6.04 + i * 0.17
+    textbox(s4, 7.16, yy, 3.60, 0.17, [(item, 10, bold, GREEN if bold else INK)])
+    textbox(s4, 10.85, yy, 1.90, 0.17, [(cost, 10, bold, GREEN if bold else GREY)])
 
 
 # =====================================================================  S5
@@ -463,12 +473,12 @@ remove(shape_by_name(s5, "TextBox 8"))
 
 heading(s5, 0.45, 1.20, 12.4, "From a fare on a screen to a figure in the CPI", 15)
 JOURNEY = [
-    ("A fare is published", "A portal shows a price for one route\non one departure date"),
-    ("We observe it", "Collected every 10 minutes,\nrobots-checked, timestamped"),
-    ("It becomes a price", "Cheapest fare per route \u00d7 lead time\n\u2014 what a traveller could transact at"),
-    ("It becomes an index", "Weighted Jevons across the basket\n\u2192 airfare inflation"),
-    ("MoSPI ingests it", "REST API with method, coverage\nand revision history attached"),
-    ("CPI reflects reality", "Transport sub-index priced from\n144 daily observations, not 1 visit"),
+    ("A fare is published", "A portal shows a price for one route, one date"),
+    ("We observe it", "Read every 10 minutes, robots-checked"),
+    ("It becomes a price", "Cheapest logical fare per route × lead time"),
+    ("It becomes an index", "Weighted Jevons across the basket"),
+    ("MoSPI ingests it", "REST API with method and coverage"),
+    ("CPI reflects reality", "Transport sub-index from 144 daily reads"),
 ]
 bw, gap = 1.86, 0.24
 for i, (t, d) in enumerate(JOURNEY):
@@ -484,9 +494,9 @@ for i, (t, d) in enumerate(JOURNEY):
         ar.line.fill.background(); ar.shadow.inherit = False
 
 s5.shapes.add_picture(SHOT, Inches(0.45), Inches(3.36), width=Inches(6.2))
-linkbox(s5, 0.45, 6.42, 6.2, 0.44, [
+linkbox(s5, 0.45, 6.40, 6.2, 0.44, [
     ("Live: apix-portal.pages.dev", 12, True, BLUE, 0, "https://apix-portal.pages.dev"),
-    ("Headline inflation, release status and the method, stated on the page.",
+    ("Headline inflation, release status and method on one page.",
      11, False, GREY, 2)])
 
 heading(s5, 7.0, 3.32, 5.9, "Who benefits, and how", 15)
@@ -495,17 +505,27 @@ BEN = [("MoSPI / NSO", "A defensible transport input, recomputable from stored m
        ("Citizens", "A public record of what air travel actually costs over time"),
        ("Researchers", "An open, reproducible price series for a market that has none")]
 y = 3.76
-for who, what in BEN:
-    chip(s5, 7.0, y, 1.85, 0.32, who, fill=ACCENTS[BEN.index((who, what)) % len(ACCENTS)],
-         size=11)
-    textbox(s5, 9.05, y - 0.02, 3.85, 0.5, [(what, 12, False, INK)])
-    y += 0.60
+for i, (who, what) in enumerate(BEN):
+    chip(s5, 7.0, y, 1.85, 0.32, who, fill=ACCENTS[i % len(ACCENTS)], size=11)
+    textbox(s5, 9.05, y - 0.02, 3.85, 0.5, [(what, 11.5, False, INK)])
+    y += 0.52
 
-promise = panel(s5, 7.0, 6.02, 5.9, 0.84, fill=RGBColor(0xE4,0xF4,0xEC), line=None)
+# --- the impact, as numbers -------------------------------------------
+IMPACT = [("144 ×", "observations a day, not one a month", GREEN),
+          ("75", "priced cells behind every figure", INDIGO),
+          ("T+0", "same-day index, not a two-week lag", TEAL)]
+sw = (5.9 - 2 * 0.16) / 3
+for i, (val, lbl, col) in enumerate(IMPACT):
+    x = 7.0 + i * (sw + 0.16)
+    panel(s5, x, 5.80, sw, 0.62, fill=TINTS[(i * 2 + 1) % len(TINTS)], line=None)
+    textbox(s5, x + 0.10, 5.84, sw - 0.20, 0.54,
+            [(val, 15, True, col), (lbl, 8.5, False, GREY, 1)])
+
+promise = panel(s5, 7.0, 6.48, 5.9, 0.44, fill=RGBColor(0xE4, 0xF4, 0xEC), line=None)
 write(promise.text_frame, [
-    ("OUR PROMISE", 11.5, True, GREEN),
-    ("Replace one manual price visit a month with 144 automated observations a day "
-     "\u2014 at zero marginal cost.", 13, False, INK, 3)])
+    ("Our promise — replace one manual price visit a month with 144 automated "
+     "observations a day, at zero marginal cost.", 11, False, INK)])
+promise.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
 
 # =====================================================================  S6
 s6 = prs.slides[5]
@@ -558,8 +578,8 @@ for i, (title, body, linktext, url) in enumerate(REFS):
         (body, 11.5, False, INK, 4),
         (linktext, 11, True, BLUE, 5, url)])
 
-s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.26), width=Inches(4.4))
-linkbox(s6, 5.10, 5.32, 7.75, 1.5, [
+s6.shapes.add_picture(SURV, Inches(0.45), Inches(5.20), width=Inches(4.55))
+linkbox(s6, 5.25, 5.24, 7.60, 1.3, [
     ("Everything above is reproducible.", 13, True, NAVY),
     ("The index, every chart in this deck and every figure on the portal are "
      "regenerated from the database by scripts in the repository. Nothing is "
@@ -567,6 +587,15 @@ linkbox(s6, 5.10, 5.32, 7.75, 1.5, [
      11.5, False, INK, 4),
     ("Live API and interactive documentation \u2192", 11.5, True, BLUE, 5,
      "https://apix-api-n5ux.onrender.com/docs")])
+
+MORE = [("README and method notes \u2192",
+         "https://github.com/BradCage-afk/sih-2026-airfare-index#readme"),
+        ("Statistical release portal \u2192", "https://apix-portal.pages.dev"),
+        ("Indian aviation market size \u2192",
+         "https://www.ibef.org/industry/indian-aviation")]
+textbox(s6, 5.25, 6.48, 0.8, 0.24, [("ALSO", 9.5, True, GREY)])
+for i, (txt, url) in enumerate(MORE):
+    linkbox(s6, 6.05 + i * 2.30, 6.48, 2.25, 0.24, [(txt, 10, True, BLUE, 0, url)])
 
 drop_slide(prs, 6)
 prs.save(OUT)

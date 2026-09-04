@@ -6144,3 +6144,25 @@ method: weighted Jevons on minimum logical fares, seat-weighted, min 3 obs/cell
     nothing excluded — every cell met the observation, basket and plausibility rules
 
   wrote 5 day(s) to apix_daily
+
+APIx — Airfare Price Index      base 2026-09-01 = 100
+method: weighted Jevons on minimum logical fares, seat-weighted, min 3 obs/cell
+
+  day              APIx   routes  cells     obs   by lead time
+  2026-09-01     100.00 *      6     30    2040   T+1 100.0  T+7 100.0  T+15 100.0  T+30 100.0  T+45 100.0
+  2026-09-02      83.53 *      6      6   15816   T+1 83.53
+  2026-09-03      98.59 *      6     30   15718   T+1 97.3  T+7 98.63  T+15 101.32  T+30 99.06  T+45 96.69
+  2026-09-04      93.38 *      3      3   14782   T+1 93.38
+  2026-09-05     108.27 *      3      3    1401   T+1 108.27
+
+  PROVISIONAL APIx = 108.27   (+8.27% against base)
+  coverage: 34.8% of basket weight, 1 lead-time bucket(s)
+  not published as headline: 35% of basket weight (needs 60%); 1 lead-time bucket(s) (needs 3)
+  largest movers: DEL-BLR 109.5 (+9.5)   BOM-BLR 108.2 (+8.2)   DEL-BOM 107.5 (+7.5)
+
+  * provisional — coverage below publication threshold
+
+  cleaning report:
+    nothing excluded — every cell met the observation, basket and plausibility rules
+
+  wrote 5 day(s) to apix_daily
