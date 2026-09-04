@@ -6,5 +6,9 @@
 # these observations — the same way official price statistics work.
 */10 * * * * ~/SIH/airfare-scraper/run-scheduled.sh hot
 
-# The full 6-route basket once a day at 07:30 IST (~45 min)
-0 2 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index
+# The full 15-route basket across all five booking lead times (~2 h). This is
+# the ONLY tier that collects T+7 .. T+45, so if it is skipped the heat map
+# loses four of its five columns for the whole day. It waits for the lock
+# rather than giving up, and runs twice so the lead-time columns are never
+# more than ~12 hours stale.
+0 2,14 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index

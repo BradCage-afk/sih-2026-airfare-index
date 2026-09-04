@@ -5874,3 +5874,9 @@
   info  run_start          tier=hot routes=3 windows=1 sources=['cleartrip'] pages=3 estimate_s=60 period_s=600 deadline_s=510 model=meta/llama-3.2-11b-vision-instruct target=supabase:ngywgselrypjcyagaast/fares rpm_limit=40
   info  robots_check       source=cleartrip allowed=True reason=robots.txt parsed (2 groups)
   info  fetched            route=DEL-BOM window=T+1 source=cleartrip rows_found=161 rows_used=40 chars=4612 depart=2026-09-05 ms=16028
+  info  extracted          route=DEL-BOM window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=39 chunks=7 attempts=7 ms=85690
+  info  written            route=DEL-BOM window=T+1 source=cleartrip records=39 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=DEL-BLR window=T+1 source=cleartrip rows_found=171 rows_used=40 chars=4668 depart=2026-09-05 ms=15816
+  info  extracted          route=DEL-BLR window=T+1 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=37 chunks=7 attempts=7 ms=78331
+  info  written            route=DEL-BLR window=T+1 source=cleartrip records=37 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=BOM-BLR window=T+1 source=cleartrip rows_found=171 rows_used=40 chars=4610 depart=2026-09-05 ms=15715

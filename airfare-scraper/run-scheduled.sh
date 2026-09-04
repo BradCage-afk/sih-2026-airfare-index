@@ -10,14 +10,26 @@ set -uo pipefail
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
 TIER="${1:-hot}"
+
+# The index tier is the only one that collects every booking lead time, and it
+# runs once a day. If it merely fails when a 10-minute `hot` run happens to be
+# holding the lock, the whole day loses T+7 .. T+45 — which is exactly what
+# happened on 2026-09-04. Short runs give up; the daily index run waits.
+LOCK_WAIT=0
+[ "$TIER" = "index" ] && LOCK_WAIT=900
 LOG_DIR="logs"
 mkdir -p "$LOG_DIR"
 LOG="$LOG_DIR/scrape-$(date +%Y%m%d).jsonl"
 
 # Only one scrape at a time — a slow run must never overlap the next.
 exec 9>"$LOG_DIR/.lock"
-if ! flock -n 9; then
-  echo "{\"ts\":\"$(date -Iseconds)\",\"event\":\"skipped\",\"reason\":\"a scrape is already running\"}" >> "$LOG"
+if [ "$LOCK_WAIT" -gt 0 ]; then
+  flock -w "$LOCK_WAIT" 9
+else
+  flock -n 9
+fi
+if [ $? -ne 0 ]; then
+  echo "{\"ts\":\"$(date -Iseconds)\",\"event\":\"skipped\",\"tier\":\"$TIER\",\"reason\":\"a scrape is already running\"}" >> "$LOG"
   exit 0
 fi
 
