@@ -329,7 +329,7 @@ textbox(s2, 7.70, 3.25, 5.00, 0.24, [("WHAT THE TERMS MEAN", 10.5, True, TEAL)])
 DEFS = [("Basket", "15 city pairs \u00d7 5 lead times = 75 cells"),
         ("Price",  "minimum logical fare, no add-ons"),
         ("Weight", "route seat share \u00d7 lead-time share"),
-        ("Base",   "August 2026 = 100")]
+        ("Base",   "first observation day = 100")]
 for i, (k, v) in enumerate(DEFS):
     yy = 3.50 + i * 0.155
     textbox(s2, 7.70, yy, 0.85, 0.16, [(k, 10, True, TEAL)])

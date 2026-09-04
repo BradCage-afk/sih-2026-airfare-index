@@ -6074,3 +6074,8 @@
   info  extracted          route=MAA-BOM window=T+7 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=17 chunks=3 attempts=3 ms=84616
   info  written            route=MAA-BOM window=T+7 source=cleartrip records=17 target=supabase:ngywgselrypjcyagaast/fares
   info  fetched            route=MAA-BOM window=T+15 source=cleartrip rows_found=130 rows_used=40 chars=4620 depart=2026-09-19 ms=15507
+  info  extracted          route=MAA-BOM window=T+15 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=32 chunks=7 attempts=7 ms=73058
+  info  written            route=MAA-BOM window=T+15 source=cleartrip records=32 target=supabase:ngywgselrypjcyagaast/fares
+  info  fetched            route=MAA-BOM window=T+30 source=cleartrip rows_found=19 rows_used=19 chars=2209 depart=2026-10-04 ms=15459
+  info  extracted          route=MAA-BOM window=T+30 source=cleartrip model=meta/llama-3.2-11b-vision-instruct flights=18 chunks=4 attempts=4 ms=18607
+  info  written            route=MAA-BOM window=T+30 source=cleartrip records=18 target=supabase:ngywgselrypjcyagaast/fares
