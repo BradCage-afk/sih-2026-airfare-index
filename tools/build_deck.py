@@ -227,6 +227,20 @@ def set_team_oval(slide):
                 r.font.bold = True
 
 
+def set_footer(slide):
+    """The reference deck brands its footer; this keeps that edit in the build."""
+    ph = shape_by_name(slide, "Footer Placeholder 6")
+    if ph is None or not ph.has_text_frame:
+        return
+    para = ph.text_frame.paragraphs[0]
+    runs = para.runs
+    if not runs:
+        return
+    runs[0].text = f"{TEAM} - @SIH Idea submission"
+    for extra in runs[1:]:
+        extra.text = ""
+
+
 def set_title(slide, text, size=36):
     t = shape_by_name(slide, "Title 1")
     tf = t.text_frame
@@ -268,6 +282,7 @@ for para in tb.text_frame.paragraphs:
 # =====================================================================  S2
 s2 = prs.slides[1]
 set_team_oval(s2)
+set_footer(s2)
 set_title(s2, "APIx \u2014 AIRFARE PRICE INDEX")
 remove(shape_by_name(s2, "TextBox 8"))
 
@@ -351,6 +366,7 @@ for i, (title, body) in enumerate(CARDS):
 # =====================================================================  S3
 s3 = prs.slides[2]
 set_team_oval(s3)
+set_footer(s3)
 set_title(s3, "TECHNICAL APPROACH")
 remove(shape_by_name(s3, "TextBox 8"))
 
@@ -380,56 +396,45 @@ for i, (n, t, big, sub) in enumerate(STEPS):
         ar.fill.solid(); ar.fill.fore_color.rgb = ACCENTS[i]
         ar.line.fill.background(); ar.shadow.inherit = False
 
-heading(s3, 0.45, 3.02, 12.4, "What actually happens to one results page", 14)
+heading(s3, 0.45, 3.02, 12.4,
+        "What we keep from one results row \u2014 and what we drop", 14)
 
-MONO = "Consolas"
-STAGES = [
-    (BLUE, "1 \u00b7 WHAT THE PAGE GIVES US",
-     "IndiGo | 6E-955 | 20:20 | 2h |\n"
-     "Non-stop | 22:20 | \u20b96,529 |\n"
-     "\u20b9480 off with CTFKSBIC | Book",
-     "Found by structure \u2014 a time beside a price \u2014 not by CSS class names, "
-     "so a redesign cannot break it."),
-    (GREEN, "2 \u00b7 WHAT THE MODEL RETURNS",
-     '{"carrier": "IndiGo",\n'
-     ' "flight_number": "6E-955",\n'
-     ' "departure_time": "20:20",\n'
-     ' "total_fare": 6529,\n'
-     ' "base_fare": null}',
-     "Strict JSON only. Coupons and struck-through prices are ignored; "
-     "unpublished fields stay null."),
-    (INDIGO, "3 \u00b7 WHAT POSTGRES STORES",
-     "DEL \u2192 BOM  \u00b7  T+1\n"
-     "total_fare  \u20b96,529\n"
-     "source      cleartrip\n"
-     "model_used  llama-3.2-11b\n"
-     "scraped_at  2026-09-04 19:54Z",
-     "Every fare records its source, the moment it was seen and the model that "
-     "read it \u2014 so any figure traces back."),
+# The interesting part is not the raw text, it is the rule applied to each
+# field, so this is a table of decisions rather than a dump of three payloads.
+KEEP = [
+    ("IndiGo \u00b7 6E-955 \u00b7 20:20 \u2192 22:20",
+     "carrier, flight_number, times", "the flight's identity", INK),
+    ("\u20b96,529", "total_fare = 6529",
+     "the price a traveller actually pays", GREEN),
+    ("\u20b9480 off with CTFKSBIC", "dropped",
+     "a coupon is not a published fare", RED),
+    ("base fare not shown", "base_fare = NULL",
+     "we never estimate what a page omits", AMBER),
+    ("\u2014 nothing on the page \u2014", "source \u00b7 scraped_at \u00b7 model_used",
+     "so any index figure traces back", INDIGO),
 ]
-pw2, pgap = 4.05, 0.28
-for i, (accent, title, code, note) in enumerate(STAGES):
-    x = 0.45 + i * (pw2 + pgap)
-    panel(s3, x, 3.44, pw2, 2.56, fill=TINTS[i * 2 % len(TINTS)], line=None)
-    bar = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(3.44),
-                              Inches(pw2), Inches(0.07))
-    bar.fill.solid(); bar.fill.fore_color.rgb = accent
-    bar.line.fill.background(); bar.shadow.inherit = False
-    textbox(s3, x + 0.16, 3.60, pw2 - 0.32, 0.26, [(title, 11, True, accent)])
-    code_box = panel(s3, x + 0.16, 3.90, pw2 - 0.32, 1.04, fill=WHITE, line=LINE)
-    tf = code_box.text_frame
-    tf.word_wrap = False
-    tf.margin_left = tf.margin_right = Inches(0.09)
-    tf.margin_top = Inches(0.07)
-    tf.clear()
-    for j, line in enumerate(code.split("\n")):
-        para = tf.paragraphs[0] if j == 0 else tf.add_paragraph()
-        para.space_before = Pt(0); para.space_after = Pt(0); para.line_spacing = 1.05
-        r = para.add_run(); r.text = line
-        r.font.name = MONO; r.font.size = Pt(9.5); r.font.color.rgb = INK
-    textbox(s3, x + 0.16, 5.02, pw2 - 0.32, 0.92, [(note, 11.5, False, INK)])
+COLS = [(0.70, 3.85), (4.75, 4.05), (8.95, 3.70)]
 
-TECHSTRIP = ("Python \u00b7 Playwright \u00b7 OpenAI-compatible LLM with failover \u00b7 "
+panel(s3, 0.45, 3.44, 12.4, 2.56, fill=WHITE, line=LINE)
+band = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.45), Inches(3.44),
+                           Inches(12.4), Inches(0.34))
+band.fill.solid(); band.fill.fore_color.rgb = NAVY
+band.line.fill.background(); band.shadow.inherit = False
+for (cx, cwid), label in zip(COLS, ("ON THE PAGE", "WHAT WE STORE", "THE RULE")):
+    textbox(s3, cx, 3.50, cwid, 0.24, [(label, 10, True, WHITE)])
+
+for i, (page, stored, rule, colour) in enumerate(KEEP):
+    ry = 3.86 + i * 0.42
+    if i % 2 == 0:
+        stripe = s3.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.45), Inches(ry - 0.04),
+                                     Inches(12.4), Inches(0.42))
+        stripe.fill.solid(); stripe.fill.fore_color.rgb = PALER
+        stripe.line.fill.background(); stripe.shadow.inherit = False
+    textbox(s3, COLS[0][0], ry, COLS[0][1], 0.30, [(page, 11.5, False, INK)])
+    textbox(s3, COLS[1][0], ry, COLS[1][1], 0.30, [(stored, 11.5, True, colour)])
+    textbox(s3, COLS[2][0], ry, COLS[2][1], 0.30, [(rule, 11, False, GREY)])
+
+TECHSTRIP = ("Python \u00b7 Playwright \u00b7 LLM extraction with failover \u00b7 "
              "Pydantic v2 \u00b7 Supabase PostgreSQL \u00b7 FastAPI \u00b7 Cloudflare \u00b7 cron")
 strip = panel(s3, 0.45, 6.12, 12.4, 0.58, fill=RGBColor(0xEC, 0xEA, 0xF7), line=None)
 write(strip.text_frame, [("STACK   " + TECHSTRIP, 11.5, True, INDIGO)])
@@ -437,6 +442,7 @@ write(strip.text_frame, [("STACK   " + TECHSTRIP, 11.5, True, INDIGO)])
 # =====================================================================  S4
 s4 = prs.slides[3]
 set_team_oval(s4)
+set_footer(s4)
 set_title(s4, "FEASIBILITY AND VIABILITY")
 remove(shape_by_name(s4, "TextBox 8"))
 
@@ -505,6 +511,7 @@ for i, (item, cost, bold) in enumerate(COST):
 # =====================================================================  S5
 s5 = prs.slides[4]
 set_team_oval(s5)
+set_footer(s5)
 set_title(s5, "IMPACT AND BENEFITS")
 remove(shape_by_name(s5, "TextBox 8"))
 
@@ -567,6 +574,7 @@ promise.text_frame.vertical_anchor = MSO_ANCHOR.MIDDLE
 # =====================================================================  S6
 s6 = prs.slides[5]
 set_team_oval(s6)
+set_footer(s6)
 set_title(s6, "RESEARCH AND REFERENCES")
 remove(shape_by_name(s6, "TextBox 8"))
 
