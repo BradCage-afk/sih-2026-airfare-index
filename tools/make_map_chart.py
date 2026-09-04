@@ -44,24 +44,22 @@ print("wrote chart-map.png")
 c = db.FareStore()._client
 row = c.table("fares").select("*").order("scraped_at", desc=True).limit(1).execute().data[0]
 FIELDS = [("origin → destination", f"{row['origin']} → {row['destination']}"),
-          ("carrier", row["carrier"]),
-          ("departure_time", row.get("departure_time") or "—"),
+          ("carrier · departure", f"{row['carrier']} · {row.get('departure_time') or '—'}"),
           ("advance_window_days", f"T+{row['advance_window_days']}"),
           ("total_fare", f"₹{int(row['total_fare']):,}"),
           ("base_fare / taxes / udf", "NULL — not published on the listing"),
-          ("source", row["source"]),
-          ("model_used", row["model_used"]),
+          ("source · model_used", f"{row['source']} · {row['model_used']}"),
           ("scraped_at", row["scraped_at"][:19].replace("T", " ") + " UTC")]
-fig, ax = plt.subplots(figsize=(6.4, 3.1), dpi=200); ax.axis("off")
+fig, ax = plt.subplots(figsize=(7.6, 2.35), dpi=200); ax.axis("off")
 for i,(k,v) in enumerate(FIELDS):
-    y = 1 - i*0.112
-    ax.add_patch(plt.Rectangle((0, y-0.085), 1, 0.098, transform=ax.transAxes,
+    y = 1 - i*0.138
+    ax.add_patch(plt.Rectangle((0, y-0.105), 1, 0.122, transform=ax.transAxes,
                  facecolor=PALE if i % 2 == 0 else "white", edgecolor="none"))
-    ax.text(0.015, y-0.038, k, fontsize=10, color=GREY, transform=ax.transAxes,
+    ax.text(0.015, y-0.045, k, fontsize=10.5, color=GREY, transform=ax.transAxes,
             va="center", family="monospace")
-    ax.text(0.50, y-0.038, v, fontsize=10.5, color=INK, fontweight="bold",
+    ax.text(0.46, y-0.045, v, fontsize=11, color=INK, fontweight="bold",
             transform=ax.transAxes, va="center")
-ax.set_title("One stored fare — every field traceable",
+ax.set_title("",
              fontsize=13, fontweight="bold", color=NAVY, loc="left", pad=8)
 fig.tight_layout()
 fig.savefig(f"{OUT}/chart-record.png", facecolor="white", bbox_inches="tight")
