@@ -108,21 +108,21 @@ retained by the service provider". On an Indian domestic ticket those are:
 | Charge | Amount | Set by |
 |---|---|---|
 | Aviation Security Fee (ASF) | ₹200 + 18% GST = ₹236 per departing passenger | DGCA order, since 1 April 2021 |
-| User Development Fee (UDF) | Per airport; DEL ₹129, BOM ₹175 (+₹75 arriving), BLR ₹300 (+₹125 arriving, from 1 Sep 2026), HYD ₹515 (+₹220 arriving, from 1 Sep 2026), MAA ₹410, AMD ₹600 | AERA tariff orders |
+| User Development Fee (UDF) | Per airport, exclusive of GST, charged +18% on the ticket: DEL ₹129 (+₹56 arriving), BOM ₹175 (+₹75 arriving), BLR ₹300 (+₹125 arriving, from 1 Sep 2026), HYD ₹515 (+₹220 arriving, from 1 Sep 2026), MAA ₹455, AMD ₹600, CCU ₹644, PNQ ₹387, SXR ₹1,050 | AERA tariff orders, as tabulated in Lok Sabha USQ 1862 (MoCA, 31 July 2025) |
 | GST on the airline's own fare (5%) | Proportional — cancels in a price relative | — |
 
 ```
 APIx-P_t = 100 × exp( Σ wᵢ · ln((Pᵢ,t − Cᵢ,t) / (Pᵢ,0 − Cᵢ,0)) / Σ wᵢ )
-Cᵢ,t = ASF + UDF_dep(originᵢ, t) + UDF_arr(destinationᵢ, t)
+Cᵢ,t = ASF + 1.18 × [ UDF_dep(originᵢ, t) + UDF_arr(destinationᵢ, t) ]
 ```
 
 Same basket, reference period, weights and Jevons aggregation; only the price
 concept changes. The tariff table lives in `airfare-scraper/config.py:UDF_INR`
 with a source and effective date per entry, so a tariff change inside the
-series is applied from its own date. An airport whose current tariff could
-not be verified from the public record (Kolkata, Pune) is `None`, and its
-departures are **excluded** from the producer series and counted in the
-cleaning report — not estimated.
+series is applied from its own date. Every airport in the basket has a
+notified figure; an airport without one would be `None`, and its departures
+**excluded** from the producer series and counted in the cleaning report —
+not estimated.
 
 Because C is a fixed rupee amount, a fare rise of x% appears in the CPI-basis
 relative as *less* than x%, and a tariff cut appears as airfare deflation
@@ -130,10 +130,11 @@ while the airline's price is unchanged. The producer series therefore ships
 with, for every day: `purchaser_matched` (the CPI-basis index on exactly the
 same cells), `wedge` (the difference, in index points — the measured effect
 of pass-through charges on measured inflation) and `sensitivity` (how far the
-figure moves if every charge were 20% higher or lower; ~0.05 points on
-current data, so little rests on the table). On 11 September 2026: purchaser
-basis 101.98 on the full basket; on the 65 cells priced on both bases,
-purchaser 100.98 against producer 101.16, wedge +0.18.
+figure moves if every charge were 20% higher or lower; ~0.10 points on
+current data, so little rests on the table). On 11 September 2026, on the
+full 75-cell basket: purchaser basis 101.98 against producer basis 102.34,
+wedge +0.36 points — the airline's own price rose 2.34% while the ticket
+rose 1.98%, the difference being the fixed charges' share of the ticket.
 
 Why it matters: MoSPI's Index of Services Production (experimental, July
 2026) is deflated by CPI (non-food) in the absence of an SPPI. A producer-price

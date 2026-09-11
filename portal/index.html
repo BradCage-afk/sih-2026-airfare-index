@@ -284,8 +284,18 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
   border:1px solid var(--border);border-radius:4px;padding:12px 14px;overflow-x:auto;white-space:nowrap}
 .formula b{color:var(--ink)}
 .tar td.n,.tar th.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
-.tar td.src{font-size:11.5px;color:var(--muted);min-width:30ch;white-space:normal;line-height:1.45}
-.tar tr.excl td{color:var(--muted);font-style:italic}
+.tar td.dim{color:var(--muted)}
+.tar .bar{display:inline-block;height:9px;border-radius:2px;background:#ec835a;vertical-align:middle;margin-right:8px}
+.tar td.ap{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink);cursor:help;border-bottom:1px dotted var(--muted)}
+.tar tr.chg td.n.dep{color:#b5541c;font-weight:600}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:820px){.sgrid{grid-template-columns:1fr}}
+.ptitle{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:10px}
+.ptsub{font-weight:400;color:var(--muted);margin-left:6px}
+.cmp td.c,.cmp th.c{text-align:center}
+.cmp td.y{color:var(--good-text);font-weight:600}
+.cmp td.n{color:var(--muted)}
+.cmp tr.use td{font-weight:600;color:var(--ink);border-top:2px solid var(--border)}
 .sec > h2{margin:0 0 3px;font-size:17px;font-weight:600;letter-spacing:-.015em}
 .sec > .why{margin:0 0 15px;font-size:13px;color:var(--ink-2);max-width:78ch;line-height:1.6}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:18px 20px}
@@ -362,17 +372,9 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
 
   <div class="sec" id="sec-sppi">
     <h2>CPI basis and producer-price (SPPI) basis, side by side</h2>
-    <p class="why">A consumer price index prices what the household <b>pays</b>. A services
-      producer price index prices what the producer <b>receives</b>: the Eurostat&ndash;OECD
-      SPPI guide (&sect;6.3.8, air transport) requires that &ldquo;taxes and airport landing and
-      security charges should be excluded if they are not retained by the service
-      provider&rdquo;. On an Indian domestic ticket those are the Aviation Security Fee and
-      each airport&rsquo;s User Development Fee &mdash; fixed rupee amounts set by DGCA and
-      AERA, which are netted off every fare below. GST on the airline&rsquo;s own fare is
-      proportional and cancels in a price relative. Same basket, same reference period, same
-      Jevons method; only the price concept changes. MoSPI&rsquo;s new Index of Services
-      Production (July 2026) is deflated by CPI for want of an SPPI &mdash; this is the
-      deflator air transport would need.</p>
+    <p class="why">The same fares priced two ways: the whole ticket (what the household pays,
+      the CPI input) and the ticket net of ASF and UDF (what the airline keeps, the SPPI input).
+      Same basket, reference period and Jevons method.</p>
 
     <div class="headline two">
       <div class="hcell">
@@ -401,22 +403,41 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       </div>
     </div>
 
+    <div class="sgrid">
+      <div class="panel">
+        <div class="ptitle">What each index counts</div>
+        <div class="tw"><table class="cmp" id="t-cmp">
+          <thead><tr><th>Ticket component</th><th>Goes to</th><th class="c">CPI basis</th><th class="c">SPPI basis</th></tr></thead>
+          <tbody>
+            <tr><td>Base fare</td><td>airline</td><td class="c y">&#10003;</td><td class="c y">&#10003;</td></tr>
+            <tr><td>Fuel &amp; airline surcharges</td><td>airline</td><td class="c y">&#10003;</td><td class="c y">&#10003;</td></tr>
+            <tr><td>GST on fare (5%)</td><td>government</td><td class="c y">&#10003;</td><td class="c n">cancels</td></tr>
+            <tr><td>Aviation Security Fee &#8377;236</td><td>government</td><td class="c y">&#10003;</td><td class="c n">&#10007;</td></tr>
+            <tr><td>UDF departing + arriving (+18% GST)</td><td>airport</td><td class="c y">&#10003;</td><td class="c n">&#10007;</td></tr>
+            <tr><td>OTA convenience fee</td><td>portal</td><td class="c n">not in listing</td><td class="c n">not in listing</td></tr>
+            <tr class="use"><td>Used for</td><td></td><td class="c">CPI &middot; DA &middot; RBI target</td><td class="c">ISP &amp; GDP deflator</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle">Wedge by route, latest day <span class="ptsub">producer &minus; purchaser, index points, same cells</span></div>
+        <div class="plot" id="p-wedge"></div>
+      </div>
+    </div>
+
     <div class="panel" style="margin-top:14px">
       <div class="formula">
         <b>CPI basis</b>&nbsp;&nbsp;&nbsp;&nbsp; APIx<sub>t</sub>&nbsp;&nbsp; = 100 &times; exp( &Sigma; w<sub>i</sub> &middot; ln( P<sub>i,t</sub> / P<sub>i,0</sub> ) / &Sigma; w<sub>i</sub> )<br>
         <b>SPPI basis</b>&nbsp;&nbsp;&nbsp; APIx-P<sub>t</sub> = 100 &times; exp( &Sigma; w<sub>i</sub> &middot; ln( (P<sub>i,t</sub> &minus; C<sub>i,t</sub>) / (P<sub>i,0</sub> &minus; C<sub>i,0</sub>) ) / &Sigma; w<sub>i</sub> )<br>
-        <b>where</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C<sub>i,t</sub> = ASF + UDF<sub>dep</sub>(origin<sub>i</sub>, t) + UDF<sub>arr</sub>(destination<sub>i</sub>, t)&nbsp;&nbsp;&nbsp; and&nbsp;&nbsp;&nbsp; P = (1 + GST) &middot; F + C&nbsp; &rArr;&nbsp; (P &minus; C) / (P<sub>0</sub> &minus; C<sub>0</sub>) = F / F<sub>0</sub>
+        <b>where</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C<sub>i,t</sub> = ASF + 1.18 &middot; [ UDF<sub>dep</sub>(origin<sub>i</sub>, t) + UDF<sub>arr</sub>(destination<sub>i</sub>, t) ]<br>
+        <b>GST cancels</b>&nbsp; P = 1.05 &middot; F + C&nbsp; &rArr;&nbsp; (P &minus; C) / (P<sub>0</sub> &minus; C<sub>0</sub>) = F / F<sub>0</sub>
       </div>
-      <p class="why" style="margin:12px 0 0;max-width:none">Because C is a fixed rupee
-        amount, a fare rise of x% shows up in the CPI-basis relative as less than x%, and a
-        tariff cut &mdash; Bengaluru and Hyderabad both cut their departure UDF on 1 September
-        2026 &mdash; reads as airfare <em>deflation</em> in the CPI while the airline&rsquo;s
-        price is unchanged. The wedge above is that effect, measured.</p>
     </div>
 
     <div class="panel" style="margin-top:14px">
+      <div class="ptitle">Pass-through charges by departure airport <span class="ptsub" id="t-tariff-asof"></span></div>
       <div class="tw"><table class="tar" id="t-tariff"></table></div>
-      <p class="why" id="t-tariff-note" style="margin:12px 0 0;max-width:none"></p>
+      <div class="leg" id="t-tariff-note"></div>
     </div>
   </div>
 
@@ -806,19 +827,23 @@ function seatWeight(pair){
    estimated. Entries are [effective_from, rupees] so a change inside the
    series applies from its own date. */
 const ASF_INR = 236;   // Rs 200 Aviation Security Fee + 18% GST, DGCA order, from 2021-04-01
+const UDF_GST = 1.18;  // AERA's UDF is exclusive of GST; 18% is charged on top (Lok Sabha USQ 1862, 31 Jul 2025)
+const LS = "Lok Sabha USQ 1862, 31 Jul 2025 (MoCA): AERA UDF for FY 2025-26, exclusive of GST";
 const UDF_INR = {
-  DEL: {dep:[["2024-04-01",129]], arr:[],
-        src:"AERA, DIAL 4th control period 2024-29: domestic UDF unchanged at ₹129"},
-  BOM: {dep:[["2025-05-16",175]], arr:[["2025-05-16",75]],
-        src:"AERA, MIAL: ₹175 departing / ₹75 arriving, from 16 May 2025"},
-  BLR: {dep:[["2024-04-01",550],["2026-09-01",300]], arr:[["2026-09-01",125]],
-        src:"AERA, BIAL 4th control period: ₹300 departing / ₹125 arriving from 1 Sep 2026 (₹550 before)"},
-  HYD: {dep:[["2024-04-01",750],["2026-09-01",515]], arr:[["2026-09-01",220]],
-        src:"AERA, GHIAL 4th control period 2026-31: ₹515 departing / ₹220 arriving from 1 Sep 2026 (₹750 before)"},
-  MAA: {dep:[["2024-04-01",410]], arr:[], src:"AERA, AAI Chennai: ₹410 domestic departing (March 2026)"},
-  AMD: {dep:[["2024-04-01",600]], arr:[], src:"AERA, Adani Ahmedabad: ₹600 domestic departing (March 2026)"},
+  DEL: {dep:[["2025-04-01",129]], arr:[["2025-04-01",56]],  src:LS + "; AERA DIAL 4th control period 2024-29"},
+  BOM: {dep:[["2025-05-16",175]], arr:[["2025-05-16",75]],  src:LS + "; AERA MIAL order effective 16 May 2025"},
+  BLR: {dep:[["2025-04-01",550],["2026-09-01",300]], arr:[["2026-09-01",125]],
+        src:LS + "; AERA BIAL 4th control period: ₹300 departing / ₹125 arriving from 1 Sep 2026"},
+  HYD: {dep:[["2025-04-01",750],["2026-09-01",515]], arr:[["2026-09-01",220]],
+        src:LS + "; AERA GHIAL 4th control period 2026-31: ₹515 departing / ₹220 arriving from 1 Sep 2026"},
+  MAA: {dep:[["2025-04-01",455]], arr:[], src:LS},
+  AMD: {dep:[["2025-04-01",600]], arr:[], src:LS},
+  CCU: {dep:[["2025-04-01",644]], arr:[], src:LS},
+  PNQ: {dep:[["2025-04-01",387]], arr:[], src:LS},
+  SXR: {dep:[["2025-04-01",1050]], arr:[], src:LS},
+  GOI: {dep:[["2025-04-01",570]], arr:[], src:LS},
+  COK: {dep:[["2025-04-01",270]], arr:[], src:LS},
 };
-const UDF_UNVERIFIED = {CCU:"AAI Kolkata", PNQ:"AAI Pune", SXR:"AAI Srinagar"};
 function tariffOn(entries, iso){
   let rate = null;
   for (const [eff, inr] of entries) if (eff <= iso) rate = inr;
@@ -827,8 +852,8 @@ function tariffOn(entries, iso){
 function passThrough(o, d, iso){
   const dep = UDF_INR[o]; if (!dep) return null;
   const depUdf = tariffOn(dep.dep, iso); if (depUdf === null) return null;
-  const arr = UDF_INR[d];                       // no arrival UDF notified = nothing to net
-  return ASF_INR + depUdf + ((arr && tariffOn(arr.arr, iso)) || 0);
+  const arr = UDF_INR[d];                       // no arrival UDF levied = nothing to net
+  return ASF_INR + UDF_GST * (depUdf + ((arr && tariffOn(arr.arr, iso)) || 0));
 }
 
 /* day -> {cellKey: minFare} from the rows already loaded.
@@ -977,7 +1002,7 @@ function sppiRelease(){
     const alts = [lo.get(r.day), hi.get(r.day)].filter(v => v != null);
     r.sensitivity = alts.length ? Math.max(...alts.map(v => Math.abs(v - r.apix))) : null;
   }
-  return {series, latest: series[series.length - 1]};
+  return {series, latest: series[series.length - 1], cpiLatest: cpi[cpi.length - 1] || null};
 }
 
 /* ===================== the release ===================== */
@@ -1184,21 +1209,19 @@ function drawSppi(rel, headline){
   const signed = (v, dp=2) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(dp);
 
   set("s-cpi", headline.apix.toFixed(2));
-  set("s-cpi-note", `Whole ticket, taxes and charges included — ${signed(headline.apix-100)}% ` +
-      `against the reference period, on the full basket.`);
+  set("s-cpi-note", `${signed(headline.apix-100)}% against the reference period · whole ticket, full basket`);
   set("s-prod", L.apix.toFixed(2));
-  set("s-prod-note", `Net of ASF and UDF — ${signed(L.apix-100)}% against the reference period. ` +
-      `${Math.round(L.weightCovered*100)}% of basket weight` +
-      (L.provisional ? " (provisional)" : "") +
-      (L.sensitivity != null ? `; charges ±20% move it by at most ${L.sensitivity.toFixed(2)} points.` : "."));
+  set("s-prod-note", `${signed(L.apix-100)}% against the reference period · net of ASF and UDF · ` +
+      `${Math.round(L.weightCovered*100)}% of basket weight` + (L.provisional ? " (provisional)" : "") +
+      (L.sensitivity != null ? ` · charges ±20% → ±${L.sensitivity.toFixed(2)} pt` : ""));
   if (L.wedge != null){
     set("s-wedge", signed(L.wedge) + " pt");
     document.getElementById("s-wedge").style.color =
       Math.abs(L.wedge) < 0.005 ? "" : (L.wedge > 0 ? "var(--crit)" : "var(--good-text)");
-    set("s-wedge-note", `Producer ${L.apix.toFixed(2)} against purchaser ${L.cpi.toFixed(2)} on ` +
-        `exactly the same cells. ${L.wedge > 0 ? "Fixed charges damp the CPI-basis movement: the airline's own price moved more than the ticket price."
-                                               : L.wedge < 0 ? "Tariff changes or fixed charges moved the ticket price more than the airline's own price."
-                                               : "No difference on these cells."}`);
+    set("s-wedge-note", `${L.apix.toFixed(2)} producer vs ${L.cpi.toFixed(2)} purchaser on the same ${L.cells} cells · ` +
+        (L.wedge > 0 ? "fixed charges damp the CPI-basis move: the airline's price moved more than the ticket"
+                     : L.wedge < 0 ? "the ticket moved more than the airline's price (tariff change or fixed charges)"
+                     : "no difference"));
   } else { set("s-wedge", "—"); set("s-wedge-note", ""); }
 
   // two lines on one scale
@@ -1221,7 +1244,7 @@ function drawSppi(rel, headline){
       svg.appendChild(txt(m.l-8, Y(v)+3.5, v.toFixed(0), "tick", {"text-anchor":"end"}));
     });
     svg.appendChild(S("line", {x1:m.l, x2:w-m.r, y1:Y(100), y2:Y(100)}, "stroke:var(--axis);stroke-width:1"));
-    svg.appendChild(txt(w-m.r, Y(100)-6, "reference 100", "tick", {"text-anchor":"end"}));
+    svg.appendChild(txt(w-m.r, Y(100)+13, "reference 100", "tick", {"text-anchor":"end"}));
     const path = (get, colour, width) => {
       const d = series.map((r,i) => `${i?"L":"M"}${X(i).toFixed(1)} ${Y(get(r)).toFixed(1)}`).join(" ");
       svg.appendChild(S("path", {d, fill:"none", "stroke-linejoin":"round"}, `stroke:${colour};stroke-width:${width}`));
@@ -1238,44 +1261,81 @@ function drawSppi(rel, headline){
   }
   set("s-leg-note", `Cells priced on both bases: ${L.cells}`);
 
-  // the tariff table, with the charge as a share of today's cheapest fare
+  // wedge by route: horizontal bars, producer minus purchaser on the same cells
+  const wh = document.getElementById("p-wedge"); wh.textContent = "";
+  const cpiRoutes = (rel.cpiLatest && rel.cpiLatest.byRoute) || {};
+  const wedges = Object.entries(L.byRoute)
+    .filter(([k]) => cpiRoutes[k] != null)
+    .map(([k, v]) => [k, v - cpiRoutes[k]])
+    .sort((a,b) => b[1] - a[1]);
+  if (wedges.length){
+    const rowH = 17, m = {l:74, r:44, t:6, b:18};
+    const H = m.t + m.b + wedges.length*rowH, {svg, w} = svgFor(wh, H);
+    const pw = w - m.l - m.r, maxAbs = Math.max(0.1, ...wedges.map(x => Math.abs(x[1])));
+    const X0 = m.l + pw/2, sx = (pw/2) / maxAbs;
+    svg.appendChild(S("line", {x1:X0, x2:X0, y1:m.t, y2:H-m.b}, "stroke:var(--axis);stroke-width:1"));
+    wedges.forEach(([k, v], i) => {
+      const y = m.t + i*rowH, bw = Math.abs(v)*sx;
+      svg.appendChild(txt(m.l-8, y+12, k, "tick", {"text-anchor":"end"}));
+      svg.appendChild(S("rect", {x: v >= 0 ? X0 : X0-bw, y:y+3, width:Math.max(bw,1), height:rowH-6, rx:2},
+        `fill:${v >= 0 ? "#ec835a" : "var(--accent)"}`));
+      svg.appendChild(txt(v >= 0 ? X0+bw+5 : X0-bw-5, y+12, signed(v), "tick", {"text-anchor": v >= 0 ? "start" : "end"}));
+    });
+    svg.appendChild(txt(X0, H-4, "0", "tick", {"text-anchor":"middle"}));
+  }
+
+  // the tariff table: charge in force on the latest day, and its share of today's cheapest fare
   const iso = isoOf(L.day);
+  set("t-tariff-asof", `in force on ${dayLab(L.day)}, per passenger`);
   const t = document.getElementById("t-tariff"); t.textContent = "";
   const hd = t.createTHead().insertRow();
-  [["Departure airport",""],["UDF departing",""],["UDF arriving",""],["ASF",""],["Netted per ticket",""],
-   ["Share of cheapest fare today",""],["Source",""]].forEach(([h,c],i) => {
-    const th = document.createElement("th"); th.textContent = h; if (i>0 && i<6) th.className = "n"; hd.appendChild(th);
+  [["Airport",""],["UDF departing","n"],["UDF arriving","n"],["ASF","n"],["On the ticket, incl. GST","n"],
+   ["Share of cheapest fare today",""],["Changed",""]].forEach(([h,c]) => {
+    const th = document.createElement("th"); th.textContent = h; th.className = c; hd.appendChild(th);
   });
   const body = t.createTBody();
-  // today's cheapest purchaser fare by departure airport, for the share column
   const cheapest = {};
   for (const r of D){
     if (r[C.d] !== L.day || r[C.n] < MIN_OBS || !(r[C.lo] > 0)) continue;
     const o = R[r[C.r]].o;
     cheapest[o] = Math.min(cheapest[o] ?? Infinity, r[C.lo]);
   }
-  const airports = [...new Set(R.map(r => r.o))].sort();
-  for (const a of airports){
-    const tr = body.insertRow();
+  const airports = [...new Set(R.flatMap(r => [r.o, r.d]))].filter(a => UDF_INR[a]).sort();
+  const shares = airports.map(a => {
+    const u = UDF_INR[a], dep = tariffOn(u.dep, iso) ?? 0;
+    const ticket = ASF_INR + UDF_GST*dep;
+    return [a, dep, tariffOn(u.arr, iso), ticket, cheapest[a] ? ticket/cheapest[a] : null];
+  });
+  const maxShare = Math.max(0.01, ...shares.map(x => x[4] || 0));
+  for (const [a, dep, arr, ticket, share] of shares){
     const u = UDF_INR[a];
-    if (!u){
-      tr.className = "excl";
-      const cells = [a, "not verified", "—", inr(ASF_INR), "excluded", "—",
-                     `${UDF_UNVERIFIED[a] || a}: current AERA-notified figure not found in the public record — departures excluded rather than guessed`];
-      cells.forEach((v,i) => { const td = tr.insertCell(); td.textContent = v; if (i>0 && i<6) td.className="n"; if (i===6) td.className="src"; });
-      continue;
-    }
-    const dep = tariffOn(u.dep, iso), arr = tariffOn(u.arr, iso) ?? 0;
-    const net = ASF_INR + dep;
-    const share = cheapest[a] ? (net / cheapest[a] * 100).toFixed(1) + "%" : "—";
-    [a, inr(dep), arr ? inr(arr) : "none notified", inr(ASF_INR), inr(net) + (arr ? ` (+${inr(arr)} on arrival)` : ""),
-     share, u.src].forEach((v,i) => { const td = tr.insertCell(); td.textContent = v; if (i>0 && i<6) td.className="n"; if (i===6) td.className="src"; });
+    const changed = u.dep.length > 1 ? u.dep[u.dep.length-1][0] : null;
+    const tr = body.insertRow();
+    if (changed && changed >= (DATA.meta.start || "")) tr.className = "chg";
+    const cells = [
+      [a, "ap"], [inr(dep), "n dep"], [arr ? inr(arr) : "—", arr ? "n" : "n dim"], [inr(ASF_INR), "n"],
+      [inr(ticket) + (arr ? ` (+${inr(UDF_GST*arr)} arriving)` : ""), "n"],
+    ];
+    cells.forEach(([v, cls]) => { const td = tr.insertCell(); td.textContent = v; td.className = cls; });
+    const td = tr.insertCell();
+    if (share != null){
+      const bar = document.createElement("span"); bar.className = "bar";
+      bar.style.width = Math.round(120 * share / maxShare) + "px";
+      td.appendChild(bar); td.appendChild(document.createTextNode((share*100).toFixed(1) + "%"));
+    } else { td.textContent = "arrivals only in basket"; td.className = "dim"; }
+    const tdc = tr.insertCell();
+    tdc.textContent = changed ? new Date(changed + "T00:00:00Z").toLocaleDateString("en-GB",
+                        {day:"numeric", month:"short", year:"numeric", timeZone:"UTC"}) : "—";
+    if (!changed) tdc.className = "dim";
+    tr.cells[0].title = u.src;
   }
-  set("t-tariff-note", `Charges in force on ${dayLab(L.day)}, per departing passenger; an arrival UDF is added ` +
-      `where the destination has one notified. "Share" is the charge against the cheapest purchaser fare ` +
-      `from that airport today — the part of the ticket that is not the airline's price. GST at 5% on the ` +
-      `airline's fare is proportional and needs no entry. PSF facilitation component, where still levied, ` +
-      `is not netted; the sensitivity figure bounds the effect.`);
+  const note = document.getElementById("t-tariff-note"); note.textContent = "";
+  [["UDF figures are AERA's, exclusive of GST; the ticket carries them +18%"],
+   ["— = no arrival UDF levied at that airport"],
+   ["hover an airport code for the source"],
+   ["GST at 5% on the airline's fare is proportional and cancels"]].forEach(([t_]) => {
+    const sp = document.createElement("span"); sp.textContent = t_; note.appendChild(sp);
+  });
 }
 
 const DOW = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -1416,7 +1476,7 @@ function drawMethod(latest){
     ["Index formula", "APIx = 100 × exp( Σ wᵢ · ln(Pᵢ,t ⁄ Pᵢ,0) ⁄ Σ wᵢ ) — a weighted geometric (Jevons) mean of price relatives"],
     ["Price concept", "Minimum logical fare: the cheapest fare observed for a route and lead time on a day"],
     ["Price basis", "Headline: purchaser price — the whole ticket, what the household pays (CPI concept). " +
-                    "Producer-price series: the same fare net of ASF and UDF, what the airline keeps (SPPI concept, " +
+                    "Producer-price series: the same fare net of ASF and UDF (+18% GST), what the airline keeps (SPPI concept, " +
                     "Eurostat–OECD SPPI guide §6.3.8); GST on the airline's fare cancels in the relative"],
     ["Weights", "Each city pair's share of scheduled seats across the 15-pair basket"],
     ["Basket", "15 busiest domestic city pairs by scheduled seats"],

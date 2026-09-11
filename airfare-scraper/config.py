@@ -93,35 +93,42 @@ LEAD_TIME_WEIGHT_SOURCE = "uniform (pending an official booking-curve distributi
 #   ASF  Aviation Security Fee, national, Rs 200 + 18% GST = Rs 236
 #        (DGCA order, in force since 1 April 2021).
 #   UDF  User Development Fee, per airport, set by AERA tariff order; some
-#        airports now also levy a UDF on ARRIVING passengers.
+#        airports also levy a UDF on ARRIVING passengers. AERA's figures are
+#        EXCLUSIVE of GST and 18% GST is charged on top (Lok Sabha Unstarred
+#        Question 1862, answered 31 July 2025), so the ticket carries 1.18x.
 # GST on the airline's own fare (5% economy) is proportional, so it cancels
 # in a price relative and needs no entry here. Nothing below is estimated:
 # every figure is a notified tariff with its source, and an airport without a
-# verified tariff is None, which EXCLUDES its cells from the producer series
-# rather than guessing. Entries are (effective_from, rupees) lists so a tariff
-# change inside the series is applied from its own date.
+# verified tariff would be None, which EXCLUDES its cells from the producer
+# series rather than guessing. Entries are (effective_from, rupees) lists so a
+# tariff change inside the series is applied from its own date.
 ASF_INR = 236.0
 ASF_SOURCE = "DGCA order: Rs 200 per embarking domestic passenger + 18% GST, from 2021-04-01"
+UDF_GST = 1.18
+LS_1862 = ("Lok Sabha USQ 1862, 31 Jul 2025 (MoCA): AERA-determined UDF, FY 2025-26, "
+           "exclusive of GST")
 
-# domestic UDF per passenger: {"dep": [(effective_from, INR), ...], "arr": [...], "source": str}
+# domestic UDF per passenger, exclusive of GST:
+#   {"dep": [(effective_from, INR), ...], "arr": [...], "source": str}
 UDF_INR: dict = {
-    "DEL": {"dep": [("2024-04-01", 129.0)], "arr": [],
-            "source": "AERA tariff order, DIAL 4th control period 2024-29: domestic UDF unchanged at Rs 129"},
+    "DEL": {"dep": [("2025-04-01", 129.0)], "arr": [("2025-04-01", 56.0)],
+            "source": LS_1862 + "; AERA DIAL 4th control period 2024-29"},
     "BOM": {"dep": [("2025-05-16", 175.0)], "arr": [("2025-05-16", 75.0)],
-            "source": "AERA tariff order, MIAL: Rs 175 departing / Rs 75 arriving domestic, from 2025-05-16"},
-    "BLR": {"dep": [("2024-04-01", 550.0), ("2026-09-01", 300.0)], "arr": [("2026-09-01", 125.0)],
-            "source": "AERA tariff order, BIAL 4th control period: Rs 300 departing / Rs 125 arriving from 2026-09-01 (Rs 550 before)"},
-    "HYD": {"dep": [("2024-04-01", 750.0), ("2026-09-01", 515.0)], "arr": [("2026-09-01", 220.0)],
-            "source": "AERA tariff order, GHIAL 4th control period 2026-31: Rs 515 departing / Rs 220 arriving from 2026-09-01 (Rs 750 before)"},
-    "MAA": {"dep": [("2024-04-01", 410.0)], "arr": [],
-            "source": "AERA tariff order, AAI Chennai: Rs 410 domestic departing (as of March 2026)"},
-    "AMD": {"dep": [("2024-04-01", 600.0)], "arr": [],
-            "source": "AERA tariff order, Adani Ahmedabad: Rs 600 domestic departing (as of March 2026)"},
-    "CCU": None,   # AAI Kolkata: current AERA-notified figure not verifiable from public record
-    "PNQ": None,   # AAI Pune: not verified
-    "GOI": None, "COK": None, "SXR": None,
+            "source": LS_1862 + "; AERA MIAL order effective 16 May 2025"},
+    "BLR": {"dep": [("2025-04-01", 550.0), ("2026-09-01", 300.0)], "arr": [("2026-09-01", 125.0)],
+            "source": LS_1862 + "; AERA BIAL 4th control period: Rs 300 / Rs 125 arriving from 1 Sep 2026"},
+    "HYD": {"dep": [("2025-04-01", 750.0), ("2026-09-01", 515.0)], "arr": [("2026-09-01", 220.0)],
+            "source": LS_1862 + "; AERA GHIAL 4th control period 2026-31: Rs 515 / Rs 220 arriving from 1 Sep 2026"},
+    "MAA": {"dep": [("2025-04-01", 455.0)], "arr": [], "source": LS_1862},
+    "AMD": {"dep": [("2025-04-01", 600.0)], "arr": [], "source": LS_1862},
+    "CCU": {"dep": [("2025-04-01", 644.0)], "arr": [], "source": LS_1862},
+    "PNQ": {"dep": [("2025-04-01", 387.0)], "arr": [], "source": LS_1862},
+    "SXR": {"dep": [("2025-04-01", 1050.0)], "arr": [], "source": LS_1862},
+    "GOI": {"dep": [("2025-04-01", 570.0)], "arr": [], "source": LS_1862},
+    "COK": {"dep": [("2025-04-01", 270.0)], "arr": [], "source": LS_1862},
 }
-PASS_THROUGH_NOTE = ("PSF facilitation component, where still levied, is not netted out; "
+PASS_THROUGH_NOTE = ("UDF is taken at the AERA figure plus 18% GST, as charged on the ticket; "
+                     "PSF facilitation component, where still levied, is not netted out; "
                      "the sensitivity figure published with each release bounds the effect.")
 
 
@@ -148,7 +155,7 @@ def pass_through(origin: str, destination: str, day: str) -> float | None:
     # far); an airport with none notified — every AAI-run airport — nets zero.
     arr = UDF_INR.get(destination)
     arr_udf = _tariff_on(arr["arr"], day) if arr else None
-    return ASF_INR + dep_udf + (arr_udf or 0.0)
+    return ASF_INR + UDF_GST * (dep_udf + (arr_udf or 0.0))
 
 def cell_weight(origin: str, destination: str, advance_days: int) -> float:
     """One entry of the weighting matrix: route share x lead-time share."""
