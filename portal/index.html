@@ -764,16 +764,38 @@ function apixFor(cells, baseDay, day){
   if (windows.length < MIN_WINDOWS)
     why.push(`${windows.length} lead-time bucket${windows.length===1?"":"s"} (needs ${MIN_WINDOWS})`);
 
-  return {day, apix: 100*overall, byWindow, byRoute, windows,
+  return {day, baseDay, apix: 100*overall, byWindow, byRoute, windows,
           weightCovered, cells: rows.length,
           provisional: why.length > 0, why: why.join("; ")};
+}
+
+/* Basket weight and lead-time buckets one day covers on its own. */
+function dayCoverage(dayCells){
+  const routes = new Set(), windows = new Set();
+  for (const key of dayCells.keys()){
+    const [pair, w] = key.split("|"); routes.add(pair); windows.add(w);
+  }
+  return {weight: [...routes].reduce((a,p) => a + seatWeight(p), 0), windows: windows.size};
+}
+
+/* The base is the first day that would itself pass the publication threshold.
+   An index can only price cells that exist in its base day, so basing on the
+   first day with any data locks the basket to whatever was collectable then -
+   a route added later can never enter the index. Mirrors engine.choose_base. */
+function chooseBase(cells, days){
+  for (const d of days){
+    const c = dayCoverage(cells.get(d));
+    if (c.weight >= MIN_WEIGHT_COVERAGE && c.windows >= MIN_WINDOWS) return d;
+  }
+  return days[0];
 }
 
 function apixSeries(){
   const cells = cellsByDay();
   const days = [...cells.keys()].sort((a,b)=>a-b);
   if (days.length < 1) return [];
-  return days.map(d => apixFor(cells, days[0], d)).filter(Boolean);
+  const base = chooseBase(cells, days);
+  return days.map(d => apixFor(cells, base, d)).filter(Boolean);
 }
 
 
@@ -800,7 +822,7 @@ function drawHeadline(latest, series){
       `requires for air travel.`);
 
   set("h-level", "APIx " + latest.apix.toFixed(2));
-  set("h-period", `Reference period ${dayLab(0)} = 100.00 · ` +
+  set("h-period", `Reference period ${dayLab(latest.baseDay)} = 100.00 · ` +
       `${series.length} observation day${series.length === 1 ? "" : "s"}`);
 
   const st = document.getElementById("h-status");

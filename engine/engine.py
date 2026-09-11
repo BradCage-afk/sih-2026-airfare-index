@@ -187,12 +187,37 @@ def compute(cells: dict, base_day: str, day: str) -> dict:
     }
 
 
+def day_coverage(day_cells: dict) -> tuple[float, int]:
+    """Basket weight and lead-time buckets one day covers on its own."""
+    routes = {(k[0], k[1]) for k in day_cells}
+    windows = {k[2] for k in day_cells}
+    return sum(route_weight(o, d) for o, d in routes), len(windows)
+
+
+def choose_base(cells: dict) -> str:
+    """The first day that would itself pass the publication threshold.
+
+    compute() can only index cells that exist in the base day, so basing on
+    the first day with any data locks the basket to whatever was collectable
+    then — a route added afterwards can never enter the index, however much
+    is collected for it. The base has to be a day you would publish. When the
+    basket changes again the proper treatment is chain-linking at an overlap
+    period; this rule is the honest minimum for a young series.
+    """
+    days = sorted(cells)
+    for day in days:
+        weight, windows = day_coverage(cells[day])
+        if weight >= MIN_WEIGHT_COVERAGE and windows >= MIN_WINDOWS:
+            return day
+    return days[0]
+
+
 def series(client, base_day: str | None = None) -> list:
     cells = load_cells(client)
     if not cells:
         raise InsufficientData("fares_daily returned no usable cells")
     days = sorted(cells)
-    base = base_day or days[0]
+    base = base_day or choose_base(cells)
     out = []
     for day in days:
         try:
@@ -232,7 +257,8 @@ def monthly(rows: list) -> list:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--base", help="base period YYYY-MM-DD (default: first day)")
+    ap.add_argument("--base", help="base period YYYY-MM-DD (default: the first day "
+                                "that meets the publication threshold)")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--write", action="store_true",
                     help="upsert the series into the apix_daily table")
