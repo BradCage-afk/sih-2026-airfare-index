@@ -209,18 +209,39 @@ def get_latest(_: str = Depends(require_key)):
 @app.get("/api/v1/health", tags=["ops"])
 def health():
     """Liveness plus freshness — an ingesting system needs to know whether the
-    number it is reading is current, not merely that the service replied."""
+    number it is reading is current, not merely that the service replied.
+
+    Freshness is the age of the newest OBSERVATION, not of the last completed
+    run. A full-basket run takes about two hours and writes as it goes, so
+    judging by completed runs reported a false "stale" for the whole of it.
+    """
     try:
         client = FareStore()._client
-        runs = (client.table("scrape_runs").select("started_at,status")
+        now = datetime.now(timezone.utc)
+
+        def minutes_since(ts):
+            if not ts:
+                return None
+            then = datetime.fromisoformat(ts[:19]).replace(tzinfo=timezone.utc)
+            return round((now - then).total_seconds() / 60, 1)
+
+        fares = (client.table("fares").select("scraped_at")
+                 .order("scraped_at", desc=True).limit(1).execute().data)
+        last_obs = fares[0]["scraped_at"] if fares else None
+        runs = (client.table("scrape_runs").select("started_at,tier,status")
                 .order("started_at", desc=True).limit(1).execute().data)
-        last = runs[0]["started_at"] if runs else None
-        age_min = None
-        if last:
-            age_min = round((datetime.now(timezone.utc)
-                             - datetime.fromisoformat(last[:19]).replace(
-                                 tzinfo=timezone.utc)).total_seconds() / 60, 1)
-        return {"status": "ok", "last_scrape": last, "minutes_since_scrape": age_min,
-                "stale": age_min is not None and age_min > 60}
+        run = runs[0] if runs else None
+
+        age = minutes_since(last_obs)
+        return {
+            "status": "ok",
+            "last_observation": last_obs,
+            "minutes_since_observation": age,
+            "stale": age is not None and age > 60,
+            "last_completed_run": run,
+            # kept for callers written against the earlier shape
+            "last_scrape": last_obs,
+            "minutes_since_scrape": age,
+        }
     except Exception as exc:
         raise HTTPException(503, f"upstream unavailable: {type(exc).__name__}")
