@@ -19,8 +19,7 @@ load_dotenv()
 # are kept so the index can later be weighted properly rather than treating a
 # Delhi-Mumbai fare as equal in importance to a Delhi-Srinagar one.
 #
-# Source: published schedule data, top-15 domestic routes (seats per month).
-# Refresh against DGCA city-pair statistics when the basket is next reviewed.
+# Source: OAG schedule data, top-15 domestic routes, seats per month.
 ROUTE_SEATS: dict = {
     ("DEL", "BOM"): 654_532,   # 1
     ("DEL", "BLR"): 457_557,   # 2
@@ -41,11 +40,24 @@ ROUTE_SEATS: dict = {
 
 ROUTES: list[tuple[str, str]] = list(ROUTE_SEATS)
 
-# Share of basket seats, for a weighted index. Not yet applied to the published
-# figure — the current index is an unweighted basket mean, which is stated on
-# the dashboard. Weighting is the next methodological step, not a hidden one.
-_TOTAL_SEATS = sum(ROUTE_SEATS.values())
-ROUTE_WEIGHTS: dict = {r: n / _TOTAL_SEATS for r, n in ROUTE_SEATS.items()}
+# ------------------------------------------------------------ route weights ---
+# The problem statement asks for weighting by route PASSENGER VOLUME. DGCA
+# publishes city-pair passenger traffic monthly, but only through its web
+# portal, not as a file this build could fetch. Until those figures are entered
+# below, scheduled seats stand in: seats are capacity, and load factors on
+# Indian trunk routes run 85-90% and are similar across these pairs, so seat
+# share tracks passenger share closely. This is stated in every API response
+# (`weight_basis`) rather than left implicit.
+#
+# Fill ROUTE_PASSENGERS from the DGCA city-pair table (passengers per month,
+# same keys as ROUTE_SEATS) and the weights switch over automatically.
+ROUTE_PASSENGERS: dict = {}
+
+_VOLUME: dict = ROUTE_PASSENGERS or ROUTE_SEATS
+WEIGHT_BASIS: str = ("DGCA city-pair passenger volume" if ROUTE_PASSENGERS
+                     else "scheduled seats (OAG), as a proxy for passenger volume")
+_TOTAL_VOLUME = sum(_VOLUME.values())
+ROUTE_WEIGHTS: dict = {r: n / _TOTAL_VOLUME for r, n in _VOLUME.items()}
 
 
 

@@ -24135,3 +24135,30 @@ method: weighted Jevons on minimum logical fares, seat-weighted, min 3 obs/cell
     nothing excluded — every cell met the observation, basket and plausibility rules
 
   wrote 11 day(s) to apix_daily
+
+APIx — Airfare Price Index      base 2026-09-03 = 100
+method: weighted Jevons on minimum logical fares, seat-weighted, min 3 obs/cell
+
+  day              APIx   routes  cells     obs   by lead time
+  2026-09-01     101.44 *      6     30    2040   T+1 102.78  T+7 101.39  T+15 98.7  T+30 100.95  T+45 103.42
+  2026-09-02      96.96 *     15     15   16068   T+1 96.96
+  2026-09-03     100.00       15     75   17150   T+1 100.0  T+7 100.0  T+15 100.0  T+30 100.0  T+45 100.0
+  2026-09-04      99.75 *      3      3   14782   T+1 99.75
+  2026-09-05      99.36       15     75   18346   T+1 103.67  T+7 102.2  T+15 98.21  T+30 98.5  T+45 94.47
+  2026-09-06     102.85       15     75   16910   T+1 112.27  T+7 101.57  T+15 102.11  T+30 98.6  T+45 100.23
+  2026-09-07      99.40       15     75   17312   T+1 102.35  T+7 99.63  T+15 97.2  T+30 99.76  T+45 98.13
+  2026-09-08      98.28       15     75   14496   T+1 100.86  T+7 101.99  T+15 94.77  T+30 98.16  T+45 95.84
+  2026-09-09     101.77       15     75   14440   T+1 104.38  T+7 101.58  T+15 96.0  T+30 101.97  T+45 105.17
+  2026-09-10     103.27       15     75   12665   T+1 106.91  T+7 99.85  T+15 100.71  T+30 100.98  T+45 108.17
+  2026-09-11     102.72       15     75   14598   T+1 106.42  T+7 101.87  T+15 100.03  T+30 102.64  T+45 102.74
+
+  headline APIx = 102.72   (+2.72% against base)
+  coverage: 100.0% of basket weight, 5 lead-time bucket(s)
+  largest movers: CCU-BLR 122.6 (+22.6)   AMD-BOM 111.0 (+11.0)   DEL-AMD 108.1 (+8.1)   DEL-SXR 92.2 (-7.8)
+
+  * provisional — coverage below publication threshold
+
+  cleaning report:
+    nothing excluded — every cell met the observation, basket and plausibility rules
+
+  wrote 11 day(s) to apix_daily

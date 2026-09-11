@@ -97,6 +97,18 @@ class IndexResponse(BaseModel):
     days: list[DayIndex] = []
 
 
+def _base_period(rows: list) -> str | None:
+    """The reference period as published. apix_daily.base_day is a DATE and
+    holds the period's first day; the full period rides in the method string
+    as `/base=YYYY-MM-DD/YYYY-MM-DD` when it spans more than one day."""
+    if not rows:
+        return None
+    method = next((r.get("method") for r in rows if r.get("method")), "") or ""
+    if "/base=" in method:
+        return method.split("/base=", 1)[1]
+    return rows[0]["base_day"]
+
+
 def _envelope(rows: list, subset: list, month: str | None = None) -> IndexResponse:
     published = [r for r in subset if r.get("apix") is not None]
     monthly = None
@@ -104,7 +116,7 @@ def _envelope(rows: list, subset: list, month: str | None = None) -> IndexRespon
         monthly = round(math.exp(
             sum(math.log(r["apix"]) for r in published) / len(published)), 2)
     return IndexResponse(
-        base_period=rows[0]["base_day"] if rows else None,
+        base_period=_base_period(rows),
         method=next((r.get("method") for r in rows if r.get("method")), None),
         weighting=next((r.get("weighting") for r in rows if r.get("weighting")), None),
         cleaning=next((r.get("cleaning") for r in reversed(rows) if r.get("cleaning") is not None), None),
@@ -172,7 +184,7 @@ def get_monthly(_: str = Depends(require_key)):
     return {
         "index": "APIx",
         "unit": "index, base period = 100",
-        "base_period": rows[0]["base_day"],
+        "base_period": _base_period(rows),
         "method": next((r.get("method") for r in rows if r.get("method")), None),
         "weighting": next((r.get("weighting") for r in rows if r.get("weighting")), None),
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

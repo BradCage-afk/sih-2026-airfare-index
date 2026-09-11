@@ -346,8 +346,11 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
   <div class="sec">
     <h2>Route-level heat map</h2>
     <p class="why">Index by city pair and booking lead time, against the reference period.
-      Red is dearer than the reference period, blue is cheaper. Blank cells had too few
-      observations to price reliably and are excluded rather than estimated.</p>
+      Red is dearer than the reference period, blue is cheaper. T+7 means booked seven
+      days before departure (the T−7 bucket in the problem statement). A cell at 100 means
+      the cheapest fare bucket has not moved — hover any cell for the fares behind it.
+      Blank cells had too few observations to price reliably and are excluded rather
+      than estimated.</p>
     <div class="panel">
       <div id="heat"></div>
       <div class="hmleg" id="heat-legend"></div>
@@ -376,8 +379,10 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
 
   <div class="sec">
     <h2>Airline comparison</h2>
-    <p class="why">Observed fares by carrier. Carrier mix is not controlled for in the
-      index; this table is the diagnostic that makes any mix effect visible.</p>
+    <p class="why" id="carriers-why">Each carrier's cheapest fare in a cell (route × lead
+      time × day) against the cheapest anyone offered in that cell, over every observation.
+      Controlling for route is what makes carriers comparable — a raw mean fare mostly
+      reflects which routes a carrier flies.</p>
     <div class="panel"><div class="tw"><table id="t-carriers"></table></div></div>
   </div>
 
@@ -626,7 +631,7 @@ async function goLive(){
   if (!SUPABASE.url || !SUPABASE.key) return {live:false, why:"not configured"};
   const since = new Date(Date.now() - SUPABASE.days * 864e5);
 
-  const [daily, recent, runs, hourly] = await Promise.all([
+  const [daily, recent, runs, hourly, carriers] = await Promise.all([
     rest("fares_daily", {select:"*", day:`gte.${isoDay(since)}`, order:"day.asc", limit:5000}),
     rest("fares", {select:"origin,destination,carrier,source,advance_window_days,base_fare," +
                           "taxes,udf,convenience_fee,total_fare,model_used,scraped_at",
@@ -634,8 +639,12 @@ async function goLive(){
     rest("scrape_runs", {select:"*", order:"started_at.desc", limit:SUPABASE.runs}),
     // optional: the page still works if this view has not been created yet
     rest("fares_hourly", {select:"bucket,total_fare,n_flights", order:"bucket.asc", limit:20000})
-      .catch(err => { console.warn("fares_hourly unavailable:", err.message); return []; })
+      .catch(err => { console.warn("fares_hourly unavailable:", err.message); return []; }),
+    // route-controlled airline comparison over every observation, not the last few
+    rest("fares_carrier", {select:"*", order:"fares_observed.desc", limit:50})
+      .catch(err => { console.warn("fares_carrier unavailable:", err.message); return []; })
   ]);
+  DATA.carriers = carriers;
 
   // Connected fine, just nothing collected yet — a state of its own, not an error.
   if (!daily.length) return {live:false, why:"empty", runs:runs.length};
@@ -703,6 +712,7 @@ const ROUTE_SEATS = {
 };
 const MIN_OBS = 3, REL_FLOOR = 0.2, REL_CEIL = 5.0;
 const MIN_WEIGHT_COVERAGE = 0.60, MIN_WINDOWS = 3;
+const BASE_DAYS = 3;   // the reference is a period, not a day - mirrors engine.BASE_DAYS
 const SEAT_TOTAL = Object.values(ROUTE_SEATS).reduce((a,b)=>a+b,0);
 const MIN_SEAT = Math.min(...Object.values(ROUTE_SEATS));
 
@@ -731,8 +741,9 @@ function weightedJevons(entries){          // [[weight, relative], ...]
   return den ? Math.exp(num / den) : null;
 }
 
-function apixFor(cells, baseDay, day){
-  const base = cells.get(baseDay), cur = cells.get(day);
+function apixFor(cells, baseDay, day, base){
+  base = base || cells.get(baseDay);
+  const cur = cells.get(day);
   if (!base || !cur) return null;
   const rows = [];
   for (const [key, price] of cur){
@@ -782,20 +793,43 @@ function dayCoverage(dayCells){
    An index can only price cells that exist in its base day, so basing on the
    first day with any data locks the basket to whatever was collectable then -
    a route added later can never enter the index. Mirrors engine.choose_base. */
-function chooseBase(cells, days){
+function chooseBasePeriod(cells, days){
+  const chosen = [];
   for (const d of days){
     const c = dayCoverage(cells.get(d));
-    if (c.weight >= MIN_WEIGHT_COVERAGE && c.windows >= MIN_WINDOWS) return d;
+    if (c.weight >= MIN_WEIGHT_COVERAGE && c.windows >= MIN_WINDOWS){
+      chosen.push(d);
+      if (chosen.length === BASE_DAYS) break;
+    }
   }
-  return days[0];
+  return chosen.length ? chosen : days.slice(0, 1);
+}
+
+/* Each cell's reference price: geometric mean of its daily minimum over the
+   reference period, over the days it was priced. Mirrors engine.base_cells. */
+function baseCells(cells, period){
+  const acc = new Map();
+  for (const d of period){
+    for (const [key, price] of cells.get(d) || []){
+      if (!acc.has(key)) acc.set(key, []);
+      acc.get(key).push(price);
+    }
+  }
+  const out = new Map();
+  for (const [key, ps] of acc)
+    out.set(key, Math.exp(ps.reduce((a,p) => a + Math.log(p), 0) / ps.length));
+  return out;
 }
 
 function apixSeries(){
   const cells = cellsByDay();
   const days = [...cells.keys()].sort((a,b)=>a-b);
   if (days.length < 1) return [];
-  const base = chooseBase(cells, days);
-  return days.map(d => apixFor(cells, base, d)).filter(Boolean);
+  const period = chooseBasePeriod(cells, days);
+  const base = baseCells(cells, period);
+  const rows = days.map(d => apixFor(cells, period, d, base)).filter(Boolean);
+  for (const r of rows){ r.basePeriod = period; r.baseMap = base; }
+  return rows;
 }
 
 
@@ -822,7 +856,9 @@ function drawHeadline(latest, series){
       `requires for air travel.`);
 
   set("h-level", "APIx " + latest.apix.toFixed(2));
-  set("h-period", `Reference period ${dayLab(latest.baseDay)} = 100.00 · ` +
+  const bp = latest.basePeriod || [latest.baseDay];
+  const baseText = bp.length > 1 ? `${dayLab(bp[0])}–${dayLab(bp[bp.length-1])}` : dayLab(bp[0]);
+  set("h-period", `Reference period ${baseText} = 100.00 · ` +
       `${series.length} observation day${series.length === 1 ? "" : "s"}`);
 
   const st = document.getElementById("h-status");
@@ -857,7 +893,7 @@ function drawHeat(latest){
   // index per route x lead time for the latest day
   const cells = cellsByDay();
   const days = [...cells.keys()].sort((a,b)=>a-b);
-  const base = cells.get(latest.baseDay), cur = cells.get(latest.day);
+  const base = latest.baseMap || cells.get(latest.baseDay), cur = cells.get(latest.day);
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
     .sort((a,b) => seatWeight(b) - seatWeight(a));
 
@@ -886,8 +922,11 @@ function drawHeat(latest){
         div.style.background = `var(${band.bg})`;
         div.style.color = `var(${band.fg})`;
         div.textContent = idx.toFixed(0);
+        const inr0 = v => "₹" + Math.round(v).toLocaleString("en-IN");
         div.title = `${pair.replace("-","–")} T+${w}: index ${idx.toFixed(1)} ` +
-                    `(${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(1)}%)`;
+                    `(${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(1)}%)\n` +
+                    `cheapest fare today ${inr0(p)} · reference ${inr0(b)}` +
+                    (Math.abs(delta) < 0.5 ? "\nthe cheapest fare bucket has not moved" : "");
       } else {
         div.style.background = "var(--inset)";
         div.style.color = "var(--muted)";
@@ -1029,6 +1068,38 @@ function drawDayOfWeek(){
 /* --- airline comparison (PS deliverable) --- */
 function drawCarriers(){
   const tbl = document.getElementById("t-carriers"); tbl.textContent = "";
+  const mk = (t,cls) => { const td=document.createElement("td");
+                          if(cls) td.className=cls; td.textContent=t; return td; };
+  const header = cols => {
+    const head = document.createElement("tr");
+    cols.forEach((h,i) => { const th = document.createElement("th");
+      if (i) th.className = "num"; th.textContent = h; head.appendChild(th); });
+    tbl.appendChild(head);
+  };
+
+  const rows = DATA.carriers || [];
+  if (rows.length){
+    const total = rows.reduce((a,r) => a + (+r.fares_observed || 0), 0) || 1;
+    header(["Carrier", "Fares observed", "Share", "City pairs",
+            "Cheapest in cell", "Premium vs cheapest", "Mean cheapest fare"]);
+    for (const r of rows){
+      const tr = document.createElement("tr");
+      const prem = +r.premium_vs_cheapest_pct;
+      tr.append(mk(r.carrier), mk(num(r.fares_observed),"num"),
+                mk((r.fares_observed/total*100).toFixed(1)+"%","num"),
+                mk(num(r.city_pairs),"num"),
+                mk((+r.cheapest_share_pct).toFixed(0)+"% of cells","num"),
+                mk((prem >= 0 ? "+" : "") + prem.toFixed(1)+"%","num"),
+                mk(inr(r.mean_cheapest_fare),"num"));
+      tbl.appendChild(tr);
+    }
+    return;
+  }
+
+  // the view is not applied yet: show the last few observations and say so
+  const why = document.getElementById("carriers-why");
+  if (why) why.textContent = `Observed fares by carrier in the last ${(DATA.recent||[]).length} ` +
+    `extractions. The route-controlled comparison appears once the fares_carrier view is applied.`;
   const agg = new Map();
   for (const r of (DATA.recent || [])){
     const k = r.carrier || "—";
@@ -1036,17 +1107,10 @@ function drawCarriers(){
     e.n++; e.s += +r.total_fare || 0; e.routes.add(`${r.origin}-${r.destination}`);
   }
   const total = [...agg.values()].reduce((a,e)=>a+e.n, 0) || 1;
-  const head = document.createElement("tr");
-  ["Carrier", "Fares observed", "Share of observations", "Mean fare", "City pairs"]
-    .forEach((h,i) => { const th = document.createElement("th");
-      if (i) th.className = "num"; th.textContent = h; head.appendChild(th); });
-  tbl.appendChild(head);
+  header(["Carrier", "Fares observed", "Share of observations", "Mean fare", "City pairs"]);
   [...agg.entries()].sort((a,b)=>b[1].n-a[1].n).forEach(([k,e]) => {
     const tr = document.createElement("tr");
-    const mk = (t,cls) => { const td=document.createElement("td");
-                            if(cls) td.className=cls; td.textContent=t; return td; };
-    tr.append(mk(k), mk(num(e.n),"num"),
-              mk((e.n/total*100).toFixed(1)+"%","num"),
+    tr.append(mk(k), mk(num(e.n),"num"), mk((e.n/total*100).toFixed(1)+"%","num"),
               mk(inr(e.s/e.n),"num"), mk(num(e.routes.size),"num"));
     tbl.appendChild(tr);
   });

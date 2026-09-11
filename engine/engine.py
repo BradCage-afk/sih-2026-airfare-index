@@ -53,6 +53,13 @@ REL_FLOOR, REL_CEIL = 0.2, 5.0
 MIN_WEIGHT_COVERAGE = float(os.getenv("APIX_MIN_WEIGHT", "0.60"))
 MIN_WINDOWS = int(os.getenv("APIX_MIN_WINDOWS", "3"))
 
+# The price reference period is several days, not one. A single base day is
+# fragile: one promotional fare in it inflates every later relative for that
+# cell, and any cell whose floor fare has not moved reads as exactly 100.
+# Averaging the daily minima over the first qualifying days damps both. CPI
+# practice uses a reference period (typically a month) for the same reason.
+BASE_DAYS = int(os.getenv("APIX_BASE_DAYS", "3"))
+
 
 class InsufficientData(RuntimeError):
     pass
@@ -117,9 +124,15 @@ def jevons(relatives: dict, weights: dict) -> float:
     return math.exp(num / den)
 
 
-def compute(cells: dict, base_day: str, day: str) -> dict:
-    """The index for one day against the base period."""
-    base, cur = cells.get(base_day, {}), cells.get(day, {})
+def compute(cells: dict, base_day, day: str, base: dict | None = None,
+            base_period: str | None = None) -> dict:
+    """The index for one day against the base period.
+
+    `base_day` may be a day (looked up in `cells`) or a label for a prepared
+    `base` mapping from base_cells()."""
+    if base is None:
+        base = cells.get(base_day, {})
+    cur = cells.get(day, {})
     matched = set(base) & set(cur)
     if not matched:
         raise InsufficientData(f"no cells common to {base_day} and {day}")
@@ -168,7 +181,8 @@ def compute(cells: dict, base_day: str, day: str) -> dict:
 
     return {
         "day": day,
-        "base_day": base_day,
+        "base_day": base_day,                       # first day of the period (a DATE)
+        "base_period": base_period or base_day,     # the whole period, as a label
         "apix": round(headline, 2),
         "provisional": provisional,
         "provisional_because": "; ".join(reasons) or None,
@@ -180,7 +194,9 @@ def compute(cells: dict, base_day: str, day: str) -> dict:
         "routes_covered": len({(k[0], k[1]) for k in relatives}),
         "observations": sum(cur[k][1] for k in relatives),
         "weight_covered": round(weight_share, 4),
-        "method": f"weighted-Jevons/min-logical-fare/min_obs={MIN_OBSERVATIONS}",
+        "method": (f"weighted-Jevons/min-logical-fare/min_obs={MIN_OBSERVATIONS}"
+                   f"/base={base_period or base_day}"),
+        "weight_basis": f"route: {config.WEIGHT_BASIS}; lead time: {config.LEAD_TIME_WEIGHT_SOURCE}",
         "weighting": f"route seat share x lead time ({config.LEAD_TIME_WEIGHT_SOURCE})",
         "cleaning": dict(CLEANING),
         "computed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -192,6 +208,39 @@ def day_coverage(day_cells: dict) -> tuple[float, int]:
     routes = {(k[0], k[1]) for k in day_cells}
     windows = {k[2] for k in day_cells}
     return sum(route_weight(o, d) for o, d in routes), len(windows)
+
+
+def choose_base_period(cells: dict) -> list:
+    """The first BASE_DAYS days that would each pass the publication threshold.
+
+    See choose_base for why the base must be a day you would publish; this
+    takes the first few such days so the reference is a period, not a day.
+    """
+    days = sorted(cells)
+    chosen = []
+    for day in days:
+        weight, windows = day_coverage(cells[day])
+        if weight >= MIN_WEIGHT_COVERAGE and windows >= MIN_WINDOWS:
+            chosen.append(day)
+            if len(chosen) == BASE_DAYS:
+                break
+    return chosen or days[:1]
+
+
+def base_cells(cells: dict, base_days: list) -> dict:
+    """Each cell's reference price: the geometric mean of its daily minimum
+    fare over the reference period, over the days it was priced."""
+    acc = {}
+    for day in base_days:
+        for key, (price, n) in cells.get(day, {}).items():
+            acc.setdefault(key, []).append(price)
+    return {key: (math.exp(sum(math.log(p) for p in ps) / len(ps)), len(ps))
+            for key, ps in acc.items()}
+
+
+def base_label(base_days: list) -> str:
+    """'2026-09-03' for one day, '2026-09-03/2026-09-06' for a period."""
+    return base_days[0] if len(base_days) == 1 else f"{base_days[0]}/{base_days[-1]}"
 
 
 def choose_base(cells: dict) -> str:
@@ -217,14 +266,15 @@ def series(client, base_day: str | None = None) -> list:
     if not cells:
         raise InsufficientData("fares_daily returned no usable cells")
     days = sorted(cells)
-    base = base_day or choose_base(cells)
+    period = [base_day] if base_day else choose_base_period(cells)
+    base, label = base_cells(cells, period), base_label(period)
     out = []
     for day in days:
         try:
-            out.append(compute(cells, base, day))
+            out.append(compute(cells, period[0], day, base=base, base_period=label))
         except InsufficientData as exc:
-            out.append({"day": day, "base_day": base, "apix": None,
-                        "error": str(exc)})
+            out.append({"day": day, "base_day": period[0], "base_period": label,
+                        "apix": None, "error": str(exc)})
     return out
 
 
@@ -287,9 +337,9 @@ def main() -> int:
         print(json.dumps(rows, indent=2))
     else:
         base = rows[0]["base_day"]
-        print(f"\nAPIx — Airfare Price Index      base {base} = 100")
+        print(f"\nAPIx — Airfare Price Index      base {rows[0].get('base_period', base)} = 100")
         print(f"method: weighted Jevons on minimum logical fares, "
-              f"seat-weighted, min {MIN_OBSERVATIONS} obs/cell\n")
+              f"weighted by {config.WEIGHT_BASIS}, min {MIN_OBSERVATIONS} obs/cell\n")
         print(f"  {'day':<12} {'APIx':>8}  {'routes':>7} {'cells':>6} {'obs':>7}   by lead time")
         for r in rows:
             if r.get("apix") is None:
