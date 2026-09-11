@@ -61,7 +61,19 @@ def require_key(key: str = Security(_key_header)) -> str:
 app = FastAPI(
     title="APIx — Airfare Price Index",
     version="1.0",
-    description="Machine-readable airfare price index for CPI augmentation (SIH26056).",
+    description=(
+        "A daily airfare inflation index for India, built to augment the Consumer "
+        "Price Index (Smart India Hackathon 2026, problem statement SIH26056, MoSPI).\n\n"
+        "**Method.** Weighted Jevons over minimum logical fares across a fixed basket of "
+        "15 domestic city pairs × 5 booking lead times, weighted by route seat share "
+        "(a stated proxy for passenger volume). Every response carries the method, the "
+        "weighting basis, the reference period, the coverage and a provisional flag, so "
+        "an ingested figure can never be separated from how it was produced.\n\n"
+        "**Access.** Index endpoints require an `X-API-Key` header, issued to ingesting "
+        "systems on request. `/api/v1/health` is open so the service can be monitored.\n\n"
+        "Portal: https://apix-portal.pages.dev · Method and source: "
+        "https://github.com/BradCage-afk/sih-2026-airfare-index"
+    ),
 )
 
 _cache: dict = {"series": None, "at": None}
@@ -154,7 +166,12 @@ def root():
     }
 
 
-@app.get("/api/v1/apix", response_model=IndexResponse, tags=["index"])
+@app.get("/api/v1/apix", response_model=IndexResponse, tags=["index"],
+         summary="Index for a month, or a date range",
+         description="The daily series for a calendar month (`?month=2026-09`) or a "
+                     "date range (`?from=&to=`), with the monthly geometric mean, the "
+                     "method, the reference period and the coverage of every day. This "
+                     "is the endpoint a statistical system ingests.")
 def get_apix(
     month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$", examples=["2026-09"]),
     date_from: Optional[date] = Query(None, alias="from"),
@@ -177,7 +194,10 @@ def get_apix(
     return _envelope(rows, subset, month)
 
 
-@app.get("/api/v1/apix/monthly", tags=["index"])
+@app.get("/api/v1/apix/monthly", tags=["index"],
+         summary="The monthly series",
+         description="One figure per calendar month — the cadence CPI is published at. "
+                     "A month containing any provisional day is itself provisional.")
 def get_monthly(_: str = Depends(require_key)):
     """The monthly series — the cadence CPI is actually published at.
 
@@ -198,7 +218,11 @@ def get_monthly(_: str = Depends(require_key)):
     }
 
 
-@app.get("/api/v1/apix/revisions", tags=["index"])
+@app.get("/api/v1/apix/revisions", tags=["index"],
+         summary="Revision history",
+         description="Every change to a previously published figure, with the old "
+                     "value, the new value and when it changed. A statistical office "
+                     "revises; it does not silently overwrite.")
 def get_revisions(_: str = Depends(require_key)):
     """Every change made to a previously published figure.
 
@@ -215,7 +239,10 @@ def get_revisions(_: str = Depends(require_key)):
                       "each change is recorded before the new value is stored"}
 
 
-@app.get("/api/v1/apix/latest", response_model=IndexResponse, tags=["index"])
+@app.get("/api/v1/apix/latest", response_model=IndexResponse, tags=["index"],
+         summary="The most recent published figure",
+         description="The latest day that met the publication threshold, in the same "
+                     "envelope as the monthly endpoint.")
 def get_latest(_: str = Depends(require_key)):
     rows = _series()
     published = [r for r in rows if r.get("apix") is not None]
@@ -224,7 +251,10 @@ def get_latest(_: str = Depends(require_key)):
     return _envelope(rows, [published[-1]])
 
 
-@app.get("/api/v1/health", tags=["ops"])
+@app.get("/api/v1/health", tags=["ops"],
+         summary="Liveness and data freshness",
+         description="Open, for monitoring. Reports the age of the newest observation "
+                     "and the last completed collection run.")
 def health():
     """Liveness plus freshness — an ingesting system needs to know whether the
     number it is reading is current, not merely that the service replied.
