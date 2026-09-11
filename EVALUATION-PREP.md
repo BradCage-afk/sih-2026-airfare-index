@@ -605,9 +605,7 @@ live that RLS blocks writes with it.
 - [ ] Export the deck to **PDF** from PowerPoint (portal accepts PDF only)
 - [x] Repo is **public**, with README; working notes removed from the tree
 - [x] All five lead-time columns populated; release **Published** at 100% coverage
-- [ ] Apply the `fares_carrier` view — `python3 run_schema.py` (asks for the DB
-      password) or paste the view from `schema.sql` into the Supabase SQL editor.
-      Until then the airline comparison falls back to the last 18 extractions and says so
+- [x] `fares_carrier` view applied — the airline comparison runs on every observation
 - [ ] Rehearse the demo path; have `selftest.py` ready as the offline fallback
 - [ ] Morning of: `python3 tools/shoot_portal.py && python3 tools/build_deck.py` so the
       screenshot and the fare count are same-day, then copy to `SIHPPT1.pptx`
