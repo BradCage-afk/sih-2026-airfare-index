@@ -48,17 +48,24 @@ faith.
 |---|---|
 | Minimum logical fare | The cheapest fare observed for a route × departure date × lead time — the price a traveller could actually have transacted at |
 | Cell | One (route, lead time) pair. 15 × 5 = 75 |
-| Weight | Route share of scheduled seats × lead-time share |
-| Base period | The first day that itself meets the publication threshold — currently **3 September 2026 = 100**. Basing on the first day with *any* data would lock the basket to whatever was collectable then |
+| Weight | Route share of scheduled seats (a stated proxy for passenger volume — see below) × lead-time share |
+| Base period | The first **three** days that each meet the publication threshold, averaged — currently **3–6 September 2026 = 100**. A single-day base is fragile: one promotional fare in it inflates every later relative, and a cell whose floor fare has not moved reads as exactly 100. Basing on the first day with *any* data would also lock the basket to whatever was collectable then |
 | Price basis | `total_fare` — what the household pays, taxes and fees included |
 
 ### Weighting
 
 The weight of a cell is a **matrix** entry, not a single vector:
 
-- **Route dimension — real.** Share of scheduled seats, from DGCA city-pair
-  statistics. Delhi–Mumbai moves the index roughly three times as hard as
-  Delhi–Srinagar.
+- **Route dimension — real, with a stated proxy.** The problem statement asks
+  for weighting by route *passenger volume*. DGCA publishes city-pair passenger
+  traffic monthly, but only through its web portal, not as a file this build
+  could fetch. Until those figures are entered, **scheduled seats** (OAG schedule
+  data) stand in: seats are capacity, and load factors on Indian trunk routes run
+  85–90% and are similar across these pairs, so seat share tracks passenger share
+  closely. Every API response states the basis (`weight_basis`). Fill
+  `ROUTE_PASSENGERS` in `airfare-scraper/config.py` from the DGCA table and the
+  weights switch over automatically. Delhi–Mumbai moves the index roughly three
+  times as hard as Delhi–Srinagar either way.
 - **Lead-time dimension — uniform, and stated as such.** Weighting it properly
   needs the share of bookings made at each notice period, which no public source
   publishes. A fabricated distribution would bias every published figure

@@ -24,9 +24,9 @@ authenticated REST API that MoSPI's systems can ingest directly.
 
 **It is running now:** 158,778 fares from 1,175 collection runs (97.4% ok), over 11
 observation days, without a single failed extraction in the last full-basket run.
-**Published:** APIx 102.72 on 11 Sep against a 3 Sep base — airfare inflation of
-**+2.7%**, at **100% basket coverage**, status **Published** (not provisional) for
-eight consecutive days. 66 revisions on the audit log.
+**Published:** APIx 101.98 on 11 Sep against a 3–6 Sep reference period — airfare
+inflation of **+2.0%**, at **100% basket coverage**, status **Published** (not
+provisional) for eight consecutive days. 77 revisions on the audit log.
 **Live:** `apix-portal.pages.dev` · `apix-api-n5ux.onrender.com/docs` ·
 `github.com/BradCage-afk/sih-2026-airfare-index` (public, with README)
 
@@ -429,11 +429,21 @@ basket, not a national sample — it covers the busiest pairs, not the long tail
 production index would widen it and derive weights from passenger volumes rather than
 scheduled seats.
 
-**7. Fare buckets recur, so identical cells happen.** Airlines price in fixed steps
-(₹7,989 and ₹7,857 recur on DEL–HYD for days). On 11 Sep every DEL–HYD cell read exactly
-100 because today's cheapest buckets matched the base day's. A judge who notices will
-suspect a data fault; the daily minima table shows the values moving on other days
-(6,529 on the 5th, 8,930 on the 7th). It is real.
+**7. Minimum fare tracks the floor of the fare ladder.** Airlines price in fixed
+buckets and the cheapest class stays open until close to departure, so at T+30 and T+45
+the *minimum* barely moves for weeks (DEL–HYD sat at ₹7,857 for nine days while the
+median swung between ₹8,200 and ₹8,800; the page returned 72–78 live fares a day, so
+it is not a caching fault). A cell reading exactly 100 means "the floor has not moved",
+and the heat map now says so on hover, with the two fares behind it. This is a known
+property of minimum-fare methodology and the reason the reference is a period rather
+than a day. A production index would also publish a median-fare series alongside.
+
+**8. Route weights are a stated proxy.** The problem statement asks for weighting by
+route *passenger volume*. DGCA publishes city-pair passenger traffic monthly, but only
+through its web portal, not as a file. Scheduled seats (OAG) stand in — capacity, with
+load factors of 85–90% that are similar across trunk routes — and every API response
+says so in `weight_basis`. `ROUTE_PASSENGERS` in `config.py` is the drop-in; nothing
+else changes.
 
 ---
 
@@ -459,13 +469,19 @@ and could **never** enter the index, because nothing existed on day one to compa
 against. Symptoms: ten blank rows in the heat map, coverage stuck at exactly 46% (the
 seat share of the six original routes), every release permanently provisional.
 
-Fix: the base is now **the first day that would itself pass the publication threshold**
-— ≥60% basket weight and ≥3 lead-time buckets — which lands on 3 September. Same rule in
-the engine (`choose_base`) and the portal (`chooseBase`), so the API and the dashboard
-agree. You do not base an index on a day you would not publish. Rebasing changed every
-published day, and the revision log recorded all eleven — which is exactly what the
-revision log is for. When the basket changes again, the proper treatment is
-chain-linking at an overlap period; that is the stated next step.
+Fix, in two steps the same day. First: the base became **the first day that would
+itself pass the publication threshold** — ≥60% basket weight and ≥3 lead-time buckets.
+You do not base an index on a day you would not publish. Then, looking at the result,
+a second weakness showed: a **single-day** base is fragile. One promotional fare in it
+inflates every later relative for that cell, and any cell whose floor fare has not
+moved reads as exactly 100 (DEL–HYD did, across all five lead times). So the base is
+now a **reference period** — the geometric mean of each cell's daily minimum over the
+first three qualifying days, 3–6 September — which is what CPI practice does with a
+reference month. Same rule in the engine (`choose_base_period`, `base_cells`) and the
+portal, so the API and the dashboard agree. Rebasing changed every published day and
+the revision log recorded all of them — which is exactly what it is for. When the
+basket changes again, the proper treatment is chain-linking at an overlap period; that
+is the stated next step.
 
 **3. The health endpoint cried wolf (found 11 Sep).** `/api/v1/health` measured freshness
 as time since the last *completed* run. A full-basket run takes two hours and writes as
@@ -545,9 +561,27 @@ price; the breakup is behind the checkout page, which is robots-disallowed. It i
 NULL rather than derived from the total. And it does not matter for the deliverable: a
 CPI prices what the household pays, taxes and fees included — that is `total_fare`.
 
-**"Why is DEL–HYD exactly 100 across the board?"** Airlines price in fixed fare buckets
-and today's cheapest matched the base day's. The daily minima vary on other days. Real,
-not a fault — and the fact that we can pull that table in ten seconds is the point.
+**"Why is DEL–HYD exactly 100 across the board?"** Because its cheapest fare bucket has
+not moved: ₹7,857 at T+30 for nine days straight, while the page returned 72–78 live
+fares a day and the median swung by ₹600. Minimum fare tracks the floor of the fare
+ladder, and 30–45 days out the floor class is always open. Hover the cell and the portal
+says exactly that, with both fares. Real, not a fault.
+
+**"CCU–BLR is up 92% at T+45 — is that a data error?"** No, and it is the best thing in
+the dataset. The *minimum* went ₹7,274 → ₹13,951, but so did the median (₹10,192 →
+₹16,350) and the maximum — the whole distribution moved. Forty-five days out from 11
+September is 26 October: **Durga Puja in Kolkata.** The index detected festival pricing
+six weeks ahead, which is precisely what a high-frequency airfare index is for and what
+a monthly hand visit cannot see.
+
+**"You weight by seats; the problem statement says passenger volume."** Correct, and
+stated in every response. DGCA's city-pair passenger table is only reachable through
+its portal, not as a file. Seats are capacity; at 85–90% load factors, similar across
+trunk routes, seat share is a close proxy. `ROUTE_PASSENGERS` is the drop-in.
+
+**"Your lead times are T+7; the problem statement says T−7."** Same bucket, opposite
+convention: T+7 counts from the booking date, T−7 from departure. The portal caption
+maps one to the other.
 
 **"What does the page give you, what does the model return, what does Postgres store?"**
 The page: fare rows found by shape — an element with both an `HH:MM` and a `₹` price —
@@ -571,6 +605,9 @@ live that RLS blocks writes with it.
 - [ ] Export the deck to **PDF** from PowerPoint (portal accepts PDF only)
 - [x] Repo is **public**, with README; working notes removed from the tree
 - [x] All five lead-time columns populated; release **Published** at 100% coverage
+- [ ] Apply the `fares_carrier` view — `python3 run_schema.py` (asks for the DB
+      password) or paste the view from `schema.sql` into the Supabase SQL editor.
+      Until then the airline comparison falls back to the last 18 extractions and says so
 - [ ] Rehearse the demo path; have `selftest.py` ready as the offline fallback
 - [ ] Morning of: `python3 tools/shoot_portal.py && python3 tools/build_deck.py` so the
       screenshot and the fare count are same-day, then copy to `SIHPPT1.pptx`
