@@ -196,8 +196,8 @@ def compute(cells: dict, base_day, day: str, base: dict | None = None,
         "weight_covered": round(weight_share, 4),
         "method": (f"weighted-Jevons/min-logical-fare/min_obs={MIN_OBSERVATIONS}"
                    f"/base={base_period or base_day}"),
-        "weight_basis": f"route: {config.WEIGHT_BASIS}; lead time: {config.LEAD_TIME_WEIGHT_SOURCE}",
-        "weighting": f"route seat share x lead time ({config.LEAD_TIME_WEIGHT_SOURCE})",
+        "weighting": (f"route: {config.WEIGHT_BASIS}; "
+                      f"lead time: {config.LEAD_TIME_WEIGHT_SOURCE}"),
         "cleaning": dict(CLEANING),
         "computed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
