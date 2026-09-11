@@ -481,7 +481,7 @@ precisely when the system was busiest. It now reports the age of the newest obse
 |---|---|---|
 | Innovation & uniqueness | 25% | Structure-based extraction; model-agnostic parsing with failover; RFC 9309 parser written because the stdlib is wrong; a published index that marks its own figures provisional |
 | Problem understanding | 20% | Framed as inflation measurement, not fare tracking; booking-window dimension identified as the gap a single CPI quote misses; Jevons aggregation chosen because it is what statistical offices use |
-| Technical feasibility | 20% | Running now: 36,076 fares, 298 runs, 98.7% clean, ₹0/month, portal and API both live |
+| Technical feasibility | 20% | Running now: 158,778 fares, 1,175 runs, 97.4% ok, ₹0/month, portal and API both live, a week unattended |
 | Impact & scalability | 20% | MoSPI, DGCA, citizens; linear scaling; honest bottleneck named |
 | Presentation quality | 15% | Six slides, ~670 words, charts drawn from live data, deck regenerated from the database |
 
