@@ -314,6 +314,11 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
 .hmleg{display:flex;align-items:center;gap:0;margin-top:12px;font-size:11px;color:var(--muted)}
 .hmleg i{width:34px;height:10px;display:block}
 .hmleg span{padding:0 9px;font-family:"IBM Plex Mono",monospace}
+.hmnote{margin:14px 0 0;padding:12px 0 0 18px;border-top:1px solid var(--border-2);font-size:12.5px;
+  color:var(--ink-2);line-height:1.6}
+.hmnote li{margin:0 0 3px}
+.hmnote b{color:var(--ink);font-weight:600}
+.hmnote .up{color:var(--crit)} .hmnote .down{color:var(--good-text)}
 
 .dl{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;
   font-weight:600;padding:9px 16px;border-radius:5px;cursor:pointer;
@@ -439,13 +444,14 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
     <h2>Route-level heat map</h2>
     <p class="why">Index by city pair and booking lead time, against the reference period.
       Red is dearer than the reference period, blue is cheaper. T+7 means booked seven
-      days before departure (the T−7 bucket in the problem statement). A cell at 100 means
+      days before departure (the T−7 bucket in the problem statement). A cell at 0% means
       the cheapest fare bucket has not moved — hover any cell for the fares behind it.
       Blank cells had too few observations to price reliably and are excluded rather
       than estimated.</p>
     <div class="panel">
       <div id="heat"></div>
       <div class="hmleg" id="heat-legend"></div>
+      <ul class="hmnote" id="heat-note"></ul>
     </div>
   </div>
 
@@ -1062,6 +1068,7 @@ function drawHeat(latest){
   const base = latest.baseMap || cells.get(latest.baseDay), cur = cells.get(latest.day);
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
     .sort((a,b) => seatWeight(b) - seatWeight(a));
+  const deltas = [];
 
   const table = document.createElement("table");
   table.className = "hm";
@@ -1087,7 +1094,10 @@ function drawHeat(latest){
         const band = heatBand(delta);
         div.style.background = `var(${band.bg})`;
         div.style.color = `var(${band.fg})`;
-        div.textContent = idx.toFixed(0);
+        const pctLabel = Math.abs(delta) < 0.5 ? "0%"
+                       : (delta > 0 ? "+" : "−") + Math.abs(delta).toFixed(0) + "%";
+        div.textContent = pctLabel;
+        deltas.push({pair, w, delta});
         const inr0 = v => "₹" + Math.round(v).toLocaleString("en-IN");
         div.title = `${pair.replace("-","–")} T+${w}: index ${idx.toFixed(1)} ` +
                     `(${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(1)}%)\n` +
@@ -1115,8 +1125,58 @@ function drawHeat(latest){
   const r = document.createElement("span"); r.textContent = "dearer"; leg.appendChild(r);
   const n = document.createElement("span");
   n.style.cssText = "margin-left:auto;font-family:inherit";
-  n.textContent = "cell value = index, reference period = 100";
+  n.textContent = "cell value = change in the cheapest fare against the reference period";
   leg.appendChild(n);
+
+  drawHeatNote(latest, deltas);
+}
+
+/* What the map says, computed from the same cells so it cannot drift from it. */
+function drawHeatNote(latest, deltas){
+  const ul = document.getElementById("heat-note"); if (!ul) return;
+  ul.textContent = "";
+  if (!deltas.length) return;
+  const sp = (n, dp=0) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toFixed(dp) + "%";
+  const li = (html) => { const e = document.createElement("li"); e.innerHTML = html; ul.appendChild(e); };
+  const name = pair => pair.replace("-", "–");
+
+  const up = deltas.filter(d => d.delta >= 0.5).length;
+  const down = deltas.filter(d => d.delta <= -0.5).length;
+  const flat = deltas.length - up - down;
+  const overall = latest.apix - 100;
+  li(`<b>${up} of ${deltas.length} cells dearer</b> than the reference period, ${down} cheaper, ` +
+     `${flat} unchanged — the basket overall is <b class="${overall >= 0 ? "up" : "down"}">${sp(overall, 1)}</b>.`);
+
+  // lead-time pattern from the Jevons per-window index
+  const bw = Object.entries(latest.byWindow || {}).map(([w, v]) => [+w, v - 100]).sort((a,b) => a[0]-b[0]);
+  if (bw.length >= 2){
+    const hi = bw.reduce((a,b) => b[1] > a[1] ? b : a), lo = bw.reduce((a,b) => b[1] < a[1] ? b : a);
+    const first = bw[0], last = bw[bw.length-1];
+    li(`By lead time: ${bw.map(([w, v]) => `T+${w} <b class="${v >= 0 ? "up" : "down"}">${sp(v, 1)}</b>`).join(" · ")}. ` +
+       (hi[0] === last[0] && first[1] < last[1]
+         ? `Fares booked furthest ahead have risen most — the increase is in advance fares, not last-minute ones.`
+         : hi[0] === first[0] && first[1] > last[1]
+         ? `Last-minute fares have risen most — a widening late-booking premium.`
+         : `The dearest bucket is T+${hi[0]}, the cheapest T+${lo[0]}.`));
+  }
+
+  // routes: consistent movers, from the per-route index
+  const br = Object.entries(latest.byRoute || {}).map(([r, v]) => [r, v - 100]).sort((a,b) => b[1]-a[1]);
+  if (br.length >= 2){
+    const top = br[0], bottom = br[br.length-1];
+    li(`Routes: <b>${name(top[0])}</b> is the largest riser (<b class="up">${sp(top[1], 1)}</b> across its lead times)` +
+       (bottom[1] < 0 ? `; <b>${name(bottom[0])}</b> the largest faller (<b class="down">${sp(bottom[1], 1)}</b>)` : "") + `.`);
+  }
+
+  // the single biggest cell moves
+  const big = [...deltas].sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 2);
+  li(`Largest single cells: ` + big.map(d =>
+     `<b>${name(d.pair)} T+${d.w}</b> <b class="${d.delta >= 0 ? "up" : "down"}">${sp(d.delta)}</b>`).join(", ") +
+     (Math.abs(big[0].delta) >= 15 ? ` — beyond the ±15% spike threshold, see the alerts below.` : `.`));
+
+  li(`Each column prices departures a fixed number of days after the observation day, so the travel date ` +
+     `moves with the calendar: a jump in one column can be that date crossing into a festival or holiday peak ` +
+     `rather than a general rise. Hover a cell for the fares behind it.`);
 }
 
 /* --- fare spike alerts (PS deliverable) --- */
