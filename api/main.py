@@ -36,7 +36,13 @@ for _sub in ("engine", "airfare-scraper"):
     if _path not in sys.path:
         sys.path.insert(0, _path)
 import engine                                     # noqa: E402
+import config                                     # noqa: E402
 from db import FareStore                          # noqa: E402
+
+# How the published figures were weighted. Stated on every response so an
+# ingested number can never be separated from its weighting basis.
+WEIGHTING = (f"route: {config.WEIGHT_BASIS}; "
+             f"lead time: {config.LEAD_TIME_WEIGHT_SOURCE}")
 
 API_KEYS = {k.strip() for k in os.getenv("APIX_API_KEYS", "").split(",") if k.strip()}
 _key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -118,7 +124,7 @@ def _envelope(rows: list, subset: list, month: str | None = None) -> IndexRespon
     return IndexResponse(
         base_period=_base_period(rows),
         method=next((r.get("method") for r in rows if r.get("method")), None),
-        weighting=next((r.get("weighting") for r in rows if r.get("weighting")), None),
+        weighting=next((r.get("weighting") for r in rows if r.get("weighting")), WEIGHTING),
         cleaning=next((r.get("cleaning") for r in reversed(rows) if r.get("cleaning") is not None), None),
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         monthly=monthly,
@@ -186,7 +192,7 @@ def get_monthly(_: str = Depends(require_key)):
         "unit": "index, base period = 100",
         "base_period": _base_period(rows),
         "method": next((r.get("method") for r in rows if r.get("method")), None),
-        "weighting": next((r.get("weighting") for r in rows if r.get("weighting")), None),
+        "weighting": next((r.get("weighting") for r in rows if r.get("weighting")), WEIGHTING),
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "months": engine.monthly(rows),
     }
