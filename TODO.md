@@ -169,7 +169,8 @@ https://apix-api.onrender.com/api/v1/health
 You should see something like:
 
 ```json
-{"status":"ok","last_scrape":"2026-09-03T18:20:02","minutes_since_scrape":4.2,"stale":false}
+{"status":"ok","last_observation":"2026-09-11T15:58:09","minutes_since_observation":0.4,"stale":false,
+ "last_completed_run":{"started_at":"2026-09-11T13:50:02","tier":"hot","status":"ok"}}
 ```
 
 `"stale": false` means it's talking to your live database. That's the win.

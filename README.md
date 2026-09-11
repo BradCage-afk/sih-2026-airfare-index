@@ -119,7 +119,7 @@ Built so MoSPI's systems can ingest the index directly.
 | `GET /api/v1/apix/latest` | The most recent published figure |
 | `GET /api/v1/apix/monthly` | The full monthly series |
 | `GET /api/v1/apix/revisions` | Every figure that changed after first publication, and when |
-| `GET /api/v1/health` | Liveness and last-collection timestamp |
+| `GET /api/v1/health` | Liveness and freshness — age of the newest observation, plus the last completed run |
 
 Authenticate with `X-API-Key` when `APIX_API_KEYS` is set:
 
