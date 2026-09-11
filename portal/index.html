@@ -657,7 +657,7 @@ async function goLive(){
   DATA.meta.start = days[0];
   DATA.meta.today = days[days.length - 1];
   DATA.meta.days = days.length;
-  DATA.meta.base_period = days[0];
+  DATA.meta.base_period = days[0];   // provisional; the release picks its own base (chooseBase)
 
   DATA.recent.length = 0;
   DATA.recent.push(...recent.map(r => ({
@@ -857,7 +857,7 @@ function drawHeat(latest){
   // index per route x lead time for the latest day
   const cells = cellsByDay();
   const days = [...cells.keys()].sort((a,b)=>a-b);
-  const base = cells.get(days[0]), cur = cells.get(latest.day);
+  const base = cells.get(latest.baseDay), cur = cells.get(latest.day);
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
     .sort((a,b) => seatWeight(b) - seatWeight(a));
 
