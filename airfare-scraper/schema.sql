@@ -147,7 +147,8 @@ SELECT
   c.carrier,
   sum(c.n)::int                                              AS fares_observed,
   count(*)::int                                              AS cells_priced,
-  count(DISTINCT c.origin || '-' || c.destination)::int      AS city_pairs,
+  count(DISTINCT least(c.origin, c.destination) || '-' ||
+                 greatest(c.origin, c.destination))::int   AS city_pairs,
   round(avg(c.carrier_min))::int                             AS mean_cheapest_fare,
   round(100.0 * exp(avg(ln(c.carrier_min / ch.cell_min))) - 100, 1)
                                                              AS premium_vs_cheapest_pct,

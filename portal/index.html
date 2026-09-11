@@ -1078,7 +1078,12 @@ function drawCarriers(){
   };
 
   const rows = DATA.carriers || [];
+  const why = document.getElementById("carriers-why");
   if (rows.length){
+    if (why) why.textContent = "Each carrier's cheapest fare in a cell (route × lead time × day) " +
+      "against the cheapest anyone offered in that cell, over every observation. Controlling " +
+      "for route is what makes carriers comparable — a raw mean fare mostly reflects which " +
+      "routes a carrier flies.";
     const total = rows.reduce((a,r) => a + (+r.fares_observed || 0), 0) || 1;
     header(["Carrier", "Fares observed", "Share", "City pairs",
             "Cheapest in cell", "Premium vs cheapest", "Mean cheapest fare"]);
@@ -1097,7 +1102,6 @@ function drawCarriers(){
   }
 
   // the view is not applied yet: show the last few observations and say so
-  const why = document.getElementById("carriers-why");
   if (why) why.textContent = `Observed fares by carrier in the last ${(DATA.recent||[]).length} ` +
     `extractions. The route-controlled comparison appears once the fares_carrier view is applied.`;
   const agg = new Map();
