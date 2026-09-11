@@ -186,6 +186,32 @@ GRANT SELECT ON apix_daily TO anon;
 
 
 -- ---------------------------------------------------------------------------
+-- The same index on the PRODUCER price basis (an SPPI, ISIC 51): each fare net
+-- of the charges the airline collects but does not keep (ASF, UDF). Same
+-- basket, base and method as apix_daily, so the two are directly comparable;
+-- `sensitivity` is how far the figure moves if the tariff table is off by 20%.
+CREATE TABLE IF NOT EXISTS apix_producer_daily (
+  day             DATE PRIMARY KEY,
+  base_day        DATE,
+  apix            NUMERIC,
+  provisional     BOOLEAN DEFAULT false,
+  by_window       JSONB,
+  by_route        JSONB,
+  routes_covered  INT,
+  observations    INT,
+  weight_covered  NUMERIC,
+  method          TEXT,
+  sensitivity     NUMERIC,
+  computed_at     TIMESTAMP DEFAULT now()
+);
+
+ALTER TABLE apix_producer_daily ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS apix_prod_anon_read ON apix_producer_daily;
+CREATE POLICY apix_prod_anon_read ON apix_producer_daily FOR SELECT TO anon USING (true);
+GRANT SELECT ON apix_producer_daily TO anon;
+
+
+-- ---------------------------------------------------------------------------
 -- Revisions. A statistical office revises a published figure; it does not
 -- silently replace one. Every change to a previously published day is recorded
 -- here first, so the published history is reconstructible.

@@ -76,9 +76,23 @@ def route_weight(origin: str, destination: str) -> float:
 
 CLEANING: dict = defaultdict(int)          # reason -> count, for the audit report
 
+# Two price bases from one collection. The CPI wants the PURCHASER price — the
+# whole ticket. A services producer price index (SPPI) wants the BASIC price —
+# what the airline keeps — so charges it collects for others (ASF, UDF) come
+# off first. The 5% GST on the airline's own fare is proportional and cancels
+# in the relative. See config.pass_through for the tariff table and sources.
+BASES = ("purchaser", "producer")
+TABLE_FOR = {"purchaser": "apix_daily", "producer": "apix_producer_daily"}
 
-def load_cells(client, since: str | None = None) -> dict:
+
+def load_cells(client, since: str | None = None, basis: str = "purchaser",
+               scale: float = 1.0) -> dict:
     """day -> {(origin, destination, window): (min_fare, n_flights)}
+
+    `basis="producer"` nets the pass-through charges off every cell before
+    folding; a cell whose departure airport has no verified tariff is excluded
+    and counted, never estimated. `scale` multiplies the charges and exists
+    only for the sensitivity check.
 
     Also records why anything was dropped, so the cleaning step is auditable
     rather than invisible."""
@@ -98,6 +112,17 @@ def load_cells(client, since: str | None = None) -> dict:
         if price <= 0:
             CLEANING["non-positive fare"] += 1
             continue
+        if basis == "producer":
+            # net before folding: the charge depends on the actual departure
+            # and arrival airports, which folding erases
+            charge = config.pass_through(r["origin"], r["destination"], r["day"])
+            if charge is None:
+                CLEANING[f"departure airport {r['origin']} has no verified tariff"] += 1
+                continue
+            price -= charge * scale
+            if price <= 0:
+                CLEANING["fare below pass-through charges"] += 1
+                continue
         pair = (r["origin"], r["destination"])
         # A route the basket does not define must not enter the index, and the
         # same city pair recorded in both directions must not count twice.
@@ -125,7 +150,7 @@ def jevons(relatives: dict, weights: dict) -> float:
 
 
 def compute(cells: dict, base_day, day: str, base: dict | None = None,
-            base_period: str | None = None) -> dict:
+            base_period: str | None = None, basis: str = "purchaser") -> dict:
     """The index for one day against the base period.
 
     `base_day` may be a day (looked up in `cells`) or a label for a prepared
@@ -194,8 +219,9 @@ def compute(cells: dict, base_day, day: str, base: dict | None = None,
         "routes_covered": len({(k[0], k[1]) for k in relatives}),
         "observations": sum(cur[k][1] for k in relatives),
         "weight_covered": round(weight_share, 4),
-        "method": (f"weighted-Jevons/min-logical-fare/min_obs={MIN_OBSERVATIONS}"
-                   f"/base={base_period or base_day}"),
+        "price_basis": basis,
+        "method": (f"weighted-Jevons/min-logical-fare/basis={basis}"
+                   f"/min_obs={MIN_OBSERVATIONS}/base={base_period or base_day}"),
         "weighting": (f"route: {config.WEIGHT_BASIS}; "
                       f"lead time: {config.LEAD_TIME_WEIGHT_SOURCE}"),
         "cleaning": dict(CLEANING),
@@ -261,21 +287,61 @@ def choose_base(cells: dict) -> str:
     return days[0]
 
 
-def series(client, base_day: str | None = None) -> list:
-    cells = load_cells(client)
-    if not cells:
-        raise InsufficientData("fares_daily returned no usable cells")
+def _series_from(cells: dict, base_day: str | None, basis: str) -> list:
     days = sorted(cells)
     period = [base_day] if base_day else choose_base_period(cells)
     base, label = base_cells(cells, period), base_label(period)
     out = []
     for day in days:
         try:
-            out.append(compute(cells, period[0], day, base=base, base_period=label))
+            out.append(compute(cells, period[0], day, base=base, base_period=label,
+                               basis=basis))
         except InsufficientData as exc:
             out.append({"day": day, "base_day": period[0], "base_period": label,
                         "apix": None, "error": str(exc)})
     return out
+
+
+def series(client, base_day: str | None = None, basis: str = "purchaser") -> list:
+    if basis not in BASES:
+        raise ValueError(f"basis must be one of {BASES}")
+    cells = load_cells(client, basis=basis)
+    if not cells:
+        raise InsufficientData("fares_daily returned no usable cells")
+    rows = _series_from(cells, base_day, basis)
+    if basis == "producer":
+        # The tariff table is notified, not measured, but a PSF component or a
+        # GST treatment could still be off by a few hundred rupees. Recompute
+        # with the charges scaled +-20% and publish the largest movement, so a
+        # reader knows how much of the figure rests on the table.
+        cleaning = dict(CLEANING)
+        lo = {r["day"]: r.get("apix") for r in
+              _series_from(load_cells(client, basis=basis, scale=0.8), base_day, basis)}
+        hi = {r["day"]: r.get("apix") for r in
+              _series_from(load_cells(client, basis=basis, scale=1.2), base_day, basis)}
+        # The CPI-basis figure on the SAME cells, so the gap between the two
+        # series measures the pass-through charges and nothing else — a cell
+        # missing from one basket would otherwise masquerade as a price effect.
+        purchaser = load_cells(client, basis="purchaser")
+        matched_cells = {day: {k: v for k, v in purchaser.get(day, {}).items() if k in keys}
+                         for day, keys in cells.items()}
+        matched = {r["day"]: r.get("apix") for r in
+                   _series_from(matched_cells, base_day, "purchaser")}
+        CLEANING.clear(); CLEANING.update(cleaning)
+        for r in rows:
+            if r.get("apix") is None:
+                continue
+            alts = [v for v in (lo.get(r["day"]), hi.get(r["day"])) if v is not None]
+            r["sensitivity"] = (round(max(abs(v - r["apix"]) for v in alts), 2)
+                                if alts else None)
+            r["purchaser_matched"] = matched.get(r["day"])
+            r["wedge"] = (round(r["apix"] - matched[r["day"]], 2)
+                          if matched.get(r["day"]) is not None else None)
+            r["pass_through"] = {"asf_inr": config.ASF_INR,
+                                 "udf_inr": {k: v for k, v in config.UDF_INR.items() if v},
+                                 "unverified": [k for k, v in config.UDF_INR.items() if not v],
+                                 "note": config.PASS_THROUGH_NOTE}
+    return rows
 
 
 def monthly(rows: list) -> list:
@@ -311,13 +377,19 @@ def main() -> int:
                                 "that meets the publication threshold)")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--write", action="store_true",
-                    help="upsert the series into the apix_daily table")
+                    help="upsert the series into the table for its basis "
+                         "(apix_daily, or apix_producer_daily)")
     ap.add_argument("--monthly", action="store_true",
                     help="print the monthly index instead of the daily series")
+    ap.add_argument("--basis", choices=BASES, default="purchaser",
+                    help="purchaser = the whole ticket, the CPI basis (default); "
+                         "producer = net of ASF and UDF, the SPPI basis")
     args = ap.parse_args()
 
     client = FareStore()._client
-    rows = series(client, args.base)
+    rows = series(client, args.base, basis=args.basis)
+    table = TABLE_FOR[args.basis]
+    name = "APIx" if args.basis == "purchaser" else "APIx-P (producer basis)"
 
     if args.monthly:
         months = monthly(rows)
@@ -337,9 +409,13 @@ def main() -> int:
         print(json.dumps(rows, indent=2))
     else:
         base = rows[0]["base_day"]
-        print(f"\nAPIx — Airfare Price Index      base {rows[0].get('base_period', base)} = 100")
+        print(f"\n{name} — Airfare Price Index      base {rows[0].get('base_period', base)} = 100")
         print(f"method: weighted Jevons on minimum logical fares, "
-              f"weighted by {config.WEIGHT_BASIS}, min {MIN_OBSERVATIONS} obs/cell\n")
+              f"weighted by {config.WEIGHT_BASIS}, min {MIN_OBSERVATIONS} obs/cell")
+        if args.basis == "producer":
+            print(f"price basis: ticket net of ASF (Rs {config.ASF_INR:.0f}) and the AERA-notified "
+                  f"UDF at each verified airport — what the airline keeps")
+        print()
         print(f"  {'day':<12} {'APIx':>8}  {'routes':>7} {'cells':>6} {'obs':>7}   by lead time")
         for r in rows:
             if r.get("apix") is None:
@@ -352,9 +428,15 @@ def main() -> int:
         last = [r for r in rows if r.get("apix") is not None]
         if last:
             r = last[-1]
-            label = "PROVISIONAL APIx" if r.get("provisional") else "headline APIx"
+            label = f"PROVISIONAL {name}" if r.get("provisional") else f"headline {name}"
             print(f"\n  {label} = {r['apix']:.2f}   "
                   f"({(r['apix']-100):+.2f}% against base)")
+            if r.get("sensitivity") is not None:
+                print(f"  sensitivity: charges +-20% move the figure by at most "
+                      f"{r['sensitivity']:.2f} points")
+            if r.get("purchaser_matched") is not None:
+                print(f"  same cells on the purchaser (CPI) basis: {r['purchaser_matched']:.2f}"
+                      f"   wedge {r['wedge']:+.2f} points from pass-through charges")
             print(f"  coverage: {r['weight_covered']*100:.1f}% of basket weight, "
                   f"{r['windows_present']} lead-time bucket(s)")
             if r.get("provisional_because"):
@@ -381,12 +463,14 @@ def main() -> int:
                     "routes_covered": r.get("routes_covered"),
                     "observations": r.get("observations"),
                     "weight_covered": r.get("weight_covered"),
-                    "method": r.get("method")} for r in rows if r.get("apix")]
+                    "method": r.get("method"),
+                    **({"sensitivity": r.get("sensitivity")} if args.basis == "producer" else {}),
+                    } for r in rows if r.get("apix")]
         # A statistical office revises; it does not silently overwrite. Any day
         # whose value changes is recorded first, so the published history is
         # reconstructible and a revision is visible rather than implied.
         existing = {r["day"]: r for r in
-                    client.table("apix_daily").select("day,apix,provisional")
+                    client.table(table).select("day,apix,provisional")
                     .execute().data}
         revisions = []
         for row in payload:
@@ -402,7 +486,8 @@ def main() -> int:
                     "new_apix": row["apix"],
                     "previous_provisional": prev.get("provisional"),
                     "new_provisional": row["provisional"],
-                    "reason": "recomputed from current observations",
+                    "reason": "recomputed from current observations"
+                              + ("" if args.basis == "purchaser" else f" ({args.basis} basis)"),
                 })
         if revisions:
             try:
@@ -411,8 +496,8 @@ def main() -> int:
             except Exception as exc:
                 print(f"  {WARN if False else '!'} could not record revisions: "
                       f"{type(exc).__name__} — run the apix_revisions DDL in schema.sql")
-        client.table("apix_daily").upsert(payload, on_conflict="day").execute()
-        print(f"\n  wrote {len(payload)} day(s) to apix_daily")
+        client.table(table).upsert(payload, on_conflict="day").execute()
+        print(f"\n  wrote {len(payload)} day(s) to {table}")
     return 0
 
 

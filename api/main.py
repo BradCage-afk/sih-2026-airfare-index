@@ -76,16 +76,19 @@ app = FastAPI(
     ),
 )
 
-_cache: dict = {"series": None, "at": None}
+_cache: dict = {b: {"series": None, "at": None} for b in engine.BASES}
 
 
-def _series() -> list:
-    """Recompute at most once a minute; the underlying data moves every ten."""
+def _series(basis: str = "purchaser") -> list:
+    """Recompute at most once a minute; the underlying data moves every ten.
+    `basis` is the price concept: purchaser (the CPI input) or producer (the
+    SPPI input) — the same collection, base and method either way."""
     now = datetime.now(timezone.utc)
-    if _cache["series"] and _cache["at"] and (now - _cache["at"]).total_seconds() < 60:
-        return _cache["series"]
-    rows = engine.series(FareStore()._client)
-    _cache.update(series=rows, at=now)
+    c = _cache[basis]
+    if c["series"] and c["at"] and (now - c["at"]).total_seconds() < 60:
+        return c["series"]
+    rows = engine.series(FareStore()._client, basis=basis)
+    c.update(series=rows, at=now)
     return rows
 
 
@@ -97,10 +100,26 @@ class DayIndex(BaseModel):
     routes_covered: Optional[int] = None
     observations: Optional[int] = None
     by_window: Optional[dict] = None
+    # producer-basis only
+    sensitivity: Optional[float] = Field(
+        None, description="Largest movement in the figure if every pass-through charge "
+                          "were 20% higher or lower — how much rests on the tariff table")
+    purchaser_matched: Optional[float] = Field(
+        None, description="The purchaser-basis index on exactly the same cells")
+    wedge: Optional[float] = Field(
+        None, description="producer minus purchaser_matched: the effect of pass-through "
+                          "charges on measured inflation, in index points")
 
 
 class IndexResponse(BaseModel):
     index: str = "APIx"
+    price_basis: str = Field(
+        "purchaser", description="purchaser = the whole ticket, what the household pays "
+                                 "(the CPI concept); producer = net of ASF and UDF, what "
+                                 "the airline keeps (the SPPI concept)")
+    pass_through: Optional[dict] = Field(
+        None, description="producer basis only: the notified tariffs netted off, with "
+                          "sources, and the airports excluded for lack of a verified one")
     base_period: Optional[str]
     method: Optional[str]
     weighting: Optional[str] = Field(
@@ -127,13 +146,18 @@ def _base_period(rows: list) -> str | None:
     return rows[0]["base_day"]
 
 
-def _envelope(rows: list, subset: list, month: str | None = None) -> IndexResponse:
+def _envelope(rows: list, subset: list, month: str | None = None,
+              basis: str = "purchaser") -> IndexResponse:
     published = [r for r in subset if r.get("apix") is not None]
     monthly = None
     if published:
         monthly = round(math.exp(
             sum(math.log(r["apix"]) for r in published) / len(published)), 2)
     return IndexResponse(
+        index="APIx" if basis == "purchaser" else "APIx-P",
+        price_basis=basis,
+        pass_through=next((r.get("pass_through") for r in reversed(rows)
+                           if r.get("pass_through")), None) if basis == "producer" else None,
         base_period=_base_period(rows),
         method=next((r.get("method") for r in rows if r.get("method")), None),
         weighting=next((r.get("weighting") for r in rows if r.get("weighting")), WEIGHTING),
@@ -160,6 +184,8 @@ def root():
             "monthly series": "/api/v1/apix/monthly",
             "revision history": "/api/v1/apix/revisions",
             "latest figure": "/api/v1/apix/latest",
+            "producer-price (SPPI) basis": "/api/v1/sppi?month=YYYY-MM",
+            "producer-price latest": "/api/v1/sppi/latest",
             "service health": "/api/v1/health",
         },
         "authentication": "send the key as an X-API-Key header; /api/v1/health is open",
@@ -249,6 +275,53 @@ def get_latest(_: str = Depends(require_key)):
     if not published:
         raise HTTPException(503, "no index data available yet")
     return _envelope(rows, [published[-1]])
+
+
+def _subset(rows: list, month, date_from, date_to) -> list:
+    subset = rows
+    if month:
+        subset = [r for r in rows if r["day"].startswith(month)]
+        if not subset:
+            raise HTTPException(404, f"no index data for {month}")
+    elif date_from or date_to:
+        lo = date_from.isoformat() if date_from else "0000-00-00"
+        hi = date_to.isoformat() if date_to else "9999-99-99"
+        subset = [r for r in rows if lo <= r["day"] <= hi]
+    return subset
+
+
+@app.get("/api/v1/sppi", response_model=IndexResponse, tags=["sppi"],
+         summary="Producer-price (SPPI) basis: index for a month, or a date range",
+         description="The same basket, base and Jevons method as /api/v1/apix, but each "
+                     "fare is taken net of the charges the airline collects and does not "
+                     "keep — the Aviation Security Fee and each airport's AERA-notified "
+                     "User Development Fee — which is the basic-price concept a services "
+                     "producer price index (Eurostat-OECD SPPI guide, s.6.3.8) requires. "
+                     "GST on the airline's own fare is proportional and cancels in the "
+                     "relative. Every day carries `purchaser_matched`, the CPI-basis index "
+                     "on the same cells, and `wedge`, the difference, so the effect of "
+                     "pass-through charges on measured inflation is published, not "
+                     "implied. Airports without a verified tariff are excluded, and named.")
+def get_sppi(
+    month: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}$", examples=["2026-09"]),
+    date_from: Optional[date] = Query(None, alias="from"),
+    date_to: Optional[date] = Query(None, alias="to"),
+    _: str = Depends(require_key),
+):
+    rows = _series("producer")
+    if not rows:
+        raise HTTPException(503, "no index data available yet")
+    return _envelope(rows, _subset(rows, month, date_from, date_to), month, basis="producer")
+
+
+@app.get("/api/v1/sppi/latest", response_model=IndexResponse, tags=["sppi"],
+         summary="Producer-price (SPPI) basis: the most recent figure")
+def get_sppi_latest(_: str = Depends(require_key)):
+    rows = _series("producer")
+    published = [r for r in rows if r.get("apix") is not None]
+    if not published:
+        raise HTTPException(503, "no index data available yet")
+    return _envelope(rows, [published[-1]], basis="producer")
 
 
 @app.get("/api/v1/health", tags=["ops"],

@@ -80,6 +80,76 @@ ADVANCE_WINDOWS: list[int] = [1, 7, 15, 30, 45]
 LEAD_TIME_WEIGHTS: dict = {w: 1.0 / len(ADVANCE_WINDOWS) for w in ADVANCE_WINDOWS}
 LEAD_TIME_WEIGHT_SOURCE = "uniform (pending an official booking-curve distribution)"
 
+# ------------------------------------------------- producer-price basis ---
+# The CPI prices what the household PAYS: the whole ticket. A services
+# producer price index (SPPI, ISIC 51 air transport) prices what the airline
+# RECEIVES — the Eurostat-OECD SPPI guide, s.6.3.8: "taxes and airport landing
+# and security charges should be excluded if they are not retained by the
+# service provider. However, surcharges imposed by respondents to cover rising
+# input costs (e.g. fuel) must be included."
+#
+# On an Indian domestic ticket the charges an airline collects but does not
+# keep are, per departing passenger:
+#   ASF  Aviation Security Fee, national, Rs 200 + 18% GST = Rs 236
+#        (DGCA order, in force since 1 April 2021).
+#   UDF  User Development Fee, per airport, set by AERA tariff order; some
+#        airports now also levy a UDF on ARRIVING passengers.
+# GST on the airline's own fare (5% economy) is proportional, so it cancels
+# in a price relative and needs no entry here. Nothing below is estimated:
+# every figure is a notified tariff with its source, and an airport without a
+# verified tariff is None, which EXCLUDES its cells from the producer series
+# rather than guessing. Entries are (effective_from, rupees) lists so a tariff
+# change inside the series is applied from its own date.
+ASF_INR = 236.0
+ASF_SOURCE = "DGCA order: Rs 200 per embarking domestic passenger + 18% GST, from 2021-04-01"
+
+# domestic UDF per passenger: {"dep": [(effective_from, INR), ...], "arr": [...], "source": str}
+UDF_INR: dict = {
+    "DEL": {"dep": [("2024-04-01", 129.0)], "arr": [],
+            "source": "AERA tariff order, DIAL 4th control period 2024-29: domestic UDF unchanged at Rs 129"},
+    "BOM": {"dep": [("2025-05-16", 175.0)], "arr": [("2025-05-16", 75.0)],
+            "source": "AERA tariff order, MIAL: Rs 175 departing / Rs 75 arriving domestic, from 2025-05-16"},
+    "BLR": {"dep": [("2024-04-01", 550.0), ("2026-09-01", 300.0)], "arr": [("2026-09-01", 125.0)],
+            "source": "AERA tariff order, BIAL 4th control period: Rs 300 departing / Rs 125 arriving from 2026-09-01 (Rs 550 before)"},
+    "HYD": {"dep": [("2024-04-01", 750.0), ("2026-09-01", 515.0)], "arr": [("2026-09-01", 220.0)],
+            "source": "AERA tariff order, GHIAL 4th control period 2026-31: Rs 515 departing / Rs 220 arriving from 2026-09-01 (Rs 750 before)"},
+    "MAA": {"dep": [("2024-04-01", 410.0)], "arr": [],
+            "source": "AERA tariff order, AAI Chennai: Rs 410 domestic departing (as of March 2026)"},
+    "AMD": {"dep": [("2024-04-01", 600.0)], "arr": [],
+            "source": "AERA tariff order, Adani Ahmedabad: Rs 600 domestic departing (as of March 2026)"},
+    "CCU": None,   # AAI Kolkata: current AERA-notified figure not verifiable from public record
+    "PNQ": None,   # AAI Pune: not verified
+    "GOI": None, "COK": None, "SXR": None,
+}
+PASS_THROUGH_NOTE = ("PSF facilitation component, where still levied, is not netted out; "
+                     "the sensitivity figure published with each release bounds the effect.")
+
+
+def _tariff_on(entries: list, day: str) -> float | None:
+    """The rate in force on `day` (ISO date), or None before the first entry."""
+    rate = None
+    for eff, inr in sorted(entries):
+        if eff <= day:
+            rate = inr
+    return rate
+
+
+def pass_through(origin: str, destination: str, day: str) -> float | None:
+    """Rupees on a one-way domestic ticket from `origin` to `destination` on
+    `day` that the airline collects and does not keep. None when either
+    airport's tariff is unverified — the cell is then excluded, not estimated."""
+    dep = UDF_INR.get(origin)
+    if dep is None:
+        return None
+    dep_udf = _tariff_on(dep["dep"], day)
+    if dep_udf is None:
+        return None
+    # An arrival UDF exists only where AERA has approved one (BOM, BLR, HYD so
+    # far); an airport with none notified — every AAI-run airport — nets zero.
+    arr = UDF_INR.get(destination)
+    arr_udf = _tariff_on(arr["arr"], day) if arr else None
+    return ASF_INR + dep_udf + (arr_udf or 0.0)
+
 def cell_weight(origin: str, destination: str, advance_days: int) -> float:
     """One entry of the weighting matrix: route share x lead-time share."""
     route = ROUTE_WEIGHTS.get((origin, destination))

@@ -272,6 +272,20 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
 .status.final{background:rgba(12,163,12,.13);color:var(--good-text)}
 
 .sec{margin-top:34px}
+.headline.two{grid-template-columns:1fr 1fr 1fr}
+.headline.two .big{font-size:40px}
+.sppi-tag{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-left:8px;vertical-align:middle}
+.sppi-tag.cpi{color:var(--accent);background:var(--accent-soft)}
+.sppi-tag.prod{color:#b5541c;background:rgba(236,131,90,.16)}
+.leg{display:flex;gap:18px;font-size:11.5px;color:var(--muted);margin-top:8px;flex-wrap:wrap}
+.leg i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px;border-radius:2px}
+.formula{font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.7;background:var(--inset);
+  border:1px solid var(--border);border-radius:4px;padding:12px 14px;overflow-x:auto;white-space:nowrap}
+.formula b{color:var(--ink)}
+.tar td.n,.tar th.n{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.tar td.src{font-size:11.5px;color:var(--muted);min-width:30ch;white-space:normal;line-height:1.45}
+.tar tr.excl td{color:var(--muted);font-style:italic}
 .sec > h2{margin:0 0 3px;font-size:17px;font-weight:600;letter-spacing:-.015em}
 .sec > .why{margin:0 0 15px;font-size:13px;color:var(--ink-2);max-width:78ch;line-height:1.6}
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:18px 20px}
@@ -340,7 +354,70 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       recorded &mdash; the price a traveller could actually have transacted at. Those
       prices are converted to a single index using the geometric (Jevons) method, weighted
       by each route&rsquo;s share of scheduled seats. The resulting movement is airfare
-      inflation, which is the input a consumer price index requires for air travel.</p>
+      inflation, which is the input a consumer price index requires for air travel. The
+      headline is priced at the <b>purchaser price</b> &mdash; the whole ticket, taxes and
+      airport charges included, which is what the CPI measures. The same collection is also
+      published at the <b>producer price</b>, what the airline keeps, in the section below.</p>
+  </div>
+
+  <div class="sec" id="sec-sppi">
+    <h2>CPI basis and producer-price (SPPI) basis, side by side</h2>
+    <p class="why">A consumer price index prices what the household <b>pays</b>. A services
+      producer price index prices what the producer <b>receives</b>: the Eurostat&ndash;OECD
+      SPPI guide (&sect;6.3.8, air transport) requires that &ldquo;taxes and airport landing and
+      security charges should be excluded if they are not retained by the service
+      provider&rdquo;. On an Indian domestic ticket those are the Aviation Security Fee and
+      each airport&rsquo;s User Development Fee &mdash; fixed rupee amounts set by DGCA and
+      AERA, which are netted off every fare below. GST on the airline&rsquo;s own fare is
+      proportional and cancels in a price relative. Same basket, same reference period, same
+      Jevons method; only the price concept changes. MoSPI&rsquo;s new Index of Services
+      Production (July 2026) is deflated by CPI for want of an SPPI &mdash; this is the
+      deflator air transport would need.</p>
+
+    <div class="headline two">
+      <div class="hcell">
+        <div class="lab">Purchaser price <span class="sppi-tag cpi">CPI input</span></div>
+        <div class="big" id="s-cpi">&mdash;</div>
+        <div class="note" id="s-cpi-note"></div>
+      </div>
+      <div class="hcell">
+        <div class="lab">Producer price <span class="sppi-tag prod">SPPI input</span></div>
+        <div class="big" id="s-prod">&mdash;</div>
+        <div class="note" id="s-prod-note"></div>
+      </div>
+      <div class="hcell">
+        <div class="lab">Wedge on identical cells</div>
+        <div class="big" id="s-wedge">&mdash;</div>
+        <div class="note" id="s-wedge-note"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="plot" id="p-sppi"></div>
+      <div class="leg">
+        <span><i style="background:var(--accent)"></i>purchaser price (CPI basis)</span>
+        <span><i style="background:#ec835a"></i>producer price (SPPI basis), same cells</span>
+        <span id="s-leg-note"></span>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="formula">
+        <b>CPI basis</b>&nbsp;&nbsp;&nbsp;&nbsp; APIx<sub>t</sub>&nbsp;&nbsp; = 100 &times; exp( &Sigma; w<sub>i</sub> &middot; ln( P<sub>i,t</sub> / P<sub>i,0</sub> ) / &Sigma; w<sub>i</sub> )<br>
+        <b>SPPI basis</b>&nbsp;&nbsp;&nbsp; APIx-P<sub>t</sub> = 100 &times; exp( &Sigma; w<sub>i</sub> &middot; ln( (P<sub>i,t</sub> &minus; C<sub>i,t</sub>) / (P<sub>i,0</sub> &minus; C<sub>i,0</sub>) ) / &Sigma; w<sub>i</sub> )<br>
+        <b>where</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; C<sub>i,t</sub> = ASF + UDF<sub>dep</sub>(origin<sub>i</sub>, t) + UDF<sub>arr</sub>(destination<sub>i</sub>, t)&nbsp;&nbsp;&nbsp; and&nbsp;&nbsp;&nbsp; P = (1 + GST) &middot; F + C&nbsp; &rArr;&nbsp; (P &minus; C) / (P<sub>0</sub> &minus; C<sub>0</sub>) = F / F<sub>0</sub>
+      </div>
+      <p class="why" style="margin:12px 0 0;max-width:none">Because C is a fixed rupee
+        amount, a fare rise of x% shows up in the CPI-basis relative as less than x%, and a
+        tariff cut &mdash; Bengaluru and Hyderabad both cut their departure UDF on 1 September
+        2026 &mdash; reads as airfare <em>deflation</em> in the CPI while the airline&rsquo;s
+        price is unchanged. The wedge above is that effect, measured.</p>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="tw"><table class="tar" id="t-tariff"></table></div>
+      <p class="why" id="t-tariff-note" style="margin:12px 0 0;max-width:none"></p>
+    </div>
   </div>
 
   <div class="sec">
@@ -397,6 +474,7 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       </div>
       <div class="endpoint" id="ep1">GET /api/v1/apix?month=YYYY-MM</div>
       <div class="endpoint" id="ep2">GET /api/v1/apix/latest</div>
+      <div class="endpoint" id="ep3">GET /api/v1/sppi?month=YYYY-MM</div>
       <div class="note" style="font-size:12px;color:var(--ink-2);margin-top:11px;line-height:1.6">
         Authenticated with an <code class="mono">X-API-Key</code> header. Every response
         carries the reference period and the method used, so an ingested figure can never
@@ -664,6 +742,7 @@ async function goLive(){
 
   DATA.rows.length = 0; DATA.rows.push(...rows);
   DATA.meta.start = days[0];
+  DATA.meta.dayList = days;          // the ISO date behind each day index
   DATA.meta.today = days[days.length - 1];
   DATA.meta.days = days.length;
   DATA.meta.base_period = days[0];   // provisional; the release picks its own base (chooseBase)
@@ -721,16 +800,57 @@ function seatWeight(pair){
   return (ROUTE_SEATS[pair] ?? ROUTE_SEATS[`${d}-${o}`] ?? MIN_SEAT) / SEAT_TOTAL;
 }
 
-/* day -> {cellKey: minFare} from the rows already loaded */
-function cellsByDay(){
+/* ---- producer-price basis: the charges an airline collects but does not keep.
+   Mirrors config.pass_through. Every figure is a notified tariff; an airport
+   without a verified one is absent, and its departures are excluded, not
+   estimated. Entries are [effective_from, rupees] so a change inside the
+   series applies from its own date. */
+const ASF_INR = 236;   // Rs 200 Aviation Security Fee + 18% GST, DGCA order, from 2021-04-01
+const UDF_INR = {
+  DEL: {dep:[["2024-04-01",129]], arr:[],
+        src:"AERA, DIAL 4th control period 2024-29: domestic UDF unchanged at ₹129"},
+  BOM: {dep:[["2025-05-16",175]], arr:[["2025-05-16",75]],
+        src:"AERA, MIAL: ₹175 departing / ₹75 arriving, from 16 May 2025"},
+  BLR: {dep:[["2024-04-01",550],["2026-09-01",300]], arr:[["2026-09-01",125]],
+        src:"AERA, BIAL 4th control period: ₹300 departing / ₹125 arriving from 1 Sep 2026 (₹550 before)"},
+  HYD: {dep:[["2024-04-01",750],["2026-09-01",515]], arr:[["2026-09-01",220]],
+        src:"AERA, GHIAL 4th control period 2026-31: ₹515 departing / ₹220 arriving from 1 Sep 2026 (₹750 before)"},
+  MAA: {dep:[["2024-04-01",410]], arr:[], src:"AERA, AAI Chennai: ₹410 domestic departing (March 2026)"},
+  AMD: {dep:[["2024-04-01",600]], arr:[], src:"AERA, Adani Ahmedabad: ₹600 domestic departing (March 2026)"},
+};
+const UDF_UNVERIFIED = {CCU:"AAI Kolkata", PNQ:"AAI Pune", SXR:"AAI Srinagar"};
+function tariffOn(entries, iso){
+  let rate = null;
+  for (const [eff, inr] of entries) if (eff <= iso) rate = inr;
+  return rate;
+}
+function passThrough(o, d, iso){
+  const dep = UDF_INR[o]; if (!dep) return null;
+  const depUdf = tariffOn(dep.dep, iso); if (depUdf === null) return null;
+  const arr = UDF_INR[d];                       // no arrival UDF notified = nothing to net
+  return ASF_INR + depUdf + ((arr && tariffOn(arr.arr, iso)) || 0);
+}
+
+/* day -> {cellKey: minFare} from the rows already loaded.
+   basis "producer" nets the pass-through charge off each cell before folding,
+   while the row still knows its real departure and arrival airports. */
+function cellsByDay(basis = "purchaser", scale = 1){
   const out = new Map();
   for (const r of D){
     if (r[C.n] < MIN_OBS || !(r[C.lo] > 0)) continue;
+    let price = r[C.lo];
+    const rt = R[r[C.r]];
+    if (basis === "producer"){
+      const c = passThrough(rt.o, rt.d, isoOf(r[C.d]));
+      if (c === null) continue;
+      price -= c * scale;
+      if (!(price > 0)) continue;
+    }
     const day = r[C.d];
     if (!out.has(day)) out.set(day, new Map());
-    const key = `${R[r[C.r]].o}-${R[r[C.r]].d}|${W[r[C.w]]}`;
+    const key = `${rt.o}-${rt.d}|${W[r[C.w]]}`;
     const prev = out.get(day).get(key);
-    out.get(day).set(key, prev === undefined ? r[C.lo] : Math.min(prev, r[C.lo]));
+    out.get(day).set(key, prev === undefined ? price : Math.min(prev, price));
   }
   return out;
 }
@@ -821,8 +941,8 @@ function baseCells(cells, period){
   return out;
 }
 
-function apixSeries(){
-  const cells = cellsByDay();
+function apixSeries(cells){
+  cells = cells || cellsByDay();
   const days = [...cells.keys()].sort((a,b)=>a-b);
   if (days.length < 1) return [];
   const period = chooseBasePeriod(cells, days);
@@ -832,6 +952,33 @@ function apixSeries(){
   return rows;
 }
 
+
+/* The producer-basis series, the purchaser series on the SAME cells (so the
+   gap is the pass-through effect and nothing else), and a sensitivity figure:
+   how far the producer index moves if every charge were 20% higher or lower. */
+function sppiRelease(){
+  const prod = cellsByDay("producer");
+  if (!prod.size) return null;
+  const purch = cellsByDay("purchaser");
+  const matched = new Map();
+  for (const [day, cells] of prod){
+    const m = new Map();
+    for (const [k, v] of purch.get(day) || []) if (cells.has(k)) m.set(k, v);
+    matched.set(day, m);
+  }
+  const series = apixSeries(prod), cpi = apixSeries(matched);
+  const byDay = new Map(cpi.map(r => [r.day, r]));
+  const lo = new Map(apixSeries(cellsByDay("producer", 0.8)).map(r => [r.day, r.apix]));
+  const hi = new Map(apixSeries(cellsByDay("producer", 1.2)).map(r => [r.day, r.apix]));
+  for (const r of series){
+    const c = byDay.get(r.day);
+    r.cpi = c ? c.apix : null;
+    r.wedge = c ? r.apix - c.apix : null;
+    const alts = [lo.get(r.day), hi.get(r.day)].filter(v => v != null);
+    r.sensitivity = alts.length ? Math.max(...alts.map(v => Math.abs(v - r.apix))) : null;
+  }
+  return {series, latest: series[series.length - 1]};
+}
 
 /* ===================== the release ===================== */
 const API_BASE = "https://apix-api-n5ux.onrender.com";
@@ -1028,6 +1175,109 @@ function drawTrend(series){
   svg.appendChild(txt(m.l, 12, "Index by observation day (amber = provisional)", "axlabel"));
 }
 
+function drawSppi(rel, headline){
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  const sec = document.getElementById("sec-sppi");
+  if (!rel || !rel.latest || !headline){ if (sec) sec.hidden = true; return; }
+  if (sec) sec.hidden = false;
+  const L = rel.latest;
+  const signed = (v, dp=2) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(dp);
+
+  set("s-cpi", headline.apix.toFixed(2));
+  set("s-cpi-note", `Whole ticket, taxes and charges included — ${signed(headline.apix-100)}% ` +
+      `against the reference period, on the full basket.`);
+  set("s-prod", L.apix.toFixed(2));
+  set("s-prod-note", `Net of ASF and UDF — ${signed(L.apix-100)}% against the reference period. ` +
+      `${Math.round(L.weightCovered*100)}% of basket weight` +
+      (L.provisional ? " (provisional)" : "") +
+      (L.sensitivity != null ? `; charges ±20% move it by at most ${L.sensitivity.toFixed(2)} points.` : "."));
+  if (L.wedge != null){
+    set("s-wedge", signed(L.wedge) + " pt");
+    document.getElementById("s-wedge").style.color =
+      Math.abs(L.wedge) < 0.005 ? "" : (L.wedge > 0 ? "var(--crit)" : "var(--good-text)");
+    set("s-wedge-note", `Producer ${L.apix.toFixed(2)} against purchaser ${L.cpi.toFixed(2)} on ` +
+        `exactly the same cells. ${L.wedge > 0 ? "Fixed charges damp the CPI-basis movement: the airline's own price moved more than the ticket price."
+                                               : L.wedge < 0 ? "Tariff changes or fixed charges moved the ticket price more than the airline's own price."
+                                               : "No difference on these cells."}`);
+  } else { set("s-wedge", "—"); set("s-wedge-note", ""); }
+
+  // two lines on one scale
+  const host = document.getElementById("p-sppi"); host.textContent = "";
+  const series = rel.series.filter(r => r.cpi != null);
+  if (series.length < 2){
+    const p = document.createElement("div");
+    p.style.cssText = "font-size:12.5px;color:var(--ink-2);padding:8px 0";
+    p.textContent = "A comparison needs at least two observation days.";
+    host.appendChild(p);
+  } else {
+    const H = 190, {svg, w} = svgFor(host, H);
+    const m = {l:46, r:16, t:26, b:30}, pw = w-m.l-m.r, ph = H-m.t-m.b;
+    const vals = series.flatMap(r => [r.apix, r.cpi]);
+    const lo = Math.min(97, ...vals) - 1, hi = Math.max(103, ...vals) + 1;
+    const X = i => m.l + i*pw/(series.length-1);
+    const Y = v => m.t + ph - (v-lo)/(hi-lo)*ph;
+    yTicks(lo, hi, 3).forEach(v => {
+      svg.appendChild(S("line", {x1:m.l, x2:w-m.r, y1:Y(v), y2:Y(v)}, "stroke:var(--grid);stroke-width:1"));
+      svg.appendChild(txt(m.l-8, Y(v)+3.5, v.toFixed(0), "tick", {"text-anchor":"end"}));
+    });
+    svg.appendChild(S("line", {x1:m.l, x2:w-m.r, y1:Y(100), y2:Y(100)}, "stroke:var(--axis);stroke-width:1"));
+    svg.appendChild(txt(w-m.r, Y(100)-6, "reference 100", "tick", {"text-anchor":"end"}));
+    const path = (get, colour, width) => {
+      const d = series.map((r,i) => `${i?"L":"M"}${X(i).toFixed(1)} ${Y(get(r)).toFixed(1)}`).join(" ");
+      svg.appendChild(S("path", {d, fill:"none", "stroke-linejoin":"round"}, `stroke:${colour};stroke-width:${width}`));
+    };
+    path(r => r.cpi, "var(--accent)", 2);
+    path(r => r.apix, "#ec835a", 2);
+    series.forEach((r,i) => {
+      svg.appendChild(S("circle", {cx:X(i), cy:Y(r.apix), r:3.5}, "fill:#ec835a;stroke:var(--surface);stroke-width:2"));
+      svg.appendChild(S("circle", {cx:X(i), cy:Y(r.cpi), r:3.5}, "fill:var(--accent);stroke:var(--surface);stroke-width:2"));
+      if (i % Math.ceil(series.length/6) === 0 || i === series.length-1)
+        svg.appendChild(txt(X(i), H-9, dayLab(r.day), "tick", {"text-anchor":"middle"}));
+    });
+    svg.appendChild(txt(m.l, 12, "Both bases on identical cells, by observation day", "axlabel"));
+  }
+  set("s-leg-note", `Cells priced on both bases: ${L.cells}`);
+
+  // the tariff table, with the charge as a share of today's cheapest fare
+  const iso = isoOf(L.day);
+  const t = document.getElementById("t-tariff"); t.textContent = "";
+  const hd = t.createTHead().insertRow();
+  [["Departure airport",""],["UDF departing",""],["UDF arriving",""],["ASF",""],["Netted per ticket",""],
+   ["Share of cheapest fare today",""],["Source",""]].forEach(([h,c],i) => {
+    const th = document.createElement("th"); th.textContent = h; if (i>0 && i<6) th.className = "n"; hd.appendChild(th);
+  });
+  const body = t.createTBody();
+  // today's cheapest purchaser fare by departure airport, for the share column
+  const cheapest = {};
+  for (const r of D){
+    if (r[C.d] !== L.day || r[C.n] < MIN_OBS || !(r[C.lo] > 0)) continue;
+    const o = R[r[C.r]].o;
+    cheapest[o] = Math.min(cheapest[o] ?? Infinity, r[C.lo]);
+  }
+  const airports = [...new Set(R.map(r => r.o))].sort();
+  for (const a of airports){
+    const tr = body.insertRow();
+    const u = UDF_INR[a];
+    if (!u){
+      tr.className = "excl";
+      const cells = [a, "not verified", "—", inr(ASF_INR), "excluded", "—",
+                     `${UDF_UNVERIFIED[a] || a}: current AERA-notified figure not found in the public record — departures excluded rather than guessed`];
+      cells.forEach((v,i) => { const td = tr.insertCell(); td.textContent = v; if (i>0 && i<6) td.className="n"; if (i===6) td.className="src"; });
+      continue;
+    }
+    const dep = tariffOn(u.dep, iso), arr = tariffOn(u.arr, iso) ?? 0;
+    const net = ASF_INR + dep;
+    const share = cheapest[a] ? (net / cheapest[a] * 100).toFixed(1) + "%" : "—";
+    [a, inr(dep), arr ? inr(arr) : "none notified", inr(ASF_INR), inr(net) + (arr ? ` (+${inr(arr)} on arrival)` : ""),
+     share, u.src].forEach((v,i) => { const td = tr.insertCell(); td.textContent = v; if (i>0 && i<6) td.className="n"; if (i===6) td.className="src"; });
+  }
+  set("t-tariff-note", `Charges in force on ${dayLab(L.day)}, per departing passenger; an arrival UDF is added ` +
+      `where the destination has one notified. "Share" is the charge against the cheapest purchaser fare ` +
+      `from that airport today — the part of the ticket that is not the airline's price. GST at 5% on the ` +
+      `airline's fare is proportional and needs no entry. PSF facilitation component, where still levied, ` +
+      `is not netted; the sensitivity figure bounds the effect.`);
+}
+
 const DOW = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function drawDayOfWeek(){
   const host = document.getElementById("p-dow"), tip = document.getElementById("t-dow");
@@ -1126,17 +1376,24 @@ function wireExport(series){
     `GET ${API_BASE}/api/v1/apix?month=YYYY-MM`;
   document.getElementById("ep2").textContent =
     `GET ${API_BASE}/api/v1/apix/latest`;
+  const ep3 = document.getElementById("ep3");
+  if (ep3) ep3.textContent = `GET ${API_BASE}/api/v1/sppi?month=YYYY-MM   (producer-price basis)`;
   document.getElementById("api-docs").href = API_BASE + "/docs";
 
   document.getElementById("dl-csv").addEventListener("click", () => {
     const head = ["day","apix","provisional","routes_covered","basket_weight_covered",
-                  "lead_time_buckets","method"];
+                  "lead_time_buckets","method","apix_producer_basis","purchaser_same_cells","wedge_points"];
     const lines = [head.join(",")];
+    const prod = sppiRelease();
+    const pByDay = new Map(((prod && prod.series) || []).map(r => [r.day, r]));
     for (const s of series){
+      const p = pByDay.get(s.day);
       lines.push([s.day !== undefined ? isoOf(s.day) : "", s.apix.toFixed(2),
                   s.provisional, Object.keys(s.byRoute).length,
                   s.weightCovered.toFixed(4), s.windows.length,
-                  "weighted-Jevons/min-logical-fare"].join(","));
+                  "weighted-Jevons/min-logical-fare",
+                  p ? p.apix.toFixed(2) : "", p && p.cpi != null ? p.cpi.toFixed(2) : "",
+                  p && p.wedge != null ? p.wedge.toFixed(2) : ""].join(","));
     }
     const blob = new Blob([lines.join("\n")], {type:"text/csv"});
     const a = document.createElement("a");
@@ -1147,6 +1404,7 @@ function wireExport(series){
   });
 }
 function isoOf(dayIdx){
+  if (DATA.meta.dayList && DATA.meta.dayList[dayIdx]) return DATA.meta.dayList[dayIdx];
   const d = dayDate(dayIdx);
   return d.toISOString().slice(0, 10);
 }
@@ -1157,6 +1415,9 @@ function drawMethod(latest){
   const rows = [
     ["Index formula", "APIx = 100 × exp( Σ wᵢ · ln(Pᵢ,t ⁄ Pᵢ,0) ⁄ Σ wᵢ ) — a weighted geometric (Jevons) mean of price relatives"],
     ["Price concept", "Minimum logical fare: the cheapest fare observed for a route and lead time on a day"],
+    ["Price basis", "Headline: purchaser price — the whole ticket, what the household pays (CPI concept). " +
+                    "Producer-price series: the same fare net of ASF and UDF, what the airline keeps (SPPI concept, " +
+                    "Eurostat–OECD SPPI guide §6.3.8); GST on the airline's fare cancels in the relative"],
     ["Weights", "Each city pair's share of scheduled seats across the 15-pair basket"],
     ["Basket", "15 busiest domestic city pairs by scheduled seats"],
     ["Lead times", "T+1, T+7, T+15, T+30, T+45 days before departure"],
@@ -1177,6 +1438,7 @@ function drawMethod(latest){
 function renderAll(){
   const {series, latest} = latestRelease();
   drawHeadline(latest, series);
+  drawSppi(sppiRelease(), latest);
   drawHeat(latest);
   drawSpikes(latest);
   drawTrend(series);

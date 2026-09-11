@@ -96,6 +96,51 @@ Provisional figures are still computed and shown — an index that admits thin
 coverage is worth more than one that never does — but they are not comparable
 with a full-basket period, and the portal says so on the page.
 
+### Two price bases: CPI and SPPI
+
+The headline prices the **purchaser price** — the whole ticket, which is what
+the CPI measures. The same collection is also published at the **producer
+price**, which is what a services producer price index (SPPI) measures: the
+Eurostat–OECD *SPPI Guide* (§6.3.8, air transport) requires that "taxes and
+airport landing and security charges should be excluded if they are not
+retained by the service provider". On an Indian domestic ticket those are:
+
+| Charge | Amount | Set by |
+|---|---|---|
+| Aviation Security Fee (ASF) | ₹200 + 18% GST = ₹236 per departing passenger | DGCA order, since 1 April 2021 |
+| User Development Fee (UDF) | Per airport; DEL ₹129, BOM ₹175 (+₹75 arriving), BLR ₹300 (+₹125 arriving, from 1 Sep 2026), HYD ₹515 (+₹220 arriving, from 1 Sep 2026), MAA ₹410, AMD ₹600 | AERA tariff orders |
+| GST on the airline's own fare (5%) | Proportional — cancels in a price relative | — |
+
+```
+APIx-P_t = 100 × exp( Σ wᵢ · ln((Pᵢ,t − Cᵢ,t) / (Pᵢ,0 − Cᵢ,0)) / Σ wᵢ )
+Cᵢ,t = ASF + UDF_dep(originᵢ, t) + UDF_arr(destinationᵢ, t)
+```
+
+Same basket, reference period, weights and Jevons aggregation; only the price
+concept changes. The tariff table lives in `airfare-scraper/config.py:UDF_INR`
+with a source and effective date per entry, so a tariff change inside the
+series is applied from its own date. An airport whose current tariff could
+not be verified from the public record (Kolkata, Pune) is `None`, and its
+departures are **excluded** from the producer series and counted in the
+cleaning report — not estimated.
+
+Because C is a fixed rupee amount, a fare rise of x% appears in the CPI-basis
+relative as *less* than x%, and a tariff cut appears as airfare deflation
+while the airline's price is unchanged. The producer series therefore ships
+with, for every day: `purchaser_matched` (the CPI-basis index on exactly the
+same cells), `wedge` (the difference, in index points — the measured effect
+of pass-through charges on measured inflation) and `sensitivity` (how far the
+figure moves if every charge were 20% higher or lower; ~0.05 points on
+current data, so little rests on the table). On 11 September 2026: purchaser
+basis 101.98 on the full basket; on the 65 cells priced on both bases,
+purchaser 100.98 against producer 101.16, wedge +0.18.
+
+Why it matters: MoSPI's Index of Services Production (experimental, July
+2026) is deflated by CPI (non-food) in the absence of an SPPI. A producer-price
+airfare series is the deflator air transport output would actually need, and
+Germany compiles its air-transport SPPI "mainly using prices that are
+collected for the CPI" — the same collection serving both, as here.
+
 ---
 
 ## How a page becomes an index figure
@@ -124,6 +169,8 @@ Built so MoSPI's systems can ingest the index directly.
 |---|---|
 | `GET /api/v1/apix?month=YYYY-MM` | The index for a month, with method and coverage |
 | `GET /api/v1/apix/latest` | The most recent published figure |
+| `GET /api/v1/sppi?month=YYYY-MM` | The same index on the producer-price (SPPI) basis, with the matched CPI-basis figure, the wedge, the sensitivity and the tariff table netted off |
+| `GET /api/v1/sppi/latest` | The most recent producer-price figure |
 | `GET /api/v1/apix/monthly` | The full monthly series |
 | `GET /api/v1/apix/revisions` | Every figure that changed after first publication, and when |
 | `GET /api/v1/health` | Liveness and freshness — age of the newest observation, plus the last completed run |
@@ -179,6 +226,8 @@ psql < airfare-scraper/schema.sql   # or paste into the Supabase SQL editor
 python airfare-scraper/main.py --tier hot     # 3 routes, T+1, ~5 min
 python airfare-scraper/main.py --tier index   # full basket, all lead times, ~2 h
 python engine/engine.py --write               # recompute and publish the index
+python engine/engine.py --basis producer      # the same index on the SPPI (producer-price) basis
+python engine/engine.py --basis producer --write   # publish it (needs the apix_producer_daily DDL in schema.sql)
 uvicorn api.main:app --reload                 # serve the export API
 ```
 
