@@ -5,7 +5,7 @@ India through Automated Web Scraping of Airline and Online Travel Aggregator Por
 for Augmentation of the Consumer Price Index (CPI)
 **Theme:** Travel & Tourism · **Category:** Software · **Ministry:** MoSPI
 
-> Every number in this document came from the running system on 4 Sep 2026 and can be
+> Every number in this document came from the running system on 11 Sep 2026 and can be
 > re-derived live. Where something is a limitation, it is written as a limitation —
 > a judge who finds a gap you did not disclose will trust nothing else you said.
 
@@ -22,9 +22,13 @@ for elementary aggregates — weighted by a matrix of route seat share × bookin
 time. The result is published two ways: a statistical portal for officials, and an
 authenticated REST API that MoSPI's systems can ingest directly.
 
-**It is running now:** 36,076 fares, 298 collection runs, 98.7% clean.
-**Published:** APIx 105.80 on 4 Sep against a 1 Sep base — airfare inflation of +5.8%.
-**Live:** `apix-portal.pages.dev` · `apix-api-n5ux.onrender.com/docs`
+**It is running now:** 158,778 fares from 1,175 collection runs (97.4% ok), over 11
+observation days, without a single failed extraction in the last full-basket run.
+**Published:** APIx 102.72 on 11 Sep against a 3 Sep base — airfare inflation of
+**+2.7%**, at **100% basket coverage**, status **Published** (not provisional) for
+eight consecutive days. 66 revisions on the audit log.
+**Live:** `apix-portal.pages.dev` · `apix-api-n5ux.onrender.com/docs` ·
+`github.com/BradCage-afk/sih-2026-airfare-index` (public, with README)
 
 It marks its own figures **provisional** when coverage falls below 60% of basket
 weight. That discipline — refusing to present a thin figure as settled — is the
@@ -303,6 +307,8 @@ it*. It does not.
 | [ONS — Using alternative data sources in consumer price indices (2019)](https://www.ons.gov.uk/economy/inflationandpriceindices/articles/usingalternativedatasourcesinconsumerpriceindices/may2019/pdf) | How scraped daily prices are aggregated into monthly index inputs. |
 | [Knížat, *Web scraped data in consumer price indices* (2023)](https://journals.sagepub.com/doi/abs/10.3233/SJI-220115) | Peer-reviewed treatment of daily→monthly aggregation of scraped prices. |
 | [UNECE — How to start with web scraping in the HICP](https://unece.org/sites/default/files/2021-05/Session_2_Eurostat_Paper.pdf) | Practical adoption guidance for a statistical office. |
+| [ILO/IMF/OECD/UN/World Bank — Consumer Price Index Manual: Concepts and Methods (2020)](https://www.ilo.org/publications/consumer-price-index-manual-concepts-and-methods-2020) | The UN-endorsed standard. Chapter on elementary aggregates sets out why Jevons is preferred. The authority behind our formula. |
+| [MoSPI — first CPI release on base 2024=100 (Feb 2026)](https://www.pib.gov.in/PressReleasePage.aspx?PRID=2227012&reg=3&lang=1) | **The series this augments.** MoSPI moved the CPI from 2012=100 to 2024=100 in February 2026, aligned to COICOP 2018; 358 weighted items (up from 299), 50 of them services. Air travel sits in Transport. Say "2024=100", not "2012=100" — the old series is retired. |
 | [RFC 9309 — Robots Exclusion Protocol](https://www.rfc-editor.org/rfc/rfc9309) | The standard our gate implements. |
 
 ### Market context
@@ -324,10 +330,10 @@ Our captured carrier mix, in a 1,000-row sample:
 | Akasa, SpiceJet, Alliance, Star | 13.6% | remainder |
 
 **Close, and independently arrived at.** We never told the scraper what the market
-shares were — this is what six city pairs on one OTA returned. It is a sanity check that
-our sample resembles the real market, not a claim of representativeness: our basket is
-six trunk routes, not a national sample, and IndiGo is over-represented on exactly those
-routes. Say it that way and it is a strength; overclaim it and it is a trap.
+shares were — this is what the basket on one OTA returned. It is a sanity check that
+our sample resembles the real market, not a claim of representativeness: fifteen trunk
+routes is not a national sample, and IndiGo is over-represented on exactly those routes.
+Say it that way and it is a strength; overclaim it and it is a trap.
 
 ---
 
@@ -403,10 +409,10 @@ does not depend on airline sites. But a single source remains the honest limitat
 the fix is an access agreement rather than more engineering — which is precisely the
 argument for a ministry operating this.
 
-**3. Short history.** The index began collecting on 1 Sep 2026. Traveller verdicts need
-about three days of baseline, and the dashboard **says "Still collecting" rather than
-guessing** — deliberately, because a confident verdict computed from one day is worse
-than no verdict.
+**3. Short history.** Eleven observation days, eight of them publishable. Enough to show
+the machinery works end to end and to surface a real spike (CCU–BLR +22.6%); not enough
+to say anything about seasonality. The day-of-week panel on the portal says so on the
+page rather than drawing a curve through noise.
 
 **4. Lead-time weighting is uniform, deliberately.** The weighting matrix has a real
 route dimension (seat shares) and a uniform lead-time dimension. No public source
@@ -418,8 +424,54 @@ supply the real distribution and it drops straight in.
 **5. Model availability is unstable.** Three models reached end-of-life during the build,
 one mid-run. The pipeline now fails over automatically and records `model_used` per row.
 
-**6. Basket size.** Six routes is a demonstration basket, not a national sample. A
-production index needs route weights derived from DGCA passenger volumes.
+**6. Basket.** Fifteen trunk routes weighted by DGCA seat share is a demonstration
+basket, not a national sample — it covers the busiest pairs, not the long tail. A
+production index would widen it and derive weights from passenger volumes rather than
+scheduled seats.
+
+**7. Fare buckets recur, so identical cells happen.** Airlines price in fixed steps
+(₹7,989 and ₹7,857 recur on DEL–HYD for days). On 11 Sep every DEL–HYD cell read exactly
+100 because today's cheapest buckets matched the base day's. A judge who notices will
+suspect a data fault; the daily minima table shows the values moving on other days
+(6,529 on the 5th, 8,930 on the 7th). It is real.
+
+---
+
+## 7a. What broke in production, and what we learned
+
+A week of unattended operation found three defects. Each is fixed, each is in the
+git history, and each is worth volunteering — a system that has never broken has never
+been run.
+
+**1. The daily full-basket run was being starved (found 4 Sep).** The index tier — the
+*only* tier that collects T+7 through T+45 — ran once a day at 02:00 under `flock -n`.
+When a ten-minute hot run happened to hold the lock at 02:00:01, the index run exited
+and the whole day lost four of its five lead-time columns. The log showed it plainly:
+`02:00:01 skipped: a scrape is already running` followed by `02:00:02 run_start tier=hot`.
+Fix: the index tier now waits up to 15 minutes for the lock (`flock -w 900`), and runs
+twice a day so the lead-time columns are never more than ~12 hours stale.
+
+**2. The base period locked the basket to day one (found 11 Sep).** This is the important
+one. `compute()` can only price a cell that exists in both the base day and the current
+day. The base was `days[0]` — 1 September, collected when the basket was six routes.
+The nine routes added when we expanded to fifteen were collected faithfully every day
+and could **never** enter the index, because nothing existed on day one to compare them
+against. Symptoms: ten blank rows in the heat map, coverage stuck at exactly 46% (the
+seat share of the six original routes), every release permanently provisional.
+
+Fix: the base is now **the first day that would itself pass the publication threshold**
+— ≥60% basket weight and ≥3 lead-time buckets — which lands on 3 September. Same rule in
+the engine (`choose_base`) and the portal (`chooseBase`), so the API and the dashboard
+agree. You do not base an index on a day you would not publish. Rebasing changed every
+published day, and the revision log recorded all eleven — which is exactly what the
+revision log is for. When the basket changes again, the proper treatment is
+chain-linking at an overlap period; that is the stated next step.
+
+**3. The health endpoint cried wolf (found 11 Sep).** `/api/v1/health` measured freshness
+as time since the last *completed* run. A full-basket run takes two hours and writes as
+it goes, so the endpoint reported `stale: true` for the entirety of every index run —
+precisely when the system was busiest. It now reports the age of the newest observation
+(`minutes_since_observation`), with the last completed run alongside for context.
 
 ---
 
@@ -477,13 +529,49 @@ from how it was produced. There is a revision endpoint for anything that later c
 intercity bus fares have the same booking-window behaviour and the same CPI relevance.
 The pipeline is source-agnostic.
 
+**"How did you choose the base period?"** The first day that itself meets the
+publication threshold — 3 September — not the first day with any data. An index can only
+price cells that exist in its base, so basing on a thin day locks the basket to whatever
+was collectable then. We learned this the hard way (§7a) and the fix is a rule, not a
+hand-picked date.
+
+**"What happens when the basket changes?"** Today: the base rule re-evaluates, and the
+revision log records every figure that moves. Properly: chain-linking at an overlap
+period, which is how HICP handles basket updates every year. It is the stated next step
+and the code comment says so.
+
+**"Why is `base_fare` NULL in every row?"** Because the results page shows one headline
+price; the breakup is behind the checkout page, which is robots-disallowed. It is stored
+NULL rather than derived from the total. And it does not matter for the deliverable: a
+CPI prices what the household pays, taxes and fees included — that is `total_fare`.
+
+**"Why is DEL–HYD exactly 100 across the board?"** Airlines price in fixed fare buckets
+and today's cheapest matched the base day's. The daily minima vary on other days. Real,
+not a fault — and the fact that we can pull that table in ten seconds is the point.
+
+**"What does the page give you, what does the model return, what does Postgres store?"**
+The page: fare rows found by shape — an element with both an `HH:MM` and a `₹` price —
+one line each, ~40 per page, ~4,600 characters. The model: strict JSON per flight —
+carrier, flight number, departure, total fare; coupons and struck-through prices
+ignored, unpublished fields `null`; Pydantic drops anything outside ₹300–₹500,000.
+Postgres: that plus the context the model never saw — route, lead time, source, which
+model read it, when. Nothing is ever updated or deleted, so any past day recomputes.
+
+**"Is the code public?"** Yes — `github.com/BradCage-afk/sih-2026-airfare-index`, with
+a README that documents the method, the exclusion rules and the publication threshold.
+`.env` is gitignored; the portal's Supabase key is the publishable one and we verified
+live that RLS blocks writes with it.
+
 ---
 
 ## 10. Before the presentation
 
-- [ ] Fill in **team name** and **team ID** — six placeholders in the deck
-- [ ] Export the deck to **PDF** (portal accepts PDF only)
-- [ ] Decide repo visibility — public lets judges read the code
-- [ ] Let the scraper run: more days makes the traveller verdicts live
+- [x] Team name — **Fare Enough 101**, on every slide and the footer
+- [ ] **Team ID** — still the `‹TEAM ID›` placeholder on slide 1
+- [ ] Export the deck to **PDF** from PowerPoint (portal accepts PDF only)
+- [x] Repo is **public**, with README; working notes removed from the tree
+- [x] All five lead-time columns populated; release **Published** at 100% coverage
 - [ ] Rehearse the demo path; have `selftest.py` ready as the offline fallback
-- [ ] Re-run `tools/build_deck.py` on the morning of, so the numbers are same-day
+- [ ] Morning of: `python3 tools/shoot_portal.py && python3 tools/build_deck.py` so the
+      screenshot and the fare count are same-day, then copy to `SIHPPT1.pptx`
+- [ ] Be ready for §7a — volunteer the base-period incident before anyone asks
