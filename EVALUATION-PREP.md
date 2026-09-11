@@ -536,6 +536,27 @@ fewer than three lead-time buckets. The figure is still computed and served, wit
 reason attached — it just is not comparable with a full-basket period. Statistical
 offices publish provisional figures the same way.
 
+**"What is basket coverage, and why 60%?"** The basket is a pie: each of the 15 routes
+is a slice sized by its share of seats — Delhi–Mumbai 15.2%, Delhi–Bengaluru 10.6%,
+Mumbai–Bengaluru 9.0%, down to Delhi–Srinagar 4.2%. Coverage on a day is the sum of the
+slices that actually got priced (a route counts once, however many lead times it has —
+an earlier version summed per cell and reported 256%). A full day is 100%. If the site
+times out and only the three trunk routes price, coverage is 15.2 + 10.6 + 9.0 = 34.8%,
+and an index from that describes a third of Indian air travel, not the basket.
+
+Sixty is where the running total says "the basket, not just the trunk": the top six
+routes reach 55%, and you need the seventh to cross 60%. So the rule means a day counts
+only if the big six *and something beyond them* were priced; one or two routes failing
+is tolerated (13 routes ≈ 91%), half the basket failing is not. It is a judgement set in
+advance and configurable (`APIX_MIN_WEIGHT`); MoSPI would set its own. What matters is
+that the threshold exists and is stated, not the exact value. The second condition —
+at least 3 of 5 lead-time buckets — stops a T+1-only day publishing.
+
+The number to remember: for the first week coverage sat at **46% every day** and never
+moved. That was the six original routes (51%) minus one below the observation minimum;
+the nine routes added later could not enter the index because the base day predated
+them. Fixing the base (§7a) is what took it to 100%.
+
 **"How would MoSPI actually consume this?"** `GET /api/v1/apix?month=2026-09` with an
 API key. The response carries the value, the reference period, the method string, the
 cleaning report and the provisional flag, so an ingested figure can never be separated
