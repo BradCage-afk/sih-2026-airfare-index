@@ -49,7 +49,7 @@ faith.
 | Minimum logical fare | The cheapest fare observed for a route × departure date × lead time — the price a traveller could actually have transacted at |
 | Cell | One (route, lead time) pair. 15 × 5 = 75 |
 | Weight | Route share of scheduled seats × lead-time share |
-| Base period | The first observation day, currently **1 September 2026 = 100** |
+| Base period | The first day that itself meets the publication threshold — currently **3 September 2026 = 100**. Basing on the first day with *any* data would lock the basket to whatever was collectable then |
 | Price basis | `total_fare` — what the household pays, taxes and fees included |
 
 ### Weighting
