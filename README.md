@@ -21,7 +21,7 @@ book".
 |---|---|
 | Statistical release portal | https://apix-portal.pages.dev |
 | Export API (OpenAPI docs) | https://apix-api-n5ux.onrender.com/docs |
-| Observations collected | 53,000+ and counting |
+| Observations collected | 160,000+ and counting |
 | Basket | 15 city pairs × 5 booking lead times = 75 priced cells |
 | Cadence | every 10 minutes, robots-gated |
 | Cost to run | ₹0 a month, on free tiers throughout |
@@ -62,7 +62,7 @@ The weight of a cell is a **matrix** entry, not a single vector:
   could fetch. Until those figures are entered, **scheduled seats** (OAG schedule
   data) stand in: seats are capacity, and load factors on Indian trunk routes run
   85–90% and are similar across these pairs, so seat share tracks passenger share
-  closely. Every API response states the basis (`weight_basis`). Fill
+  closely. Every API response states the basis (`weighting`). Fill
   `ROUTE_PASSENGERS` in `airfare-scraper/config.py` from the DGCA table and the
   weights switch over automatically. Delhi–Mumbai moves the index roughly three
   times as hard as Delhi–Srinagar either way.
