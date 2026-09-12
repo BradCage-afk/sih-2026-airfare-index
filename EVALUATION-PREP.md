@@ -491,6 +491,46 @@ precisely when the system was busiest. It now reports the age of the newest obse
 
 ---
 
+## 7b. What we could not fix — say these first
+
+A judge will ask. Each has a reasoned position; none is hidden.
+
+| # | Issue | Why it is not fixed | What we did instead |
+|---|---|---|---|
+| 1 | **One data source** | 16 portals surveyed: 10 disallow, 4 block, airlines refuse automation. A second scraped site would mean ignoring a robots.txt. | The one OTA returns all six carriers. Two licensed feeds are wired and waiting on credentials (Amadeus, Travelpayouts). The honest fix is an access agreement — the argument for a ministry running this. |
+| 2 | **No fare breakup** — `base_fare`, `taxes`, `udf`, `convenience_fee` are NULL in every row | The breakup is on the itinerary page, which is robots-disallowed. | `total_fare` is what a CPI needs. The SPPI basis nets the *notified* charges (ASF, per-airport UDF) from tariff tables, not from the page — so both bases are served without touching a disallowed URL. |
+| 3 | **Weights are seats, not passengers** | The PS asks for passenger volume. DGCA's city-pair passenger table is only behind its JavaScript portal. | Seats are a stated proxy (85–90% load factors, similar across trunk routes); every API response says so; `ROUTE_PASSENGERS` is a drop-in. |
+| 4 | **Lead-time weights are uniform** | No public source publishes the share of bookings by notice period. | Stated on every response rather than fabricated. |
+| 5 | **Twelve days of history** | Time. | Enough to show the machinery and one real seasonal spike; not enough for a seasonal model, and the portal says so. |
+| 6 | **Minimum fare tracks the floor** | At T+30/T+45 the cheapest class stays open, so the minimum barely moves for weeks. It is the PS's own price definition. | Reference period instead of a day; tooltip explains a 100 cell. A production index would publish a median series alongside — not built. |
+| 7 | **A day is only complete at midnight** | Collection takes two hours and runs twice a day, so the current day is partial until it is over. | Fixed 12 Sep: an in-progress day is provisional with the reason; the release leads with the last complete day. The underlying lag is real — that is why statistics publish T−1. |
+| 8 | **Basket changes need chain-linking** | Not built. | The base rule re-evaluates and the revision log records every move. Chain-linking at an overlap period is the stated next step. |
+| 9 | **One residential machine** | Datacenter IPs get HTTP 403. There is no failover host. | Single point of failure, disclosed. A ministry would run two. |
+| 10 | **Third-party LLM on a free tier** | Three models were retired during the build, one mid-run. | Automatic failover, `model_used` on every row. Dependency remains. |
+| 11 | **Thresholds are judgements** | 60% coverage, 3 observations, 0.2–5.0 relatives, ±15% spike — set in advance, not derived. | Configurable and stated. MoSPI would set its own. |
+
+### What the rest of the field did
+
+Twenty SIH26056 repositories are public on GitHub. None has a single GitHub issue
+filed, so "their issues" have to be read from the code. Thirteen were surveyed on
+12 Sep by file tree and dependencies:
+
+| Pattern | Repos | Our position |
+|---|---|---|
+| **Mock, sample or synthetic data in the product** — `mock_adapter.py`, `mockData.ts`, `sample_fares.csv`, `airfare_sample.json`, `test_synthetic_30_day_backtest.py` | 5 of 13 | 168,000 real observations, every one with source, timestamp and model. |
+| **Hand-saved snapshots** — `Day2_scraped_data/T+1/BLR_CCU.json` committed to git | 1 | Collection is scheduled and unattended; the log is the audit trail. |
+| **Arithmetic (Laspeyres) index** | 1 (the most complete competitor) | Jevons — the elementary-aggregate formula the CPI Manual and Eurostat prescribe. A Laspeyres over volatile fares overstates inflation when fares diverge. |
+| **Anti-bot bypass service** (Scrapfly) in the dependencies | 1 | We wrote an RFC 9309 parser and skip six sites because they ask us to. |
+| **GitHub Actions as the scraper** | 1 | We tried it; the source answers datacenter IPs with 403 (run 33526308194). Cron on a residential host. |
+| **Empty or near-empty repository** (1–2 files) | 3 | — |
+| **A second price basis, a revision log, a publication threshold** | 0 found | All three. |
+
+Say this without contempt: the field's problems — blocked sources, no fare breakup,
+thin history — are the same as ours. The difference is whether the gap is disclosed
+and worked around, or papered over with sample data.
+
+---
+
 ## 8. Mapping to the evaluation rubric
 
 | Criterion | Weight | Our evidence |
