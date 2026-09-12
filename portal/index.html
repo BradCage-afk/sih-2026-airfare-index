@@ -573,6 +573,10 @@ const inr  = n => "₹" + Math.round(n).toLocaleString("en-IN");
 const inrK = n => n>=1000 ? "₹"+(+(n/1000).toFixed(1))+"k" : "₹"+Math.round(n);
 const pct  = (n,dp=1) => (n>=0?"+":"−") + Math.abs(n).toFixed(dp) + "%";
 const num  = n => Math.round(n).toLocaleString("en-IN");
+const isTodayIST = d => {
+  const now = new Date(Date.now() + 5.5 * 3600e3);          // wall clock in IST
+  return dayDate(d).toISOString().slice(0,10) === now.toISOString().slice(0,10);
+};
 const dayDate = d => {
   const t = new Date(DATA.meta.start + "T00:00:00Z");
   t.setUTCDate(t.getUTCDate() + d);
@@ -923,6 +927,8 @@ function apixFor(cells, baseDay, day, base){
     why.push(`${Math.round(weightCovered*100)}% of basket weight (needs ${MIN_WEIGHT_COVERAGE*100}%)`);
   if (windows.length < MIN_WINDOWS)
     why.push(`${windows.length} lead-time bucket${windows.length===1?"":"s"} (needs ${MIN_WINDOWS})`);
+  // a day still being collected is not final - mirrors engine.today_ist()
+  if (isTodayIST(day)) why.push("collection for this day is still in progress");
 
   return {day, baseDay, apix: 100*overall, byWindow, byRoute, windows,
           weightCovered, cells: rows.length,
@@ -1015,7 +1021,11 @@ const SPIKE_THRESHOLD = 15;
 
 function latestRelease(){
   const series = apixSeries();
-  return {series, latest: series.length ? series[series.length - 1] : null};
+  if (!series.length) return {series, latest: null};
+  // The release leads with the last COMPLETE day. A day still being collected
+  // is on the trend line in amber, not in the headline or the heat map.
+  const done = series.filter(r => !r.why || !r.why.includes("still in progress"));
+  return {series, latest: (done.length ? done : series)[ (done.length ? done : series).length - 1 ]};
 }
 
 function drawHeadline(latest, series){

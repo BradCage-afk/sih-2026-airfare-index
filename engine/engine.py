@@ -203,6 +203,13 @@ def compute(cells: dict, base_day, day: str, base: dict | None = None,
                        f"(needs {MIN_WEIGHT_COVERAGE*100:.0f}%)")
     if windows_present < MIN_WINDOWS:
         reasons.append(f"{windows_present} lead-time bucket(s) (needs {MIN_WINDOWS})")
+    # A day still being collected is not a finished observation. Early in the
+    # day a cell may hold a handful of fares and its minimum has not yet found
+    # the floor, which reads as a spurious jump. The figure stays visible; it
+    # is not final until the day is.
+    if day == today_ist():
+        provisional = True
+        reasons.append("collection for this day is still in progress")
 
     return {
         "day": day,
@@ -227,6 +234,12 @@ def compute(cells: dict, base_day, day: str, base: dict | None = None,
         "cleaning": dict(CLEANING),
         "computed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+
+
+def today_ist() -> str:
+    """The collection day is an IST calendar date (see fares_daily)."""
+    from datetime import datetime, timedelta, timezone
+    return datetime.now(timezone(timedelta(hours=5, minutes=30))).date().isoformat()
 
 
 def day_coverage(day_cells: dict) -> tuple[float, int]:
@@ -445,7 +458,7 @@ def main() -> int:
             print("  largest movers: " + "   ".join(
                 f"{k} {v:.1f} ({v-100:+.1f})" for k, v in movers))
             if any(x.get("provisional") for x in last):
-                print("\n  * provisional — coverage below publication threshold")
+                print("\n  * provisional — below the publication threshold, or still being collected")
         print("\n  cleaning report:")
         if CLEANING:
             for reason, count in sorted(CLEANING.items(), key=lambda kv: -kv[1]):
