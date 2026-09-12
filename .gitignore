@@ -22,3 +22,7 @@ ss/
 questions.txt
 claude prompt.txt
 SIH scraper.txt
+
+# runtime logs and local session state
+airfare-scraper/logs/
+.claude/
