@@ -600,6 +600,21 @@ stated in every response. DGCA's city-pair passenger table is only reachable thr
 its portal, not as a file. Seats are capacity; at 85–90% load factors, similar across
 trunk routes, seat share is a close proxy. `ROUTE_PASSENGERS` is the drop-in.
 
+**"What is the producer-price (SPPI) basis on the portal?"** The same collection
+computed a second way. A CPI prices what the household *pays* — the whole ticket. A
+services producer price index prices what the airline *receives*, and the Eurostat–OECD
+SPPI guide (§6.3.8, air transport) says to exclude taxes and airport charges the
+carrier does not keep. So each fare is netted of the Aviation Security Fee (₹236, DGCA
+order) and the departure and arrival airports' User Development Fees (AERA tariff
+orders, per airport, with effective dates, +18% GST per Lok Sabha USQ 1862). GST on the
+airline's own fare is proportional and cancels in the relative. Nothing is estimated:
+an airport without a verified tariff excludes its cells rather than guessing. Result on
+11 Sep: purchaser 100.69, producer 100.85, a +0.16pt wedge on identical cells — the
+airline's price moved more than the ticket, because the fixed charges dilute the
+percentage change. Sensitivity is stated: charges ±20% move the figure by ≤0.05pt.
+Served at `/api/v1/sppi`. This is the answer to "could MoSPI use this for anything
+beyond CPI?" — yes, the SPPI for air transport, from the same pipeline.
+
 **"Your lead times are T+7; the problem statement says T−7."** Same bucket, opposite
 convention: T+7 counts from the booking date, T−7 from departure. The portal caption
 maps one to the other.
@@ -627,6 +642,11 @@ live that RLS blocks writes with it.
 - [x] Repo is **public**, with README; working notes removed from the tree
 - [x] All five lead-time columns populated; release **Published** at 100% coverage
 - [x] `fares_carrier` view applied — the airline comparison runs on every observation
+- [ ] Apply `airfare-scraper/apix_producer_daily.sql` in the SQL editor so the SPPI
+      series is persisted and revision-tracked like the CPI one (the scheduler already
+      tries to write it; portal and API compute it live regardless)
+- [ ] Decide slide 5's screenshot: the portal now shows the CPI/SPPI comparison above
+      the heat map, so `shoot_portal.py` captures that instead of the heat map
 - [ ] Rehearse the demo path; have `selftest.py` ready as the offline fallback
 - [ ] Morning of: `python3 tools/shoot_portal.py && python3 tools/build_deck.py` so the
       screenshot and the fare count are same-day, then copy to `SIHPPT1.pptx`

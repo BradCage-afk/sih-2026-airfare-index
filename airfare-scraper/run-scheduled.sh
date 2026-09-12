@@ -41,6 +41,10 @@ find "$LOG_DIR" -name 'scrape-*.jsonl' -mtime +14 -delete 2>/dev/null
 
 # Recompute the published index from the fares just collected.
 python3 ../engine/engine.py --write >> "$LOG_DIR/engine.log" 2>&1 || true
+# The same cells on the producer-price (SPPI) basis. Needs the
+# apix_producer_daily table from schema.sql; until it exists this logs a
+# warning and the purchaser series above is unaffected.
+python3 ../engine/engine.py --write --basis producer >> "$LOG_DIR/engine.log" 2>&1 || true
 
 # Render's free tier sleeps a service after 15 minutes idle, and a cold start
 # costs about 50 seconds. This runs every 10 minutes anyway, so the scrape
