@@ -691,6 +691,16 @@ ignored, unpublished fields `null`; Pydantic drops anything outside ₹300–₹
 Postgres: that plus the context the model never saw — route, lead time, source, which
 model read it, when. Nothing is ever updated or deleted, so any past day recomputes.
 
+**"What happened after Cleartrip blocked you?"** The next day the basket was priced from a
+licensed feed — the Travelpayouts / Aviasales Data API, one-way cheapest fare per departure
+date, hourly, 38 of 75 cells on the first run across all fifteen routes. It is a different
+measurement (a search cache, not a live listing), so it is **not spliced onto the old
+series**: it is its own segment with its own reference period, the trend line breaks at the
+join, and the headline names which segment it is. Without an overlap you cannot chain-link
+two sources honestly. That is exactly what a statistical office does when it changes
+instrument, and the alternative — one continuous line through a change of measurement —
+would report inflation that never happened.
+
 **"Your data stops on 14 September — why?"** Because the source blocked us and we did not
 go around it. Cleartrip put its search API behind Akamai Bot Manager on the 15th; the page
 loads, its data call returns 403. Our monitor classifies that as *blocked* — as opposed to
@@ -725,11 +735,9 @@ live that RLS blocks writes with it.
 - [x] `fares_carrier` view applied — the airline comparison runs on every observation
 - [ ] Apply `airfare-scraper/source_health.sql` in the SQL editor so the API and the portal
       show the blocked source (the monitor keeps state locally until then)
-- [ ] **Get the Travelpayouts token** (travelpayouts.com/programs/100/tools/api) — with Cleartrip
-      blocked this is the only licensed feed left; Amadeus closed its developer portal in July 2026
-- [ ] Apply `airfare-scraper/apix_producer_daily.sql` in the SQL editor so the SPPI
-      series is persisted and revision-tracked like the CPI one (the scheduler already
-      tries to write it; portal and API compute it live regardless)
+- [x] **Travelpayouts token in, feed live** — 38 of 75 cells hourly, one-way, all 15 routes; its
+      own segment with its own reference period (publishable once three days stand behind it)
+- [x] `apix_producer_daily` applied — the SPPI series is persisted and revision-tracked
 - [ ] Decide slide 5's screenshot: the portal now shows the CPI/SPPI comparison above
       the heat map, so `shoot_portal.py` captures that instead of the heat map
 - [ ] Rehearse the demo path; have `selftest.py` ready as the offline fallback

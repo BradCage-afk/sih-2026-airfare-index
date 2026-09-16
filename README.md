@@ -23,7 +23,7 @@ book".
 | Export API (OpenAPI docs) | https://apix-api-n5ux.onrender.com/docs |
 | Observations collected | 168,000+ (collection blocked by the source since 15 Sep 2026 — see below) |
 | Basket | 15 city pairs × 5 booking lead times = 75 priced cells |
-| Cadence | every 10 minutes, robots-gated |
+| Cadence | scraped source every 10 minutes, robots-gated; licensed feed hourly |
 | Cost to run | ₹0 a month, on free tiers throughout |
 
 ---
@@ -269,6 +269,24 @@ never be handed a `blocked` source. Read `arya.txt` for the design this serves.
 Bot Manager. The page still renders; its own data call returns 403. The monitor
 classifies it `blocked`, collection has stopped, the release stands at the last
 complete day, and the source is probed hourly. We did not try to get around it.
+Collection continued the next day from a **licensed feed** (below).
+
+## Two sources, two segments
+
+From 16 September the basket is priced from the Travelpayouts / Aviasales Data
+API (`api_sources.py`, `collect_api.py`): the cheapest known **one-way** fare per
+departure date, mapped onto the lead-time windows, hourly. It is a different
+measurement — a search cache, not a live listing — so it is not spliced onto the
+Cleartrip series. The engine computes **one segment per source, each on its own
+reference period**, and unions them by day; the trend line breaks at the join
+and the headline names its segment. Without an overlap period two sources cannot
+be chain-linked, and pretending otherwise would read a change of instrument as
+inflation. A segment with fewer than three qualifying days is provisional and
+says so. Rows from an API are held to one observation per cell rather than three:
+nothing extracted them, so the guard against a mis-read fare does not apply.
+
+---
+
 
 ---
 
