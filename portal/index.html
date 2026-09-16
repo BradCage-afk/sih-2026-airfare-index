@@ -650,7 +650,7 @@ const hideTip = tip => tip.classList.remove("on");
 /* The page renders from DATA immediately, then tries to replace it. Arrays are
    mutated in place rather than reassigned, so every `const` binding taken at
    load (D, R, W...) keeps pointing at live data. */
-const SRC_INDEX = Object.fromEntries(SRC.map((s, i) => [s.k, i]));
+let   SRC_INDEX = Object.fromEntries(SRC.map((s, i) => [s.k, i]));
 let   RT_INDEX  = Object.fromEntries(R.map((r, i) => [r.o + "-" + r.d, i]));
 const W_INDEX   = Object.fromEntries(W.map((w, i) => [w, i]));
 
@@ -703,6 +703,14 @@ function adoptDaily(daily){
   const dayIx = Object.fromEntries(days.map((d, i) => [d, i]));
   const rows = [];
   let skipped = 0;
+  // sources grow too: a licensed feed the sample data never knew must not
+  // be dropped on the floor
+  for (const k of new Set(daily.map(r => r.source).filter(Boolean))){
+    if (SRC_INDEX[k] === undefined){
+      SRC.push({k, n: SOURCE_LABELS[k] || k, t: API_SOURCES.has(k) ? "api" : "ota"});
+      SRC_INDEX[k] = SRC.length - 1;
+    }
+  }
   for (const r of daily){
     const ri = RT_INDEX[`${r.origin}-${r.destination}`];
     const si = SRC_INDEX[r.source];
