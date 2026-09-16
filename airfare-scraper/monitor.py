@@ -376,8 +376,16 @@ def evaluate(do_probe: bool = True) -> dict:
         else:
             cls, evidence = "healthy", ""
         changed = prev.get("status") != status or prev.get("class") != cls
+        # "since" is when the source last worked, not when the monitor noticed:
+        # a monitor that starts a day late must not date the outage from its
+        # own first run.
+        if changed or not prev.get("since"):
+            since = (m.get("last_success_at") if status != "healthy" and m.get("last_success_at")
+                     else now.isoformat(timespec="seconds"))
+        else:
+            since = prev["since"]
         health = {"status": status, "class": cls, "reason": reason, "evidence": evidence,
-                  "since": (prev.get("since") if not changed and prev.get("since") else now.isoformat(timespec="seconds")),
+                  "since": since,
                   "checked_at": now.isoformat(timespec="seconds"),
                   "probed_at": (now.isoformat(timespec="seconds") if (p is not None and p is not prev.get("probe")) else prev.get("probed_at")),
                   "probe": p, "metrics": m}
