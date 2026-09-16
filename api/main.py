@@ -366,7 +366,10 @@ def health():
         except Exception as exc:
             # say why, rather than quietly reporting nothing
             sources_error = f"{type(exc).__name__}: {str(exc)[:160]}"
-        blocked = [k for k, v in (sources_health or {}).items() if v.get("status") == "blocked"]
+        # only sources that were collecting and stopped are news; a source that
+        # robots.txt has disallowed from the start is not a change in service
+        blocked = [k for k, v in (sources_health or {}).items()
+                   if v.get("status") == "blocked" and "robots" not in (v.get("reason") or "")]
         return {
             "status": "degraded" if blocked else "ok",
             "sources": sources_health,
