@@ -1,0 +1,9 @@
+# Minimum versions, not exact pins: this has to install alongside whatever
+# else is on the machine. Exact pins here would downgrade a working openai or
+# httpx and break unrelated projects.
+playwright>=1.47
+openai>=1.51
+pydantic>=2.9
+python-dotenv>=1.0
+supabase>=2.7
+httpx>=0.27

@@ -811,6 +811,13 @@ const ROUTE_SEATS = {
   "MAA-BOM":201494, "AMD-BOM":195938, "DEL-SXR":180884
 };
 const MIN_OBS = 3, REL_FLOOR = 0.2, REL_CEIL = 5.0;
+// Licensed, structured sources: one observation per cell is the nature of the
+// data, and no model read it, so the three-observation guard does not apply.
+const API_SOURCES = new Set(["travelpayouts"]);
+const SOURCE_LABELS = {cleartrip: "Cleartrip listing (scraped)", indigo: "IndiGo (robots-disallowed)",
+                       travelpayouts: "Aviasales search cache (licensed API)"};
+const srcKeyOf = r => (SRC[r[C.s]] || {}).k || "";
+const minObsFor = k => API_SOURCES.has(k) ? 1 : MIN_OBS;
 const MIN_WEIGHT_COVERAGE = 0.60, MIN_WINDOWS = 3;
 const BASE_DAYS = 3;   // the reference is a period, not a day - mirrors engine.BASE_DAYS
 const SEAT_TOTAL = Object.values(ROUTE_SEATS).reduce((a,b)=>a+b,0);
@@ -859,10 +866,12 @@ function passThrough(o, d, iso){
 /* day -> {cellKey: minFare} from the rows already loaded.
    basis "producer" nets the pass-through charge off each cell before folding,
    while the row still knows its real departure and arrival airports. */
-function cellsByDay(basis = "purchaser", scale = 1){
+function cellsByDay(basis = "purchaser", scale = 1, source = null){
   const out = new Map();
   for (const r of D){
-    if (r[C.n] < MIN_OBS || !(r[C.lo] > 0)) continue;
+    const sk = srcKeyOf(r);
+    if (source && sk !== source) continue;
+    if (r[C.n] < minObsFor(sk) || !(r[C.lo] > 0)) continue;
     let price = r[C.lo];
     const rt = R[r[C.r]];
     if (basis === "producer"){
@@ -968,15 +977,51 @@ function baseCells(cells, period){
   return out;
 }
 
-function apixSeries(cells){
-  cells = cells || cellsByDay();
+/* One segment: a set of cells on its own reference period. */
+function segmentSeries(cells, source){
   const days = [...cells.keys()].sort((a,b)=>a-b);
   if (days.length < 1) return [];
   const period = chooseBasePeriod(cells, days);
   const base = baseCells(cells, period);
   const rows = days.map(d => apixFor(cells, period, d, base)).filter(Boolean);
-  for (const r of rows){ r.basePeriod = period; r.baseMap = base; }
+  for (const r of rows){
+    r.basePeriod = period; r.baseMap = base;
+    r.source = source; r.sourceLabel = SOURCE_LABELS[source] || source;
+    if (period.length < BASE_DAYS){
+      // the reference period is still forming; every figure in the segment
+      // moves until BASE_DAYS qualifying days stand behind it
+      const w = `reference period has ${period.length} of ${BASE_DAYS} days`;
+      r.why = r.why ? `${r.why}; ${w}` : w; r.provisional = true;
+    }
+  }
   return rows;
+}
+
+/* Sources in first-appearance order. */
+function sourcesPresent(){
+  const seen = new Map();
+  for (const r of D){ const k = srcKeyOf(r); if (k && !seen.has(k)) seen.set(k, r[C.d]); else if (k) seen.set(k, Math.min(seen.get(k), r[C.d])); }
+  return [...seen.entries()].sort((a,b) => a[1]-b[1]).map(e => e[0]);
+}
+
+/* Union of per-source segments by day. Two sources are two measurements, so
+   a day is never priced against another source's base: without an overlap
+   they cannot be chain-linked, and pretending otherwise would read a change
+   of instrument as inflation. Mirrors engine.series(). */
+function unionBySource(builder){
+  const byDay = new Map();
+  for (const src of sourcesPresent()){
+    for (const r of builder(src) || []){
+      const prev = byDay.get(r.day);
+      if (!prev || (r.cells || 0) > (prev.cells || 0)) byDay.set(r.day, r);
+    }
+  }
+  return [...byDay.keys()].sort((a,b)=>a-b).map(d => byDay.get(d));
+}
+
+function apixSeries(cells){
+  if (cells) return segmentSeries(cells, "matched");          // caller-built cells, one segment
+  return unionBySource(src => segmentSeries(cellsByDay("purchaser", 1, src), src));
 }
 
 
@@ -984,26 +1029,33 @@ function apixSeries(cells){
    gap is the pass-through effect and nothing else), and a sensitivity figure:
    how far the producer index moves if every charge were 20% higher or lower. */
 function sppiRelease(){
-  const prod = cellsByDay("producer");
-  if (!prod.size) return null;
-  const purch = cellsByDay("purchaser");
-  const matched = new Map();
-  for (const [day, cells] of prod){
-    const m = new Map();
-    for (const [k, v] of purch.get(day) || []) if (cells.has(k)) m.set(k, v);
-    matched.set(day, m);
-  }
-  const series = apixSeries(prod), cpi = apixSeries(matched);
-  const byDay = new Map(cpi.map(r => [r.day, r]));
-  const lo = new Map(apixSeries(cellsByDay("producer", 0.8)).map(r => [r.day, r.apix]));
-  const hi = new Map(apixSeries(cellsByDay("producer", 1.2)).map(r => [r.day, r.apix]));
-  for (const r of series){
-    const c = byDay.get(r.day);
-    r.cpi = c ? c.apix : null;
-    r.wedge = c ? r.apix - c.apix : null;
-    const alts = [lo.get(r.day), hi.get(r.day)].filter(v => v != null);
-    r.sensitivity = alts.length ? Math.max(...alts.map(v => Math.abs(v - r.apix))) : null;
-  }
+  const cpiRows = [];
+  const series = unionBySource(src => {
+    const prod = cellsByDay("producer", 1, src);
+    if (!prod.size) return [];
+    const purch = cellsByDay("purchaser", 1, src);
+    const matched = new Map();
+    for (const [day, cells] of prod){
+      const m = new Map();
+      for (const [k, v] of purch.get(day) || []) if (cells.has(k)) m.set(k, v);
+      matched.set(day, m);
+    }
+    const rows = segmentSeries(prod, src), cpi = segmentSeries(matched, src);
+    cpiRows.push(...cpi);
+    const byDay = new Map(cpi.map(r => [r.day, r]));
+    const lo = new Map(segmentSeries(cellsByDay("producer", 0.8, src), src).map(r => [r.day, r.apix]));
+    const hi = new Map(segmentSeries(cellsByDay("producer", 1.2, src), src).map(r => [r.day, r.apix]));
+    for (const r of rows){
+      const c = byDay.get(r.day);
+      r.cpi = c ? c.apix : null;
+      r.wedge = c ? r.apix - c.apix : null;
+      const alts = [lo.get(r.day), hi.get(r.day)].filter(v => v != null);
+      r.sensitivity = alts.length ? Math.max(...alts.map(v => Math.abs(v - r.apix))) : null;
+    }
+    return rows;
+  });
+  if (!series.length) return null;
+  const cpi = cpiRows.sort((a,b)=>a.day-b.day);
   return {series, latest: series[series.length - 1], cpiLatest: cpi[cpi.length - 1] || null};
 }
 
@@ -1053,6 +1105,7 @@ function drawHeadline(latest, series){
   const bp = latest.basePeriod || [latest.baseDay];
   const baseText = bp.length > 1 ? `${dayLab(bp[0])}–${dayLab(bp[bp.length-1])}` : dayLab(bp[0]);
   set("h-period", `Reference period ${baseText} = 100.00 · ` +
+      (latest.sourceLabel ? `${latest.sourceLabel} · ` : "") +
       `${series.length} observation day${series.length === 1 ? "" : "s"}`);
 
   const st = document.getElementById("h-status");
@@ -1263,9 +1316,17 @@ function drawTrend(series){
     "stroke:var(--axis);stroke-width:1"));
   svg.appendChild(txt(w-m.r, Y(100)-6, "reference 100", "tick", {"text-anchor":"end"}));
 
-  const d = series.map((s,i) => `${i?"L":"M"}${X(i).toFixed(1)} ${Y(s.apix).toFixed(1)}`).join(" ");
+  // a new source starts a new path: segments are not chain-linked, so the
+  // line must not run across the join as if one measurement continued
+  const d = series.map((s,i) => `${(i && series[i-1].source === s.source) ? "L" : "M"}${X(i).toFixed(1)} ${Y(s.apix).toFixed(1)}`).join(" ");
   svg.appendChild(S("path", {d:`${d} L${X(series.length-1)} ${m.t+ph} L${X(0)} ${m.t+ph} Z`},
     "fill:var(--accent);opacity:.10"));
+  series.forEach((s,i) => {
+    if (i && series[i-1].source !== s.source){
+      svg.appendChild(S("line", {x1:X(i)-8, x2:X(i)-8, y1:m.t, y2:m.t+ph}, "stroke:var(--line);stroke-dasharray:3 3"));
+      svg.appendChild(txt(X(i)-4, m.t+10, `${s.sourceLabel || s.source} — new reference period`, "axlabel"));
+    }
+  });
   svg.appendChild(S("path", {d, fill:"none", "stroke-linejoin":"round"},
     "stroke:var(--accent);stroke-width:2"));
   series.forEach((s,i) => {
@@ -1372,7 +1433,7 @@ function drawSppi(rel, headline){
   const body = t.createTBody();
   const cheapest = {};
   for (const r of D){
-    if (r[C.d] !== L.day || r[C.n] < MIN_OBS || !(r[C.lo] > 0)) continue;
+    if (r[C.d] !== L.day || r[C.n] < minObsFor(srcKeyOf(r)) || !(r[C.lo] > 0)) continue;
     const o = R[r[C.r]].o;
     cheapest[o] = Math.min(cheapest[o] ?? Infinity, r[C.lo]);
   }

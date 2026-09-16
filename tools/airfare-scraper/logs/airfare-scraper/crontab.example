@@ -12,9 +12,3 @@
 # rather than giving up, and runs twice so the lead-time columns are never
 # more than ~12 hours stale.
 0 2,14 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index
-
-# Licensed feed (Travelpayouts / Aviasales cache): one-way cheapest per
-# departure date for every basket cell. Hourly - the cache does not move
-# faster, and it is polite. No browser, no lock; the engine publishes on the
-# ten-minute schedule above.
-7 * * * *   cd ~/SIH/airfare-scraper && python3 collect_api.py >> logs/api-$(date +\%Y\%m\%d).jsonl 2>>logs/api.err

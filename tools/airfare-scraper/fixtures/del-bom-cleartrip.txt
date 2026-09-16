@@ -1,0 +1,40 @@
+IndiGo | 6E-5014 | 18:30 | 3h 55m | 1 stop | 22:25 | ₹6,179 | ₹454 off with CTFKSBIC | Book
+IndiGo | 6E-931 | 19:35 | 4h 55m | 1 stop | 00:30 | ₹6,179 | ₹454 off with CTFKSBIC | Book
+IndiGo | 6E-2013 | 21:50 | 5h 5m | 1 stop | 02:55 | ₹6,179 | ₹454 off with CTFKSBIC | Book
+IndiGo | 6E-5033 | 15:50 | 6h 50m | 1 stop | 22:40 | ₹6,179 | ₹454 off with CTFKSBIC | Book
+IndiGo | 6E-2169 | 19:40 | 4h 5m | 1 stop | 23:45 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-2249 | 15:00 | 4h 35m | 1 stop | 19:35 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6443 | 09:00 | 4h 45m | 1 stop | 13:45 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6829 | 17:20 | 4h 45m | 1 stop | 22:05 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-5138 | 19:10 | 5h | 1 stop | 00:10 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6490 | 04:55 | 5h 15m | 1 stop | 10:10 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6459 | 05:55 | 5h 40m | 1 stop | 11:35 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6433 | 16:30 | 5h 50m | 1 stop | 22:20 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6829 | 17:20 | 6h 25m | 1 stop | 23:45 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-6018 | 04:40 | 7h 5m | 1 stop | 11:45 | ₹6,310 | ₹464 off with CTFKSBIC | Book
+IndiGo | 6E-5298 | 09:00 | 4h 50m | 1 stop | 13:50 | ₹6,389 | ₹470 off with CTFKSBIC | Book
+IndiGo | 6E-6479 | 21:25 | 4h 50m | 1 stop | 02:15 | ₹6,389 | ₹470 off with CTFKSBIC | Book
+IndiGo | 6E-6050 | 08:15 | 5h 15m | 1 stop | 13:30 | ₹6,389 | ₹470 off with CTFKSBIC | Book
+IndiGo | 6E-5038 | 14:00 | 5h 35m | 1 stop | 19:35 | ₹6,389 | ₹470 off with CTFKSBIC | Book
+IndiGo | 6E-2151 | 19:45 | 6h 30m | 1 stop | 02:15 | ₹6,389 | ₹470 off with CTFKSBIC | Book
+Akasa Air | QP-2074 | 14:10 | 2h 15m | Non-stop | 16:25 | ₹6,500 | ₹478 off with CTFKSBIC | Book
+IndiGo | 6E-882 | 23:15 | 5h 15m | 1 stop | 04:30 | ₹6,520 | ₹479 off with CTFKSBIC | Book
+IndiGo | 6E-6282 | 13:30 | 5h 20m | 1 stop | 18:50 | ₹6,520 | ₹479 off with CTFKSBIC | Book
+IndiGo | 6E-6212 | 14:45 | 5h 45m | 1 stop | 20:30 | ₹6,520 | ₹479 off with CTFKSBIC | Book
+IndiGo | 6E-6497 | 18:40 | 6h 5m | 1 stop | 00:45 | ₹6,520 | ₹479 off with CTFKSBIC | Book
+IndiGo | 6E-6282 | 13:30 | 7h | 1 stop | 20:30 | ₹6,520 | ₹479 off with CTFKSBIC | Book
+IndiGo | 6E-955 | 20:20 | 2h | Non-stop | 22:20 | ₹6,529 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-6470 | 06:55 | 2h 10m | Non-stop | 09:05 | ₹6,529 | ₹480 off with CTFKSBIC | Book
+Air India Express | IX-1038 | 17:35 | 2h 10m | Non-stop | 19:45 | ₹6,529 | ₹480 off with CTFKSBIC | Book
+Air India Express | IX-1235 | 23:25 | 2h 25m | Non-stop | 01:50 | ₹6,529 | ₹480 off with CTFKSBIC | Book
+Air India Express | IX-1056 | 05:35 | 2h 30m | Non-stop | 08:05 | ₹6,529 | ₹480 off with CTFKSBIC | Book
+Air India Express | IX-1165 | 05:45 | 5h 20m | 1 stop | 11:05 | ₹6,529 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-6676 | 12:00 | 2h 10m | Non-stop | 14:10 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-324 | 13:00 | 2h 10m | Non-stop | 15:10 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+Akasa Air | QP-1119 | 08:40 | 2h 15m | Non-stop | 10:55 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+Akasa Air | QP-1110 | 10:30 | 2h 15m | Non-stop | 12:45 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-6047 | 11:00 | 2h 15m | Non-stop | 13:15 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-6318 | 14:45 | 2h 15m | Non-stop | 17:00 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-864 | 15:30 | 2h 15m | Non-stop | 17:45 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+IndiGo | 6E-6706 | 17:00 | 2h 15m | Non-stop | 19:15 | ₹6,530 | ₹480 off with CTFKSBIC | Book
+Akasa Air | QP-1820 | 17:30 | 2h 15m | Non-stop | 19:45 | ₹6,530 | ₹480 off with CTFKSBIC | Book

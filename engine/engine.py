@@ -85,8 +85,14 @@ BASES = ("purchaser", "producer")
 TABLE_FOR = {"purchaser": "apix_daily", "producer": "apix_producer_daily"}
 
 
+def min_obs_for(source: str) -> int:
+    """Three observations guard a cell against one mis-extracted fare. A
+    structured API row was never extracted, so one observation is the rule."""
+    return 1 if source in config.API_SOURCES else MIN_OBSERVATIONS
+
+
 def load_cells(client, since: str | None = None, basis: str = "purchaser",
-               scale: float = 1.0) -> dict:
+               scale: float = 1.0, source: str | None = None) -> dict:
     """day -> {(origin, destination, window): (min_fare, n_flights)}
 
     `basis="producer"` nets the pass-through charges off every cell before
@@ -98,15 +104,18 @@ def load_cells(client, since: str | None = None, basis: str = "purchaser",
     rather than invisible."""
     CLEANING.clear()
     q = client.table("fares_daily").select(
-        "day,origin,destination,advance_window_days,min_fare,n_flights")
+        "day,origin,destination,source,advance_window_days,min_fare,n_flights")
     if since:
         q = q.gte("day", since)
+    if source:
+        q = q.eq("source", source)
     rows = q.execute().data
     cells: dict = defaultdict(dict)
     for r in rows:
         n = int(r["n_flights"] or 0)
-        if n < MIN_OBSERVATIONS:
-            CLEANING[f"cell below {MIN_OBSERVATIONS} observations"] += 1
+        need = min_obs_for(r.get("source") or "")
+        if n < need:
+            CLEANING[f"cell below {need} observation(s)"] += 1
             continue
         price = float(r["min_fare"] or 0)
         if price <= 0:
@@ -315,13 +324,68 @@ def _series_from(cells: dict, base_day: str | None, basis: str) -> list:
     return out
 
 
-def series(client, base_day: str | None = None, basis: str = "purchaser") -> list:
+def sources_present(client) -> list:
+    """Sources with any priced day, in first-appearance order."""
+    rows = client.table("fares_daily").select("day,source").order("day").execute().data
+    seen: list = []
+    for r in rows:
+        if r.get("source") and r["source"] not in seen:
+            seen.append(r["source"])
+    return seen
+
+
+def series(client, base_day: str | None = None, basis: str = "purchaser",
+           source: str | None = None) -> list:
+    """The published series.
+
+    One source at a time: a segment on its own reference period. All sources:
+    the union of per-source segments by day, each day carrying the segment it
+    belongs to. Two sources are two measurements — a search cache is not a
+    scraped listing — so a day is never priced against another source's base;
+    without an overlap period they cannot be chain-linked, and pretending
+    otherwise would read a change of instrument as inflation.
+    """
     if basis not in BASES:
         raise ValueError(f"basis must be one of {BASES}")
-    cells = load_cells(client, basis=basis)
+    if source is not None:
+        return _series_source(client, base_day, basis, source)
+    out: dict = {}
+    for src in sources_present(client):
+        try:
+            rows = _series_source(client, base_day, basis, src)
+        except InsufficientData:
+            continue
+        for r in rows:
+            prev = out.get(r["day"])
+            # the same day from two sources: keep the one with more priced cells
+            if prev is None or (r.get("cells") or 0) > (prev.get("cells") or 0):
+                out[r["day"]] = r
+    if not out:
+        raise InsufficientData("no source produced a series")
+    return [out[d] for d in sorted(out)]
+
+
+def _series_source(client, base_day: str | None, basis: str, source: str) -> list:
+    cells = load_cells(client, basis=basis, source=source)
     if not cells:
-        raise InsufficientData("fares_daily returned no usable cells")
+        raise InsufficientData(f"fares_daily returned no usable cells for {source}")
+    period = [base_day] if base_day else choose_base_period(cells)
     rows = _series_from(cells, base_day, basis)
+    short = len(period) < BASE_DAYS
+    for r in rows:
+        r["source"] = source
+        r["source_label"] = config.SOURCE_LABELS.get(source, source)
+        if r.get("apix") is None:
+            continue
+        r["cells"] = r.get("cells") or len(cells.get(r["day"], {}))
+        r["method"] = f"{r.get('method', '')}/source={source}"
+        if short:
+            # the reference period is still forming: every figure in the
+            # segment moves until BASE_DAYS qualifying days stand behind it
+            r["provisional"] = True
+            r["provisional_because"] = "; ".join(filter(None, [
+                r.get("provisional_because"),
+                f"reference period has {len(period)} of {BASE_DAYS} days"]))
     if basis == "producer":
         # The tariff table is notified, not measured, but a PSF component or a
         # GST treatment could still be off by a few hundred rupees. Recompute
@@ -329,13 +393,13 @@ def series(client, base_day: str | None = None, basis: str = "purchaser") -> lis
         # reader knows how much of the figure rests on the table.
         cleaning = dict(CLEANING)
         lo = {r["day"]: r.get("apix") for r in
-              _series_from(load_cells(client, basis=basis, scale=0.8), base_day, basis)}
+              _series_from(load_cells(client, basis=basis, scale=0.8, source=source), base_day, basis)}
         hi = {r["day"]: r.get("apix") for r in
-              _series_from(load_cells(client, basis=basis, scale=1.2), base_day, basis)}
+              _series_from(load_cells(client, basis=basis, scale=1.2, source=source), base_day, basis)}
         # The CPI-basis figure on the SAME cells, so the gap between the two
         # series measures the pass-through charges and nothing else — a cell
         # missing from one basket would otherwise masquerade as a price effect.
-        purchaser = load_cells(client, basis="purchaser")
+        purchaser = load_cells(client, basis="purchaser", source=source)
         matched_cells = {day: {k: v for k, v in purchaser.get(day, {}).items() if k in keys}
                          for day, keys in cells.items()}
         matched = {r["day"]: r.get("apix") for r in
@@ -394,13 +458,16 @@ def main() -> int:
                          "(apix_daily, or apix_producer_daily)")
     ap.add_argument("--monthly", action="store_true",
                     help="print the monthly index instead of the daily series")
+    ap.add_argument("--source", default=None,
+                    help="one source's segment only (default: every source, "
+                         "each on its own reference period, unioned by day)")
     ap.add_argument("--basis", choices=BASES, default="purchaser",
                     help="purchaser = the whole ticket, the CPI basis (default); "
                          "producer = net of ASF and UDF, the SPPI basis")
     args = ap.parse_args()
 
     client = FareStore()._client
-    rows = series(client, args.base, basis=args.basis)
+    rows = series(client, args.base, basis=args.basis, source=args.source)
     table = TABLE_FOR[args.basis]
     name = "APIx" if args.basis == "purchaser" else "APIx-P (producer basis)"
 
@@ -422,7 +489,19 @@ def main() -> int:
         print(json.dumps(rows, indent=2))
     else:
         base = rows[0]["base_day"]
-        print(f"\n{name} — Airfare Price Index      base {rows[0].get('base_period', base)} = 100")
+        segs: dict = {}
+        for r in rows:
+            if r.get("source"):
+                seg = segs.setdefault(r["source"], {"from": r["day"], "to": r["day"],
+                                                     "base": r.get("base_period"),
+                                                     "label": r.get("source_label")})
+                seg["to"] = r["day"]
+        if len(segs) > 1:
+            print(f"\n{name} — Airfare Price Index      {len(segs)} segments, one per source:")
+            for src, g in segs.items():
+                print(f"    {(g['label'] or src):<42} {g['from']} → {g['to']}   base {g['base']} = 100")
+        else:
+            print(f"\n{name} — Airfare Price Index      base {rows[0].get('base_period', base)} = 100")
         print(f"method: weighted Jevons on minimum logical fares, "
               f"weighted by {config.WEIGHT_BASIS}, min {MIN_OBSERVATIONS} obs/cell")
         if args.basis == "producer":

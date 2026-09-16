@@ -97,6 +97,9 @@ class DayIndex(BaseModel):
     apix: Optional[float] = Field(None, description="Index, base period = 100")
     provisional: bool = False
     provisional_because: Optional[str] = None
+    source: Optional[str] = Field(None, description="The source this day's segment is priced from; "
+                                  "segments are not chain-linked across sources")
+    base_period: Optional[str] = Field(None, description="This day's reference period (= 100)")
     routes_covered: Optional[int] = None
     observations: Optional[int] = None
     by_window: Optional[dict] = None
@@ -140,9 +143,9 @@ def _base_period(rows: list) -> str | None:
     as `/base=YYYY-MM-DD/YYYY-MM-DD` when it spans more than one day."""
     if not rows:
         return None
-    method = next((r.get("method") for r in rows if r.get("method")), "") or ""
+    method = next((r.get("method") for r in reversed(rows) if r.get("method")), "") or ""
     if "/base=" in method:
-        return method.split("/base=", 1)[1]
+        return method.split("/base=", 1)[1].split("/source=", 1)[0]
     return rows[0]["base_day"]
 
 

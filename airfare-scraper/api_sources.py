@@ -119,6 +119,58 @@ def fetch_cheap(origin: str, destination: str, advance_days: int,
     return parse_cheap(payload, origin, destination)
 
 
+def fetch_dates(origin: str, destination: str, windows: List[int],
+                today: date | None = None, currency: str = "inr") -> dict:
+    """One-way cheapest fare per departure date, mapped onto lead-time windows.
+
+    /aviasales/v3/prices_for_dates with one_way=true returns, per calendar
+    month, the cheapest known one-way fare for each departure date: airline,
+    departure time, price. One call per month covering the windows, so the
+    whole basket is ~30 calls. This is the only Travelpayouts endpoint that is
+    both one-way and dense enough for a lead-time basket: /v1/prices/cheap
+    covers ~15% of cells, and /v1/prices/calendar is round-trip whatever
+    parameters it is given.
+
+    Returns {advance_days: [ApiFare]} — at most one fare per window, because
+    the cache holds one cheapest per date. That is one observation per cell
+    per call; repeated calls within a day are the same cached observation
+    unless found_at moved, so the engine treats API rows with a minimum of
+    one observation, not three.
+    """
+    base = today or date.today()
+    targets = {w: (base + timedelta(days=w)).isoformat() for w in windows}
+    months = sorted({t[:7] for t in targets.values()})
+    by_date: dict = {}
+    for month in months:
+        payload = _request("/aviasales/v3/prices_for_dates", {
+            "origin": origin, "destination": destination, "departure_at": month,
+            "one_way": "true", "direct": "false", "limit": 1000, "sorting": "price",
+            "currency": currency, "token": TRAVELPAYOUTS_TOKEN,
+        })
+        if payload.get("success") is False:
+            raise ApiError(f"API reported failure: {str(payload)[:160]}")
+        for r in payload.get("data") or []:
+            if r.get("return_at"):
+                continue                       # never let a round trip in
+            dep = str(r.get("departure_at", ""))
+            if len(dep) < 10:
+                continue
+            price = r.get("price")
+            if not isinstance(price, (int, float)) or price <= 0:
+                continue
+            code = str(r.get("airline") or "").upper()
+            fare = ApiFare(
+                carrier=CARRIERS.get(code, code or "unknown"),
+                flight_number=(f"{code}-{r['flight_number']}" if r.get("flight_number") else None),
+                departure_time=dep[11:16] if len(dep) >= 16 else "00:00",
+                total_fare=float(price),
+            )
+            prev = by_date.get(dep[:10])
+            if prev is None or fare.total_fare < prev.total_fare:
+                by_date[dep[:10]] = fare
+    return {w: ([by_date[t]] if t in by_date else []) for w, t in targets.items()}
+
+
 def records(fares: List[ApiFare], origin: str, destination: str,
             advance_days: int, source: str = "travelpayouts") -> list:
     """Adapt to the same row shape the scraped path produces."""

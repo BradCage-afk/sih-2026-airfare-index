@@ -52,7 +52,7 @@ INCIDENTS = os.path.join(LOG_DIR, "incidents.jsonl")
 # A source is judged on the last hour against a seven-day baseline.
 RECENT_H, BASELINE_D = 1, 7
 # Cadence per tier, used for the "no success for N periods" rule.
-CADENCE_MIN = {"hot": 10, "index": 12 * 60, "api": 60}
+CADENCE_MIN = {"hot": 10, "index": 12 * 60}
 PROBE_EVERY_MIN = 60          # a broken source is probed at most this often
 
 BOT_COOKIES = ("_abck", "bm_sz", "ak_bmsc", "_px", "_pxhd", "__cf_bm", "cf_clearance", "datadome")
@@ -94,9 +94,7 @@ def read_runs(since: datetime) -> list:
 def read_log_events(since: datetime) -> list:
     """Events from the JSON logs since `since` (today's and yesterday's files)."""
     out = []
-    paths = (sorted(glob.glob(os.path.join(LOG_DIR, "scrape-*.jsonl")))[-3:]
-             + sorted(glob.glob(os.path.join(LOG_DIR, "api-*.jsonl")))[-3:])
-    for path in paths:
+    for path in sorted(glob.glob(os.path.join(LOG_DIR, "scrape-*.jsonl")))[-3:]:
         with open(path, encoding="utf-8") as fh:
             for line in fh:
                 try:
@@ -132,8 +130,7 @@ def metrics_for(source: str, runs: list, events: list, now: datetime) -> dict:
     ev = [e for e in events if e.get("source") == source]
     written = [e for e in ev if e.get("event") == "written"]
     fetched_recent = [e for e in ev if e.get("event") == "fetched" and _iso(e["ts"]) >= recent_from]
-    failed_recent = [e for e in ev if e.get("event") in ("fetch_failed", "api_failed")
-                     and _iso(e["ts"]) >= recent_from]
+    failed_recent = [e for e in ev if e.get("event") == "fetch_failed" and _iso(e["ts"]) >= recent_from]
     robots = [e for e in ev if e.get("event") == "robots_check"]
 
     last_success = max((_iso(e["ts"]) for e in written), default=None)
@@ -281,7 +278,7 @@ def write_repair_request(source: str, health: dict, m: dict, p: dict | None) -> 
     src = sources.SOURCES.get(source)
     action = {
         "layout_change": "regenerate_scraper: the page still serves fares; the extractor no longer finds them",
-        "blocked": "do_not_evade: the site refuses automated access; escalate to a person, switch to a licensed feed (Travelpayouts)",
+        "blocked": "do_not_evade: the site refuses automated access; escalate to a person, switch to a licensed feed (Amadeus / Travelpayouts)",
         "outage": "wait: keep probing hourly; no code change indicated",
         "empty_results": "none: the source has no flights for the probe query",
     }.get(health["class"], "investigate")
@@ -353,7 +350,7 @@ def evaluate(do_probe: bool = True) -> dict:
     events = read_log_events(now - timedelta(days=2))
     state = load_state()
     print(f"source health · {now.isoformat(timespec='seconds')}")
-    for key in list(config.DEFAULT_SOURCES) + list(getattr(config, "API_SOURCES", [])):
+    for key in config.DEFAULT_SOURCES:
         m = metrics_for(key, runs, events, now)
         status, reason = verdict(m)
         prev = state.get(key, {})
@@ -361,45 +358,28 @@ def evaluate(do_probe: bool = True) -> dict:
         cls, evidence = "healthy", ""
         if status == "blocked" and m.get("robots_allowed") is False:
             cls, evidence = "blocked", "robots.txt disallows the results path; not fetched"
-        elif key in getattr(config, "API_SOURCES", []) and status in ("broken", "degraded"):
-            # a licensed API has no page to probe: read the failure text
-            err = (m.get("last_error") or "").lower()
-            if any(t in err for t in ("401", "403", "invalid token", "unauthor", "forbidden")):
-                cls, evidence, status = "blocked", "the API refused the token: " + err[:120], "blocked"
-            elif any(t in err for t in ("429", "rate", "quota")):
-                cls, evidence = "outage", "rate-limited: " + err[:120]
-            else:
-                cls, evidence = "outage", (err[:120] or reason)
-        elif status in ("broken", "degraded"):
+        elif status in ("broken", "degraded") and do_probe:
             last = prev.get("probed_at")
-            due = do_probe and ((not last) or (not prev.get("probe"))
-                                or (now - _iso(last)) > timedelta(minutes=PROBE_EVERY_MIN))
+            due = (not last) or (now - _iso(last)) > timedelta(minutes=PROBE_EVERY_MIN)
             if due:
                 print(f"  probing {key} …")
                 p = probe(key)
                 cls, evidence = classify(m, p)
-            elif prev.get("probe"):
-                # keep the last probe's classification until a new probe replaces it
-                cls, evidence, p = prev.get("class", "unknown"), prev.get("evidence", ""), prev.get("probe")
+                if cls == "blocked":
+                    status = "blocked"
             else:
-                cls, evidence = classify(m, None)
-            if cls == "blocked":
-                status = "blocked"
-        else:
+                cls, evidence, p = prev.get("class", "unknown"), prev.get("evidence", ""), prev.get("probe")
+                if cls == "blocked":
+                    status = "blocked"
+        elif status == "healthy":
             cls, evidence = "healthy", ""
-        changed = prev.get("status") != status or prev.get("class") != cls
-        # "since" is when the source last worked, not when the monitor noticed:
-        # a monitor that starts a day late must not date the outage from its
-        # own first run.
-        if changed or not prev.get("since"):
-            since = (m.get("last_success_at") if status != "healthy" and m.get("last_success_at")
-                     else now.isoformat(timespec="seconds"))
         else:
-            since = prev["since"]
+            cls, evidence = classify(m, None)
+        changed = prev.get("status") != status or prev.get("class") != cls
         health = {"status": status, "class": cls, "reason": reason, "evidence": evidence,
-                  "since": since,
+                  "since": (prev.get("since") if not changed and prev.get("since") else now.isoformat(timespec="seconds")),
                   "checked_at": now.isoformat(timespec="seconds"),
-                  "probed_at": (now.isoformat(timespec="seconds") if (p is not None and p is not prev.get("probe")) else prev.get("probed_at")),
+                  "probed_at": (now.isoformat(timespec="seconds") if p and "url" in p and p is not prev.get("probe") else prev.get("probed_at")),
                   "probe": p, "metrics": m}
         state[key] = health
         flag = {"healthy": "✓", "degraded": "!", "broken": "✗", "blocked": "⛔", "unknown": "?"}[status]

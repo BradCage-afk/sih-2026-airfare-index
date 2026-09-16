@@ -1,0 +1,6 @@
+.env
+fares.jsonl
+pages/
+__pycache__/
+*.pyc
+.venv/

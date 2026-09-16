@@ -21,6 +21,7 @@ RUN_STARTED = datetime.now(timezone.utc)
 
 
 def log(event: str, level: str = "info", **fields):
+    fields.setdefault("source", "travelpayouts")
     print(json.dumps({"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                       "level": level, "event": event, **fields}, ensure_ascii=False),
           flush=True)
@@ -53,16 +54,19 @@ def main() -> int:
 
     written = fetched = failed = 0
     for origin, destination in routes:
+        route = f"{origin}-{destination}"
+        # one set of calls per route covers every window (one per month)
+        try:
+            per_window = api_sources.fetch_dates(origin, destination, windows, today)
+        except api_sources.ApiError as exc:
+            failed += len(windows)
+            log("api_failed", level="error", route=route, error=str(exc)[:160])
+            time.sleep(1.5)
+            continue
+        fetched += len(windows)
         for w in windows:
-            ctx = dict(route=f"{origin}-{destination}", window=f"T+{w}")
-            try:
-                fares = api_sources.fetch_cheap(origin, destination, w, today)
-            except api_sources.ApiError as exc:
-                failed += 1
-                log("api_failed", level="error", **ctx, error=str(exc)[:160])
-                time.sleep(1.5)
-                continue
-            fetched += 1
+            ctx = dict(route=route, window=f"T+{w}")
+            fares = per_window.get(w, [])
             if not fares:
                 log("no_fares", level="warn", **ctx)
                 continue
@@ -76,7 +80,7 @@ def main() -> int:
             written += n
             log("written", **ctx, fares=n,
                 cheapest=min(f.total_fare for f in fares))
-            time.sleep(1.2)          # courteous even to an API we pay nothing for
+        time.sleep(1.2)          # courteous even to an API we pay nothing for
 
     duration = (datetime.now(timezone.utc) - RUN_STARTED).total_seconds()
     log("run_end", source="travelpayouts", fetched=fetched, written=written,

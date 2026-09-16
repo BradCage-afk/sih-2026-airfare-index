@@ -169,16 +169,6 @@ def cell_weight(origin: str, destination: str, advance_days: int) -> float:
 # Sources scraped by default. Any key from sources.SOURCES works.
 DEFAULT_SOURCES: list[str] = ["cleartrip", "indigo"]
 
-# Licensed, structured sources (api_sources.py). Their rows are not read by
-# a model, so the three-observation guard against a single mis-extracted
-# fare does not apply: one observation per cell is the nature of the data.
-API_SOURCES: list[str] = ["travelpayouts"]
-SOURCE_LABELS: dict = {
-    "cleartrip": "Cleartrip listing (scraped)",
-    "indigo": "IndiGo (robots-disallowed)",
-    "travelpayouts": "Aviasales search cache (licensed API)",
-}
-
 # ------------------------------------------------------------------ tiers ---
 # A run is a tier. `index` is the statistical product — the whole basket, every
 # advance window, slow cadence. `live` is the consumer-facing one — the fare you
