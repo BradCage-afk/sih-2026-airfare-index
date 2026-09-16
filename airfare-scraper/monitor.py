@@ -278,7 +278,7 @@ def write_repair_request(source: str, health: dict, m: dict, p: dict | None) -> 
     src = sources.SOURCES.get(source)
     action = {
         "layout_change": "regenerate_scraper: the page still serves fares; the extractor no longer finds them",
-        "blocked": "do_not_evade: the site refuses automated access; escalate to a person, switch to a licensed feed (Amadeus / Travelpayouts)",
+        "blocked": "do_not_evade: the site refuses automated access; escalate to a person, switch to a licensed feed (Travelpayouts)",
         "outage": "wait: keep probing hourly; no code change indicated",
         "empty_results": "none: the source has no flights for the probe query",
     }.get(health["class"], "investigate")

@@ -521,7 +521,7 @@ A judge will ask. Each has a reasoned position; none is hidden.
 
 | # | Issue | Why it is not fixed | What we did instead |
 |---|---|---|---|
-| 1 | **One data source — and since 15 Sep, none** | 16 portals surveyed: 10 disallow, 4 block, airlines refuse automation. The one usable OTA put its search API behind Akamai on 15 Sep. A second scraped site would mean ignoring a robots.txt; evading Akamai would betray the compliance story. | 168,000 observations over 14 days stand; the release is frozen at the last complete day and says so. Two licensed feeds are wired and waiting on credentials (Amadeus, Travelpayouts) — that is now the path, not an option. The honest fix is an access agreement — the argument for a ministry running this. |
+| 1 | **One data source — and since 15 Sep, none** | 16 portals surveyed: 10 disallow, 4 block, airlines refuse automation. The one usable OTA put its search API behind Akamai on 15 Sep. A second scraped site would mean ignoring a robots.txt; evading Akamai would betray the compliance story. | 168,000 observations over 14 days stand; the release is frozen at the last complete day and says so. The licensed feed (Travelpayouts, adapter written) is now the path, not an option; Amadeus's self-service portal closed on 17 July 2026 and is no longer available to new users. The honest fix is an access agreement — the argument for a ministry running this. |
 | 2 | **No fare breakup** — `base_fare`, `taxes`, `udf`, `convenience_fee` are NULL in every row | The breakup is on the itinerary page, which is robots-disallowed. | `total_fare` is what a CPI needs. The SPPI basis nets the *notified* charges (ASF, per-airport UDF) from tariff tables, not from the page — so both bases are served without touching a disallowed URL. |
 | 3 | **Weights are seats, not passengers** | The PS asks for passenger volume. DGCA's city-pair passenger table is only behind its JavaScript portal. | Seats are a stated proxy (85–90% load factors, similar across trunk routes); every API response says so; `ROUTE_PASSENGERS` is a drop-in. |
 | 4 | **Lead-time weights are uniform** | No public source publishes the share of bookings by notice period. | Stated on every response rather than fabricated. |
@@ -725,8 +725,8 @@ live that RLS blocks writes with it.
 - [x] `fares_carrier` view applied — the airline comparison runs on every observation
 - [ ] Apply `airfare-scraper/source_health.sql` in the SQL editor so the API and the portal
       show the blocked source (the monitor keeps state locally until then)
-- [ ] **Get Amadeus or Travelpayouts credentials** — with Cleartrip blocked this is the only
-      way the index advances before the presentation
+- [ ] **Get the Travelpayouts token** (travelpayouts.com/programs/100/tools/api) — with Cleartrip
+      blocked this is the only licensed feed left; Amadeus closed its developer portal in July 2026
 - [ ] Apply `airfare-scraper/apix_producer_daily.sql` in the SQL editor so the SPPI
       series is persisted and revision-tracked like the CPI one (the scheduler already
       tries to write it; portal and API compute it live regardless)
