@@ -56,7 +56,12 @@ SOURCES: dict[str, Source] = {
             "Verified 2026-08-31: robots.txt allows /flights/results "
             "(only /flights/search* and /flights/itinerary/* are disallowed); "
             "renders ~11 fare rows per screen in headless Chromium. Listing "
-            "shows total fare only — component breakup is not on this page."
+            "shows total fare only — component breakup is not on this page. "
+            "BLOCKED from 2026-09-15 ~11:45 UTC: the page still loads but its "
+            "own data call, /flight/search/v2, answers 403 behind Akamai Bot "
+            "Manager (_abck, bm_sz, ak_p). The page shows 'servers are stumped'. "
+            "Not evaded: monitor.py marks the source blocked, main.py stops "
+            "collecting it, and it is probed hourly for recovery."
         ),
     ),
     "ixigo": Source(

@@ -483,6 +483,30 @@ the revision log recorded all of them — which is exactly what it is for. When 
 basket changes again, the proper treatment is chain-linking at an overlap period; that
 is the stated next step.
 
+**4. The only scraped source shut the door (15 Sep) — and nothing told us for 28 hours.**
+Cleartrip put its search API behind Akamai Bot Manager around 11:45 UTC on 15 September.
+The results page still renders, but its own data call (`/flight/search/v2`) answers 403
+with the canonical *Access Denied … Reference #18.…* page, and the `_abck` / `bm_sz` /
+`ak_p` markers are on the response. Fetch failures went 0% → 54% → 100% across two days
+while the cron kept firing — 431 failed fetches — and the last observation aged past a
+day before anyone looked. Two lessons, both now built:
+
+- **We do not evade.** Slide 3 promises robots compliance, slide 6 explains why we wrote
+  our own parser, and §7b criticises a competitor for shipping an anti-bot bypass. Getting
+  round Akamai would make all of that a lie. The source is marked blocked, collection has
+  stopped, the release stands at the last complete day (14 Sep), and it is probed hourly.
+- **A monitor, with a classifier.** `monitor.py` judges every source after each run and,
+  critically, says what *kind* of broken: `layout_change` (regenerate the scraper — the
+  agent's job), `blocked` (do not regenerate; escalate; switch to a licensed feed),
+  `outage`, `empty_results`. It writes a repair request with the evidence and fires a
+  webhook or a GitHub issue. This is the monitoring half of the design in `arya.txt` — AI
+  invoked only when intelligence is needed — and the classification is what keeps that
+  agent from becoming an evasion tool. It would have raised this incident at ~12:15 on the
+  15th, not the 16th.
+
+Say it exactly like this. A judge who hears "our source blocked us and we stopped" hears
+integrity; one who discovers it hears a broken demo.
+
 **3. The health endpoint cried wolf (found 11 Sep).** `/api/v1/health` measured freshness
 as time since the last *completed* run. A full-basket run takes two hours and writes as
 it goes, so the endpoint reported `stale: true` for the entirety of every index run —
@@ -497,7 +521,7 @@ A judge will ask. Each has a reasoned position; none is hidden.
 
 | # | Issue | Why it is not fixed | What we did instead |
 |---|---|---|---|
-| 1 | **One data source** | 16 portals surveyed: 10 disallow, 4 block, airlines refuse automation. A second scraped site would mean ignoring a robots.txt. | The one OTA returns all six carriers. Two licensed feeds are wired and waiting on credentials (Amadeus, Travelpayouts). The honest fix is an access agreement — the argument for a ministry running this. |
+| 1 | **One data source — and since 15 Sep, none** | 16 portals surveyed: 10 disallow, 4 block, airlines refuse automation. The one usable OTA put its search API behind Akamai on 15 Sep. A second scraped site would mean ignoring a robots.txt; evading Akamai would betray the compliance story. | 168,000 observations over 14 days stand; the release is frozen at the last complete day and says so. Two licensed feeds are wired and waiting on credentials (Amadeus, Travelpayouts) — that is now the path, not an option. The honest fix is an access agreement — the argument for a ministry running this. |
 | 2 | **No fare breakup** — `base_fare`, `taxes`, `udf`, `convenience_fee` are NULL in every row | The breakup is on the itinerary page, which is robots-disallowed. | `total_fare` is what a CPI needs. The SPPI basis nets the *notified* charges (ASF, per-airport UDF) from tariff tables, not from the page — so both bases are served without touching a disallowed URL. |
 | 3 | **Weights are seats, not passengers** | The PS asks for passenger volume. DGCA's city-pair passenger table is only behind its JavaScript portal. | Seats are a stated proxy (85–90% load factors, similar across trunk routes); every API response says so; `ROUTE_PASSENGERS` is a drop-in. |
 | 4 | **Lead-time weights are uniform** | No public source publishes the share of bookings by notice period. | Stated on every response rather than fabricated. |
@@ -667,6 +691,23 @@ ignored, unpublished fields `null`; Pydantic drops anything outside ₹300–₹
 Postgres: that plus the context the model never saw — route, lead time, source, which
 model read it, when. Nothing is ever updated or deleted, so any past day recomputes.
 
+**"Your data stops on 14 September — why?"** Because the source blocked us and we did not
+go around it. Cleartrip put its search API behind Akamai Bot Manager on the 15th; the page
+loads, its data call returns 403. Our monitor classifies that as *blocked* — as opposed to
+a layout change, which an agent could repair — and the rule for blocked is: stop, say so,
+escalate, use a licensed feed. The portal states it on the release. Fourteen days of real
+observations are still there, every one recomputable. The alternative was to ship a bypass,
+and then nothing else on these slides could be believed.
+
+**"What is the monitoring system?"** After every run, `monitor.py` scores each source on
+the last hour against a seven-day baseline — fetch-failure rate, flights per page, minutes
+since the last successful write — and if it is failing, probes it once (through the robots
+gate) to classify the failure: `layout_change`, `blocked`, `outage`, `empty_results`. On
+any change it writes a repair request with the evidence and the recommended action and
+fires a webhook or opens a GitHub issue. The collector reads the state and leaves a blocked
+source alone. This is the half of Arya's design that decides *when* the scraper-generating
+agent is invoked — and, just as important, when it must not be.
+
 **"Is the code public?"** Yes — `github.com/BradCage-afk/sih-2026-airfare-index`, with
 a README that documents the method, the exclusion rules and the publication threshold.
 `.env` is gitignored; the portal's Supabase key is the publishable one and we verified
@@ -682,6 +723,10 @@ live that RLS blocks writes with it.
 - [x] Repo is **public**, with README; working notes removed from the tree
 - [x] All five lead-time columns populated; release **Published** at 100% coverage
 - [x] `fares_carrier` view applied — the airline comparison runs on every observation
+- [ ] Apply `airfare-scraper/source_health.sql` in the SQL editor so the API and the portal
+      show the blocked source (the monitor keeps state locally until then)
+- [ ] **Get Amadeus or Travelpayouts credentials** — with Cleartrip blocked this is the only
+      way the index advances before the presentation
 - [ ] Apply `airfare-scraper/apix_producer_daily.sql` in the SQL editor so the SPPI
       series is persisted and revision-tracked like the CPI one (the scheduler already
       tries to write it; portal and API compute it live regardless)

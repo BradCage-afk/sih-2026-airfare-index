@@ -354,8 +354,20 @@ def health():
         run = runs[0] if runs else None
 
         age = minutes_since(last_obs)
+        # per-source health from monitor.py, when the table exists
+        sources_health = None
+        try:
+            hs = client.table("source_health").select(
+                "source,status,class,reason,evidence,since,checked_at").execute().data
+            sources_health = {h["source"]: {k: h[k] for k in h if k != "source"} for h in hs}
+        except Exception:
+            pass
+        blocked = [k for k, v in (sources_health or {}).items() if v.get("status") == "blocked"]
         return {
-            "status": "ok",
+            "status": "degraded" if blocked else "ok",
+            "sources": sources_health,
+            "collection_note": (f"collection from {', '.join(blocked)} is blocked; the release "
+                                f"stands at the last complete day") if blocked else None,
             "last_observation": last_obs,
             "minutes_since_observation": age,
             "stale": age is not None and age > 60,

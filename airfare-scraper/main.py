@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -58,6 +59,16 @@ class Tally:
 def polite_pause(extra: float = 0.0) -> None:
     delay = random.uniform(config.REQUEST_DELAY_MIN_S, config.REQUEST_DELAY_MAX_S) + extra
     time.sleep(delay)
+
+
+def source_blocked(key: str) -> bool:
+    """Whether monitor.py currently records this source as blocked."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "source_health.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh).get(key, {}).get("status") == "blocked"
+    except (OSError, ValueError):
+        return False
 
 
 def run(args) -> Tally:
@@ -116,6 +127,15 @@ def run(args) -> Tally:
             crawl_delay=delay,
             reason=reason,
         )
+
+    # A source the monitor has marked blocked is left alone: a site that has
+    # refused automated access is not retried every ten minutes. monitor.py
+    # probes it once an hour and clears the mark when it recovers.
+    for source in chosen:
+        if allowed[source.key] and source_blocked(source.key):
+            allowed[source.key] = False
+            log("skipped_health", level="warn", source=source.key,
+                reason="marked blocked by monitor.py; probed hourly, not collected")
 
     # only sources that passed the robots gate actually do work
     planned_units = sum(len(routes) * len(windows) for s in chosen if allowed[s.key])

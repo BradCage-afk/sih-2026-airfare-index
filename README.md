@@ -21,7 +21,7 @@ book".
 |---|---|
 | Statistical release portal | https://apix-portal.pages.dev |
 | Export API (OpenAPI docs) | https://apix-api-n5ux.onrender.com/docs |
-| Observations collected | 160,000+ and counting |
+| Observations collected | 168,000+ (collection blocked by the source since 15 Sep 2026 — see below) |
 | Basket | 15 city pairs × 5 booking lead times = 75 priced cells |
 | Cadence | every 10 minutes, robots-gated |
 | Cost to run | ₹0 a month, on free tiers throughout |
@@ -236,6 +236,39 @@ Scheduling lives in `airfare-scraper/crontab.example`: the hot tier every ten
 minutes, the full index tier twice a day. The index tier waits for the
 collection lock rather than giving up, because it is the only tier that collects
 every booking lead time.
+
+---
+
+## Source monitoring, and what happens when a site breaks
+
+`airfare-scraper/monitor.py` runs after every collection and answers two
+questions per source: *is it healthy*, and if not, *what kind of broken*.
+
+| Class | Meaning | Action it recommends |
+|---|---|---|
+| `layout_change` | The page loads and its own data call succeeds, but the extractor finds no fare rows | regenerate the scraper — the case for an AI agent |
+| `blocked` | The site's data call is refused (403/429), a bot-management product is in the path, or robots.txt disallows it | **do not evade** — escalate to a person; switch to a licensed feed |
+| `outage` | 5xx or unreachable | wait; keep probing hourly |
+| `empty_results` | The page says there are no flights | nothing to fix |
+
+It judges the last hour against a seven-day baseline (fetch-failure rate,
+flights per page, minutes since the last successful write), probes a failing
+source at most once an hour through the same robots gate as collection, and on
+any change writes a **repair request** — `logs/repair-<source>-<ts>.json`, with
+the evidence and the recommended action — and fires whatever trigger is
+configured (`MONITOR_WEBHOOK`, or a GitHub issue with `MONITOR_GH_ISSUE=1`).
+`main.py` reads the resulting state and leaves a blocked source alone instead of
+retrying it every ten minutes. The `source_health` table mirrors the state so the
+API's `/health` and the portal's release status say it too.
+
+The classification is the point. A scraper regenerated against a bot-management
+block would be an evasion tool, so the agent that repairs `layout_change` must
+never be handed a `blocked` source. Read `arya.txt` for the design this serves.
+
+**Live case.** On 15 September 2026 Cleartrip put its search API behind Akamai
+Bot Manager. The page still renders; its own data call returns 403. The monitor
+classifies it `blocked`, collection has stopped, the release stands at the last
+complete day, and the source is probed hourly. We did not try to get around it.
 
 ---
 

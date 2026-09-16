@@ -36,6 +36,11 @@ fi
 python3 main.py --tier "$TIER" >> "$LOG" 2>>"$LOG_DIR/scrape.err"
 status=$?
 
+# Source health: is each source healthy, degraded, broken or blocked? Writes
+# logs/source_health.json (which main.py reads to back off a blocked source),
+# raises a repair request on any change, and probes a broken source hourly.
+python3 monitor.py >> "$LOG_DIR/monitor.log" 2>&1 || true
+
 # Keep a fortnight of logs, no more.
 find "$LOG_DIR" -name 'scrape-*.jsonl' -mtime +14 -delete 2>/dev/null
 

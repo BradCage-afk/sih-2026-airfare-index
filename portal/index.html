@@ -362,6 +362,7 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       <div class="lab">Release status</div>
       <div id="h-status"></div>
       <div class="note" id="h-coverage"></div>
+      <div class="note" id="h-collection" hidden></div>
     </div>
   </div>
 
@@ -725,7 +726,7 @@ async function goLive(){
   if (!SUPABASE.url || !SUPABASE.key) return {live:false, why:"not configured"};
   const since = new Date(Date.now() - SUPABASE.days * 864e5);
 
-  const [daily, recent, runs, hourly, carriers] = await Promise.all([
+  const [daily, recent, runs, hourly, carriers, health] = await Promise.all([
     rest("fares_daily", {select:"*", day:`gte.${isoDay(since)}`, order:"day.asc", limit:5000}),
     rest("fares", {select:"origin,destination,carrier,source,advance_window_days,base_fare," +
                           "taxes,udf,convenience_fee,total_fare,model_used,scraped_at",
@@ -736,9 +737,13 @@ async function goLive(){
       .catch(err => { console.warn("fares_hourly unavailable:", err.message); return []; }),
     // route-controlled airline comparison over every observation, not the last few
     rest("fares_carrier", {select:"*", order:"fares_observed.desc", limit:50})
-      .catch(err => { console.warn("fares_carrier unavailable:", err.message); return []; })
+      .catch(err => { console.warn("fares_carrier unavailable:", err.message); return []; }),
+    // per-source health from monitor.py: a blocked source is said on the release
+    rest("source_health", {select:"source,status,class,reason,evidence,since,checked_at"})
+      .catch(err => { console.warn("source_health unavailable:", err.message); return []; })
   ]);
   DATA.carriers = carriers;
+  DATA.sourceHealth = health;
 
   // Connected fine, just nothing collected yet — a state of its own, not an error.
   if (!daily.length) return {live:false, why:"empty", runs:runs.length};
@@ -1013,6 +1018,22 @@ function latestRelease(){
   // is on the trend line in amber, not in the headline or the heat map.
   const done = series.filter(r => !r.why || !r.why.includes("still in progress"));
   return {series, latest: (done.length ? done : series)[ (done.length ? done : series).length - 1 ]};
+}
+
+function drawCollectionNotice(){
+  const el = document.getElementById("h-collection");
+  if (!el) return;
+  const blocked = (DATA.sourceHealth || []).filter(h => h.status === "blocked" && !(h.reason || "").includes("robots"));
+  if (!blocked.length){ el.hidden = true; return; }
+  const h = blocked[0];
+  const since = h.since ? new Date(h.since).toLocaleDateString("en-GB", {day:"numeric", month:"short", timeZone:"UTC"}) : "";
+  el.hidden = false; el.innerHTML = "";
+  const b = document.createElement("b"); b.textContent = `Collection from ${h.source} has been blocked since ${since}. `;
+  const t = document.createElement("span");
+  t.textContent = "The site's data service now refuses automated requests; this index does not evade " +
+                  "such controls. The release stands at the last complete day, and the source is " +
+                  "probed hourly for recovery.";
+  el.append(b, t);
 }
 
 function drawHeadline(latest, series){
@@ -1552,6 +1573,7 @@ function drawMethod(latest){
 function renderAll(){
   const {series, latest} = latestRelease();
   drawHeadline(latest, series);
+  drawCollectionNotice();
   drawSppi(sppiRelease(), latest);
   drawHeat(latest);
   drawSpikes(latest);
