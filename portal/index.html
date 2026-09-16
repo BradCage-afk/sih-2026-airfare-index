@@ -1327,12 +1327,21 @@ function drawTrend(series){
   // a new source starts a new path: segments are not chain-linked, so the
   // line must not run across the join as if one measurement continued
   const d = series.map((s,i) => `${(i && series[i-1].source === s.source) ? "L" : "M"}${X(i).toFixed(1)} ${Y(s.apix).toFixed(1)}`).join(" ");
-  svg.appendChild(S("path", {d:`${d} L${X(series.length-1)} ${m.t+ph} L${X(0)} ${m.t+ph} Z`},
-    "fill:var(--accent);opacity:.10"));
+  // the area fill is drawn per contiguous segment, so nothing spans the join
+  const runs = [];
+  series.forEach((s,i) => { if (!i || series[i-1].source !== s.source) runs.push([i, i]); else runs[runs.length-1][1] = i; });
+  for (const [a, z] of runs){
+    if (z === a) continue;
+    const seg = series.slice(a, z+1).map((s,j) => `${j?"L":"M"}${X(a+j).toFixed(1)} ${Y(s.apix).toFixed(1)}`).join(" ");
+    svg.appendChild(S("path", {d:`${seg} L${X(z)} ${m.t+ph} L${X(a)} ${m.t+ph} Z`}, "fill:var(--accent);opacity:.10"));
+  }
   series.forEach((s,i) => {
     if (i && series[i-1].source !== s.source){
-      svg.appendChild(S("line", {x1:X(i)-8, x2:X(i)-8, y1:m.t, y2:m.t+ph}, "stroke:var(--line);stroke-dasharray:3 3"));
-      svg.appendChild(txt(X(i)-4, m.t+10, `${s.sourceLabel || s.source} — new reference period`, "axlabel"));
+      const x = X(i) - 8, nearRight = x > w - 220;
+      svg.appendChild(S("line", {x1:x, x2:x, y1:m.t, y2:m.t+ph}, "stroke:var(--line);stroke-dasharray:3 3"));
+      const label = txt(nearRight ? x - 6 : x + 6, m.t + 10, `${s.sourceLabel || s.source} — new reference period`, "axlabel");
+      if (nearRight) label.setAttribute("text-anchor", "end");
+      svg.appendChild(label);
     }
   });
   svg.appendChild(S("path", {d, fill:"none", "stroke-linejoin":"round"},
