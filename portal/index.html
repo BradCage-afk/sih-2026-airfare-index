@@ -437,11 +437,6 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       </div>
     </div>
 
-    <div class="panel" style="margin-top:14px">
-      <div class="ptitle">Pass-through charges by departure airport <span class="ptsub" id="t-tariff-asof"></span></div>
-      <div class="tw"><table class="tar" id="t-tariff"></table></div>
-      <div class="leg" id="t-tariff-note"></div>
-    </div>
   </div>
 
   <div class="sec">
@@ -488,26 +483,6 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
     <div class="panel"><div class="tw"><table id="t-carriers"></table></div></div>
   </div>
 
-  <div class="sec">
-    <h2>Data access for statistical systems</h2>
-    <p class="why">The index is machine-readable. Central statistical systems can ingest it
-      directly rather than transcribing from this page.</p>
-    <div class="panel">
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-        <button type="button" class="dl" id="dl-csv">Download index (CSV)</button>
-        <a class="dl ghost" id="api-docs" href="#" target="_blank" rel="noopener">API documentation</a>
-      </div>
-      <div class="endpoint" id="ep1">GET /api/v1/apix?month=YYYY-MM</div>
-      <div class="endpoint" id="ep2">GET /api/v1/apix/latest</div>
-      <div class="endpoint" id="ep3">GET /api/v1/sppi?month=YYYY-MM</div>
-      <div class="note" style="font-size:12px;color:var(--ink-2);margin-top:11px;line-height:1.6">
-        Authenticated with an <code class="mono">X-API-Key</code> header. Every response
-        carries the reference period and the method used, so an ingested figure can never
-        be separated from how it was produced.
-      </div>
-    </div>
-  </div>
-
   <details class="fold sec" id="fold-method">
     <summary>
       <svg class="chev" width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
@@ -520,6 +495,18 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       <div class="mgrid" id="method"></div>
     </div>
   </details>
+
+  <div class="sec">
+    <h2>Pass-through charges by departure airport</h2>
+    <p class="why">The notified charges netted off each fare for the producer-price (SPPI)
+      basis: the Aviation Security Fee and each airport's User Development Fee, with source
+      and effective date. Nothing here is estimated.</p>
+    <div class="panel">
+      <div class="ptitle">Tariffs in force <span class="ptsub" id="t-tariff-asof"></span></div>
+      <div class="tw"><table class="tar" id="t-tariff"></table></div>
+      <div class="leg" id="t-tariff-note"></div>
+    </div>
+  </div>
 
   <div class="foot">
     <span id="foot-updated"></span>
@@ -1498,6 +1485,7 @@ function drawCarriers(){
 
 /* --- export --- */
 function wireExport(series){
+  if (!document.getElementById("ep1")) return;   // section removed from the page
   document.getElementById("ep1").textContent =
     `GET ${API_BASE}/api/v1/apix?month=YYYY-MM`;
   document.getElementById("ep2").textContent =
