@@ -358,28 +358,28 @@ def evaluate(do_probe: bool = True) -> dict:
         cls, evidence = "healthy", ""
         if status == "blocked" and m.get("robots_allowed") is False:
             cls, evidence = "blocked", "robots.txt disallows the results path; not fetched"
-        elif status in ("broken", "degraded") and do_probe:
+        elif status in ("broken", "degraded"):
             last = prev.get("probed_at")
-            due = (not last) or (now - _iso(last)) > timedelta(minutes=PROBE_EVERY_MIN)
+            due = do_probe and ((not last) or (not prev.get("probe"))
+                                or (now - _iso(last)) > timedelta(minutes=PROBE_EVERY_MIN))
             if due:
                 print(f"  probing {key} …")
                 p = probe(key)
                 cls, evidence = classify(m, p)
-                if cls == "blocked":
-                    status = "blocked"
-            else:
+            elif prev.get("probe"):
+                # keep the last probe's classification until a new probe replaces it
                 cls, evidence, p = prev.get("class", "unknown"), prev.get("evidence", ""), prev.get("probe")
-                if cls == "blocked":
-                    status = "blocked"
-        elif status == "healthy":
-            cls, evidence = "healthy", ""
+            else:
+                cls, evidence = classify(m, None)
+            if cls == "blocked":
+                status = "blocked"
         else:
-            cls, evidence = classify(m, None)
+            cls, evidence = "healthy", ""
         changed = prev.get("status") != status or prev.get("class") != cls
         health = {"status": status, "class": cls, "reason": reason, "evidence": evidence,
                   "since": (prev.get("since") if not changed and prev.get("since") else now.isoformat(timespec="seconds")),
                   "checked_at": now.isoformat(timespec="seconds"),
-                  "probed_at": (now.isoformat(timespec="seconds") if p and "url" in p and p is not prev.get("probe") else prev.get("probed_at")),
+                  "probed_at": (now.isoformat(timespec="seconds") if (p is not None and p is not prev.get("probe")) else prev.get("probed_at")),
                   "probe": p, "metrics": m}
         state[key] = health
         flag = {"healthy": "✓", "degraded": "!", "broken": "✗", "blocked": "⛔", "unknown": "?"}[status]
