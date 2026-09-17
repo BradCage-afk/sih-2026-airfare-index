@@ -363,6 +363,7 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
       <div id="h-status"></div>
       <div class="note" id="h-coverage"></div>
       <div class="note" id="h-collection" hidden></div>
+      <div class="note" id="h-newer" hidden></div>
     </div>
   </div>
 
@@ -1074,10 +1075,19 @@ const SPIKE_THRESHOLD = 15;
 function latestRelease(){
   const series = apixSeries();
   if (!series.length) return {series, latest: null};
-  // The release leads with the last COMPLETE day. A day still being collected
-  // is on the trend line in amber, not in the headline or the heat map.
+  // The release leads with the last PUBLISHED day - the same rule as
+  // engine.py's headline. A provisional day (still being collected, or in a
+  // segment whose reference period is still forming) stays on the trend line
+  // in amber; it does not take over the front page. Only if nothing has ever
+  // published does the last complete day stand in.
+  const published = series.filter(r => !r.provisional);
   const done = series.filter(r => !r.why || !r.why.includes("still in progress"));
-  return {series, latest: (done.length ? done : series)[ (done.length ? done : series).length - 1 ]};
+  const pool = published.length ? published : (done.length ? done : series);
+  const latest = pool[pool.length - 1];
+  // a newer segment forming behind the release is worth saying
+  const newer = series.filter(r => r.day > latest.day && r.source !== latest.source);
+  latest.newerSegment = newer.length ? newer[newer.length - 1] : null;
+  return {series, latest};
 }
 
 function drawCollectionNotice(){
@@ -1122,6 +1132,16 @@ function drawHeadline(latest, series){
   pill.className = "status " + (latest.provisional ? "prov" : "final");
   pill.textContent = latest.provisional ? "Provisional" : "Published";
   st.appendChild(pill);
+  const ns = latest.newerSegment;
+  const nsEl = document.getElementById("h-newer");
+  if (nsEl){
+    nsEl.hidden = !ns;
+    if (ns){
+      const pfx = ns.sourceLabel || ns.source;
+      nsEl.textContent = `A newer segment is collecting: ${pfx}, from ${dayLab(ns.basePeriod ? ns.basePeriod[0] : ns.day)}` +
+        ` (${ns.why || "provisional"}). It becomes the release once it publishes; until then this figure stands.`;
+    }
+  }
   set("h-coverage", latest.provisional
     ? `Below publication threshold: ${latest.why}. The figure is computed and shown, but ` +
       `is not comparable with a full-basket period.`
