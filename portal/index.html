@@ -1086,7 +1086,10 @@ function latestRelease(){
   const latest = pool[pool.length - 1];
   // a newer segment forming behind the release is worth saying
   const newer = series.filter(r => r.day > latest.day && r.source !== latest.source);
-  latest.newerSegment = newer.length ? newer[newer.length - 1] : null;
+  // describe the segment by its last complete day, not by today's half-collected one
+  const newerDone = newer.filter(r => !r.why || !r.why.includes("still in progress"));
+  latest.newerSegment = newerDone.length ? newerDone[newerDone.length - 1]
+                       : (newer.length ? newer[newer.length - 1] : null);
   return {series, latest};
 }
 
