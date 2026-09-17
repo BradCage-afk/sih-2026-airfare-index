@@ -22,17 +22,24 @@ for elementary aggregates — weighted by a matrix of route seat share × bookin
 time. The result is published two ways: a statistical portal for officials, and an
 authenticated REST API that MoSPI's systems can ingest directly.
 
-**It is running now:** 158,778 fares from 1,175 collection runs (97.4% ok), over 11
-observation days, without a single failed extraction in the last full-basket run.
-**Published:** APIx 101.98 on 11 Sep against a 3–6 Sep reference period — airfare
-inflation of **+2.0%**, at **100% basket coverage**, status **Published** (not
-provisional) for eight consecutive days. 77 revisions on the audit log.
+**It is running now, on its second instrument.** 168,000 scraped fares over 15 days
+until the source closed; since 16 Sep a licensed feed, checked every ten minutes.
+**Published:** the scraped segment closed at APIx 99.52 on 15 Sep against a 3–6 Sep
+reference period, **Published** for eleven consecutive days. The licensed segment
+runs from 16 Sep on its own reference period and publishes on the 19th. The two are
+shown as segments, not spliced: a change of instrument is marked, never hidden.
 **Live:** `apix-portal.pages.dev` · `apix-api-n5ux.onrender.com/docs` ·
 `github.com/BradCage-afk/sih-2026-airfare-index` (public, with README)
 
 It marks its own figures **provisional** when coverage falls below 60% of basket
-weight. That discipline — refusing to present a thin figure as settled — is the
-thing that distinguishes an index from an average.
+weight, or while a new segment's reference period is still forming. That
+discipline — refusing to present a thin figure as settled — is the thing that
+distinguishes an index from an average.
+
+**The story to tell, in one breath:** we scraped the one site that permitted it for
+fifteen days; on the fifteenth it put its search API behind Akamai; we did not go
+around it; a monitor classified the failure; the next day the basket was priced from
+a licensed feed as a new segment; the release says all of this on the page.
 
 ## 1. Code quality
 
@@ -718,6 +725,21 @@ fires a webhook or opens a GitHub issue. The collector reads the state and leave
 source alone. This is the half of Arya's design that decides *when* the scraper-generating
 agent is invoked — and, just as important, when it must not be.
 
+**"You say every ten minutes, but a cache doesn't change every ten minutes."** Correct,
+and we don't pretend it does. The licensed feed is *checked* every ten minutes; a price is
+*recorded* only when it has changed, or once an hour as confirmation that it has not.
+The first run of the day records ~36 changed prices; a run a minute later records zero
+and logs 36 unchanged. Recording the same cached value 144 times a day would fabricate
+observations — the engine would count them, and the number would be a lie. Ten-minute
+freshness, honest observation counts.
+
+**"Why is the new segment provisional for three days?"** The reference period is the
+average of a segment's first three qualifying days, because a single-day base is fragile —
+one promotional fare in it skews every later relative. Until three days stand behind it,
+every figure in the segment would move as the base forms, so it is shown, marked
+provisional, with that reason. On the third day it publishes on its own. This is the same
+rule the Cleartrip segment lived under in early September.
+
 **"Is the code public?"** Yes — `github.com/BradCage-afk/sih-2026-airfare-index`, with
 a README that documents the method, the exclusion rules and the publication threshold.
 `.env` is gitignored; the portal's Supabase key is the publishable one and we verified
@@ -735,8 +757,10 @@ live that RLS blocks writes with it.
 - [x] `fares_carrier` view applied — the airline comparison runs on every observation
 - [ ] Apply `airfare-scraper/source_health.sql` in the SQL editor so the API and the portal
       show the blocked source (the monitor keeps state locally until then)
-- [x] **Travelpayouts token in, feed live** — 38 of 75 cells hourly, one-way, all 15 routes; its
-      own segment with its own reference period (publishable once three days stand behind it)
+- [x] **Travelpayouts token in, feed live** — ~40 of 75 cells, one-way, all 15 routes, checked
+      every ten minutes with change detection; its own segment (publishes 19 Sep)
+- [x] Deck: slide 4's risks tell the block → monitor → licensed feed story; slide 2 names both
+      sources; slide 3's stack lists the monitor and the feed
 - [x] `apix_producer_daily` applied — the SPPI series is persisted and revision-tracked
 - [ ] Decide slide 5's screenshot: the portal now shows the CPI/SPPI comparison above
       the heat map, so `shoot_portal.py` captures that instead of the heat map

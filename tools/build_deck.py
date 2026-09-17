@@ -296,8 +296,9 @@ textbox(s2, 0.45, 1.00, 8.45, 1.00, [
 stat = panel(s2, 9.05, 1.02, 3.80, 0.90, fill=TINTS[1], line=None)
 write(stat.text_frame, [
     ("BUILT AND RUNNING", 10.5, True, GREEN),
-    (f"{FARES // 1000:,},000+ fares collected \u00b7 15 city pairs \u00d7 5 lead times "
-     "\u00b7 every 10 minutes \u00b7 \u20b90 a month to run", 10.5, False, INK, 4)])
+    (f"{FARES // 1000:,},000+ fares \u00b7 15 city pairs \u00d7 5 lead times \u00b7 "
+     "every 10 minutes \u00b7 scraped, then a licensed feed \u00b7 \u20b90 a month",
+     10.5, False, INK, 4)])
 
 # --- what changes for the CPI -----------------------------------------
 panel(s2, 0.45, 2.16, 6.95, 1.96, fill=TINTS[0], line=None)
@@ -434,8 +435,8 @@ for i, (page, stored, rule, colour) in enumerate(KEEP):
     textbox(s3, COLS[1][0], ry, COLS[1][1], 0.30, [(stored, 11.5, True, colour)])
     textbox(s3, COLS[2][0], ry, COLS[2][1], 0.30, [(rule, 11, False, GREY)])
 
-TECHSTRIP = ("Python \u00b7 Playwright \u00b7 LLM extraction with failover \u00b7 "
-             "Pydantic v2 \u00b7 Supabase PostgreSQL \u00b7 FastAPI \u00b7 Cloudflare \u00b7 cron")
+TECHSTRIP = ("Python \u00b7 Playwright \u00b7 LLM extraction with failover \u00b7 Pydantic v2 \u00b7 "
+             "Supabase \u00b7 FastAPI \u00b7 Cloudflare \u00b7 cron \u00b7 source monitor \u00b7 licensed feed")
 strip = panel(s3, 0.45, 6.12, 12.4, 0.58, fill=RGBColor(0xEC, 0xEA, 0xF7), line=None)
 write(strip.text_frame, [("STACK   " + TECHSTRIP, 11.5, True, INDIGO)])
 
@@ -475,14 +476,16 @@ for i, (title, stat, statlbl, body) in enumerate(FEAS):
     y += 1.36
 
 heading(s4, 7.0, 1.24, 5.9, "Risks, and what we did about them", 15)
-RISKS = [("16 portals surveyed, one is usable",
-          "Ten disallow us, four block us, airlines refuse automation entirely."),
-         ("Cloud IPs are blocked too",
-          "Verified in CI — so collection runs from a residential host."),
+RISKS = [("One portal was usable — then it closed",
+          "Cleartrip put its search API behind Akamai on 15 Sep. We did not evade it."),
+         ("A source can vanish overnight",
+          "A monitor scores every run and names the failure: a layout change is "
+          "repaired, a block is never evaded."),
+         ("So the data now comes from a licensed feed",
+          "Aviasales Data API, one-way fares, every 10 minutes — its own segment, "
+          "not spliced onto the old series."),
          ("Models get retired without notice",
-          "Three died during this build. Extraction now fails over automatically."),
-         ("Thin coverage would mislead",
-          "Days below 60% basket weight publish as provisional, with the reason.")]
+          "Three died during this build. Extraction now fails over automatically.")]
 y = 1.70
 for risk, fix in RISKS:
     panel(s4, 7.0, y, 5.9, 0.88, fill=RGBColor(0xFA, 0xEE, 0xEE), line=None)
