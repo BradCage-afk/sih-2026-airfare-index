@@ -1173,8 +1173,14 @@ function drawHeat(latest){
   const base = latest.baseMap || cells.get(latest.baseDay), cur = cells.get(latest.day);
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
     .sort((a,b) => seatWeight(b) - seatWeight(a));
+  const forming = !!(latest.why && latest.why.includes("reference period has"));
   const why = document.querySelector("#heat") && document.querySelector("#heat").closest(".sec").querySelector(".why");
-  if (why && API_SOURCES.has(latest.source)){
+  if (why && forming){
+    const priced = [...cur.keys()].filter(k => base.has(k)).length;
+    why.textContent = `This segment's reference period is still forming (${latest.why}), so an index against it ` +
+      `would only compare the day with itself. Cells show the cheapest one-way fare the current source holds ` +
+      `for each city pair and lead time — ${priced} of 75 — and switch to index values the day the segment publishes.`;
+  } else if (why && API_SOURCES.has(latest.source)){
     const priced = [...cur.keys()].filter(k => base.has(k)).length;
     why.textContent = `Index by city pair and booking lead time, against the reference period. ` +
       `The current source is a licensed search cache that prices ${priced} of 75 cells; blank cells are ` +
@@ -1201,7 +1207,16 @@ function drawHeat(latest){
       const key = `${pair}|${w}`;
       const p = cur.get(key), b = base.get(key);
       const div = document.createElement("div"); div.className = "cell";
-      if (p && b){
+      if (p && forming){
+        // the day sits inside a reference period that is still forming: an
+        // index against a base that includes itself says nothing, so show the
+        // fare; the index view begins when the segment publishes
+        div.style.background = "var(--sq2)";
+        div.style.color = "var(--sq-ink-dark)";
+        div.textContent = "₹" + (p >= 1000 ? (p/1000).toFixed(1) + "k" : Math.round(p));
+        div.title = `${pair.replace("-","–")} T+${w}: cheapest fare today ₹${Math.round(p).toLocaleString("en-IN")}\n` +
+                    `reference period still forming (${latest.why}); the index view starts when it publishes`;
+      } else if (p && b){
         const idx = 100 * p / b, delta = idx - 100;
         const band = heatBand(delta);
         div.style.background = `var(${band.bg})`;
