@@ -1080,16 +1080,14 @@ function latestRelease(){
   // segment whose reference period is still forming) stays on the trend line
   // in amber; it does not take over the front page. Only if nothing has ever
   // published does the last complete day stand in.
-  const published = series.filter(r => !r.provisional);
+  // The release leads with the live instrument: the last COMPLETE day, even
+  // while its segment's reference period is still forming - the badge says
+  // Provisional and why. A page that hid the live segment behind an older
+  // published one was current in neither sense.
   const done = series.filter(r => !r.why || !r.why.includes("still in progress"));
-  const pool = published.length ? published : (done.length ? done : series);
-  const latest = pool[pool.length - 1];
-  // a newer segment forming behind the release is worth saying
-  const newer = series.filter(r => r.day > latest.day && r.source !== latest.source);
-  // describe the segment by its last complete day, not by today's half-collected one
-  const newerDone = newer.filter(r => !r.why || !r.why.includes("still in progress"));
-  latest.newerSegment = newerDone.length ? newerDone[newerDone.length - 1]
-                       : (newer.length ? newer[newer.length - 1] : null);
+  const latest = (done.length ? done : series)[(done.length ? done : series).length - 1];
+  const prevSeg = [...series].reverse().find(r => r.source !== latest.source && !r.provisional);
+  latest.previousSegment = prevSeg || null;
   return {series, latest};
 }
 
@@ -1135,14 +1133,14 @@ function drawHeadline(latest, series){
   pill.className = "status " + (latest.provisional ? "prov" : "final");
   pill.textContent = latest.provisional ? "Provisional" : "Published";
   st.appendChild(pill);
-  const ns = latest.newerSegment;
+  const ps = latest.previousSegment;
   const nsEl = document.getElementById("h-newer");
   if (nsEl){
-    nsEl.hidden = !ns;
-    if (ns){
-      const pfx = ns.sourceLabel || ns.source;
-      nsEl.textContent = `A newer segment is collecting: ${pfx}, from ${dayLab(ns.basePeriod ? ns.basePeriod[0] : ns.day)}` +
-        ` (${ns.why || "provisional"}). It becomes the release once it publishes; until then this figure stands.`;
+    nsEl.hidden = !ps;
+    if (ps){
+      nsEl.textContent = `This segment began ${dayLab(latest.basePeriod ? latest.basePeriod[0] : latest.day)} on ` +
+        `${latest.sourceLabel || latest.source}. The previous segment (${ps.sourceLabel || ps.source}) ` +
+        `last published ${dayLab(ps.day)} at ${ps.apix.toFixed(2)}; the two are not chain-linked.`;
     }
   }
   set("h-coverage", latest.provisional
@@ -1175,6 +1173,13 @@ function drawHeat(latest){
   const base = latest.baseMap || cells.get(latest.baseDay), cur = cells.get(latest.day);
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
     .sort((a,b) => seatWeight(b) - seatWeight(a));
+  const why = document.querySelector("#heat") && document.querySelector("#heat").closest(".sec").querySelector(".why");
+  if (why && API_SOURCES.has(latest.source)){
+    const priced = [...cur.keys()].filter(k => base.has(k)).length;
+    why.textContent = `Index by city pair and booking lead time, against the reference period. ` +
+      `The current source is a licensed search cache that prices ${priced} of 75 cells; blank cells are ` +
+      `not covered by it and are left blank rather than estimated. Hover any cell for the fares behind it.`;
+  }
   const deltas = [];
 
   const table = document.createElement("table");
@@ -1214,7 +1219,9 @@ function drawHeat(latest){
         div.style.background = "var(--inset)";
         div.style.color = "var(--muted)";
         div.textContent = "·";
-        div.title = "too few observations to price";
+        div.title = API_SOURCES.has(latest.source)
+          ? "not priced by the current source - the licensed feed has no fare for this cell"
+          : "too few observations to price";
       }
       td.appendChild(div); tr.appendChild(td);
     }

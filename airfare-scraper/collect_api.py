@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from datetime import date, datetime, timezone
@@ -28,6 +29,37 @@ def log(event: str, level: str = "info", **fields):
     print(f"  {level:<5} {event:<16} " +
           " ".join(f"{k}={v}" for k, v in fields.items() if v not in (None, "")),
           file=sys.stderr, flush=True)
+
+
+# A cache is checked every ten minutes but a price is only a new observation
+# when it has changed - or once an hour as confirmation that it has not.
+# Recording the same cached value 144 times a day would fabricate observations.
+STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "api-last.json")
+CONFIRM_MIN = 60
+
+
+def load_last() -> dict:
+    try:
+        with open(STATE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_last(state: dict) -> None:
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE, "w", encoding="utf-8") as fh:
+        json.dump(state, fh)
+
+
+def is_new(state: dict, key: str, price: float, now: datetime) -> bool:
+    prev = state.get(key)
+    if not prev:
+        return True
+    if abs(prev["price"] - price) >= 0.5:
+        return True
+    age_min = (now - datetime.fromisoformat(prev["ts"])).total_seconds() / 60
+    return age_min >= CONFIRM_MIN
 
 
 def main() -> int:
@@ -53,6 +85,9 @@ def main() -> int:
         windows=len(windows), calls=len(routes) * len(windows), target=store.target)
 
     written = fetched = failed = 0
+    last = load_last()
+    now = datetime.now(timezone.utc)
+    unchanged = 0
     for origin, destination in routes:
         route = f"{origin}-{destination}"
         # one set of calls per route covers every window (one per month)
@@ -70,6 +105,11 @@ def main() -> int:
             if not fares:
                 log("no_fares", level="warn", **ctx)
                 continue
+            key = f"{route}|{w}"
+            price = min(f.total_fare for f in fares)
+            if not is_new(last, key, price, now):
+                unchanged += 1
+                continue                      # same cached price, seen within the hour
             rows = api_sources.records(fares, origin, destination, w)
             try:
                 n = store.write(rows)
@@ -78,13 +118,14 @@ def main() -> int:
                     error=f"{type(exc).__name__}: {str(exc)[:120]}")
                 continue
             written += n
-            log("written", **ctx, fares=n,
-                cheapest=min(f.total_fare for f in fares))
+            last[key] = {"price": price, "ts": now.isoformat()}
+            log("written", **ctx, fares=n, cheapest=price)
         time.sleep(1.2)          # courteous even to an API we pay nothing for
 
     duration = (datetime.now(timezone.utc) - RUN_STARTED).total_seconds()
+    save_last(last)
     log("run_end", source="travelpayouts", fetched=fetched, written=written,
-        failed=failed, duration_s=round(duration, 1))
+        unchanged=unchanged, failed=failed, duration_s=round(duration, 1))
 
     try:
         store.write_run([RunRecord(

@@ -14,7 +14,8 @@
 0 2,14 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index
 
 # Licensed feed (Travelpayouts / Aviasales cache): one-way cheapest per
-# departure date for every basket cell. Hourly - the cache does not move
-# faster, and it is polite. No browser, no lock; the engine publishes on the
-# ten-minute schedule above.
-7 * * * *   cd ~/SIH/airfare-scraper && python3 collect_api.py >> logs/api-$(date +\%Y\%m\%d).jsonl 2>>logs/api.err
+# departure date for every basket cell. Checked every ten minutes; a price is
+# recorded only when it changed, or once an hour as confirmation, so a cache
+# is never turned into fabricated observations. No browser, no lock; the
+# engine publishes on the ten-minute schedule above.
+*/10 * * * * cd ~/SIH/airfare-scraper && python3 collect_api.py >> logs/api-$(date +\%Y\%m\%d).jsonl 2>>logs/api.err
