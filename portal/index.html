@@ -1064,8 +1064,17 @@ function sppiRelease(){
     return rows;
   });
   if (!series.length) return null;
-  const cpi = cpiRows.sort((a,b)=>a.day-b.day);
-  return {series, latest: series[series.length - 1], cpiLatest: cpi[cpi.length - 1] || null};
+  // The same rule as the release: the last PUBLISHED day, and a segment whose
+  // reference period is still forming is not shown until it publishes.
+  const published = series.filter(r => !r.provisional);
+  const done = series.filter(r => !r.why || !r.why.includes("still in progress"));
+  const pool = published.length ? published : (done.length ? done : series);
+  const latest = pool[pool.length - 1];
+  const shown = new Set(published.map(r => r.source).concat([latest.source]));
+  const visible = series.filter(r => shown.has(r.source));
+  const cpi = cpiRows.filter(r => shown.has(r.source)).sort((a,b)=>a.day-b.day);
+  const cpiLatest = cpi.filter(r => r.day === latest.day)[0] || cpi[cpi.length - 1] || null;
+  return {series: visible, latest, cpiLatest};
 }
 
 /* ===================== the release ===================== */
