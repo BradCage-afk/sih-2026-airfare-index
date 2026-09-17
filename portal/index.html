@@ -823,6 +823,11 @@ const MIN_OBS = 3, REL_FLOOR = 0.2, REL_CEIL = 5.0;
 // Licensed, structured sources: one observation per cell is the nature of the
 // data, and no model read it, so the three-observation guard does not apply.
 const API_SOURCES = new Set(["travelpayouts"]);
+// Pin the release to one source's segment. null = automatic (the last
+// published segment leads; a forming segment appears when it publishes).
+// Set while a newer source is still being sorted out, so the whole page -
+// headline, heat map, spikes, trend, SPPI - stays on one instrument.
+const DISPLAY_SOURCE = "cleartrip";
 const SOURCE_LABELS = {cleartrip: "Cleartrip listing (scraped)", indigo: "IndiGo (robots-disallowed)",
                        travelpayouts: "Aviasales search cache (licensed API)"};
 const srcKeyOf = r => (SRC[r[C.s]] || {}).k || "";
@@ -1006,11 +1011,16 @@ function segmentSeries(cells, source){
   return rows;
 }
 
-/* Sources in first-appearance order. */
-function sourcesPresent(){
+/* Sources in first-appearance order (all of them, for the notice). */
+function sourcesPresentAll(){
   const seen = new Map();
   for (const r of D){ const k = srcKeyOf(r); if (k && !seen.has(k)) seen.set(k, r[C.d]); else if (k) seen.set(k, Math.min(seen.get(k), r[C.d])); }
-  return [...seen.entries()].sort((a,b) => a[1]-b[1]).map(e => e[0]);
+  return [...seen.entries()].sort((a,b) => a[1]-b[1]);
+}
+/* Sources the page computes from: the pinned one, or all. */
+function sourcesPresent(){
+  const all = sourcesPresentAll().map(e => e[0]);
+  return DISPLAY_SOURCE && all.includes(DISPLAY_SOURCE) ? [DISPLAY_SOURCE] : all;
 }
 
 /* Union of per-source segments by day. Two sources are two measurements, so
@@ -1100,6 +1110,11 @@ function latestRelease(){
   const visible = series.filter(r => shownSources.has(r.source));
   const forming = series.filter(r => !shownSources.has(r.source));
   latest.newerSegment = forming.length ? forming[forming.length - 1] : null;
+  if (!latest.newerSegment){
+    // a source pinned out of the display is still worth a line
+    const other = sourcesPresentAll().find(e => !shownSources.has(e[0]));
+    if (other) latest.newerSegment = {source: other[0], sourceLabel: SOURCE_LABELS[other[0]] || other[0], day: other[1]};
+  }
   return {series: visible, latest};
 }
 
