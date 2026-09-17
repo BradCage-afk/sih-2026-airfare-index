@@ -1080,15 +1080,18 @@ function latestRelease(){
   // segment whose reference period is still forming) stays on the trend line
   // in amber; it does not take over the front page. Only if nothing has ever
   // published does the last complete day stand in.
-  // The release leads with the live instrument: the last COMPLETE day, even
-  // while its segment's reference period is still forming - the badge says
-  // Provisional and why. A page that hid the live segment behind an older
-  // published one was current in neither sense.
+  // The release leads with the last PUBLISHED day. A segment whose reference
+  // period is still forming is collected and computed but not shown: it
+  // enters the page - headline, heat map, trend - the day it publishes.
+  const published = series.filter(r => !r.provisional);
   const done = series.filter(r => !r.why || !r.why.includes("still in progress"));
-  const latest = (done.length ? done : series)[(done.length ? done : series).length - 1];
-  const prevSeg = [...series].reverse().find(r => r.source !== latest.source && !r.provisional);
-  latest.previousSegment = prevSeg || null;
-  return {series, latest};
+  const pool = published.length ? published : (done.length ? done : series);
+  const latest = pool[pool.length - 1];
+  const shownSources = new Set(published.map(r => r.source).concat([latest.source]));
+  const visible = series.filter(r => shownSources.has(r.source));
+  const forming = series.filter(r => !shownSources.has(r.source));
+  latest.newerSegment = forming.length ? forming[forming.length - 1] : null;
+  return {series: visible, latest};
 }
 
 function drawCollectionNotice(){
@@ -1133,14 +1136,15 @@ function drawHeadline(latest, series){
   pill.className = "status " + (latest.provisional ? "prov" : "final");
   pill.textContent = latest.provisional ? "Provisional" : "Published";
   st.appendChild(pill);
-  const ps = latest.previousSegment;
+  const ns = latest.newerSegment;
   const nsEl = document.getElementById("h-newer");
   if (nsEl){
-    nsEl.hidden = !ps;
-    if (ps){
-      nsEl.textContent = `This segment began ${dayLab(latest.basePeriod ? latest.basePeriod[0] : latest.day)} on ` +
-        `${latest.sourceLabel || latest.source}. The previous segment (${ps.sourceLabel || ps.source}) ` +
-        `last published ${dayLab(ps.day)} at ${ps.apix.toFixed(2)}; the two are not chain-linked.`;
+    nsEl.hidden = !ns;
+    if (ns){
+      const start = ns.basePeriod ? ns.basePeriod[0] : ns.day;
+      nsEl.textContent = `A newer segment is being collected from ${ns.sourceLabel || ns.source}, since ` +
+        `${dayLab(start)}. Its reference period is still forming, so it is not shown yet; it becomes the ` +
+        `release the day it publishes. The two segments are not chain-linked.`;
     }
   }
   set("h-coverage", latest.provisional
@@ -1173,14 +1177,8 @@ function drawHeat(latest){
   const base = latest.baseMap || cells.get(latest.baseDay), cur = cells.get(latest.day);
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
     .sort((a,b) => seatWeight(b) - seatWeight(a));
-  const forming = !!(latest.why && latest.why.includes("reference period has"));
   const why = document.querySelector("#heat") && document.querySelector("#heat").closest(".sec").querySelector(".why");
-  if (why && forming){
-    const priced = [...cur.keys()].filter(k => base.has(k)).length;
-    why.textContent = `This segment's reference period is still forming (${latest.why}), so an index against it ` +
-      `would only compare the day with itself. Cells show the cheapest one-way fare the current source holds ` +
-      `for each city pair and lead time — ${priced} of 75 — and switch to index values the day the segment publishes.`;
-  } else if (why && API_SOURCES.has(latest.source)){
+  if (why && API_SOURCES.has(latest.source)){
     const priced = [...cur.keys()].filter(k => base.has(k)).length;
     why.textContent = `Index by city pair and booking lead time, against the reference period. ` +
       `The current source is a licensed search cache that prices ${priced} of 75 cells; blank cells are ` +
@@ -1207,16 +1205,7 @@ function drawHeat(latest){
       const key = `${pair}|${w}`;
       const p = cur.get(key), b = base.get(key);
       const div = document.createElement("div"); div.className = "cell";
-      if (p && forming){
-        // the day sits inside a reference period that is still forming: an
-        // index against a base that includes itself says nothing, so show the
-        // fare; the index view begins when the segment publishes
-        div.style.background = "var(--sq2)";
-        div.style.color = "var(--sq-ink-dark)";
-        div.textContent = "₹" + (p >= 1000 ? (p/1000).toFixed(1) + "k" : Math.round(p));
-        div.title = `${pair.replace("-","–")} T+${w}: cheapest fare today ₹${Math.round(p).toLocaleString("en-IN")}\n` +
-                    `reference period still forming (${latest.why}); the index view starts when it publishes`;
-      } else if (p && b){
+      if (p && b){
         const idx = 100 * p / b, delta = idx - 100;
         const band = heatBand(delta);
         div.style.background = `var(${band.bg})`;
