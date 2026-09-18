@@ -33,6 +33,10 @@ class FareRecord:
     total_fare: float
     model_used: str
     scraped_at: str | None = None
+    # the departure date actually priced. Set by the licensed-feed path, where
+    # a lead-time bucket may be satisfied by a neighbouring date; written only
+    # when the column exists (schema.sql adds it; see FareStore.write).
+    departure_date: str | None = None
 
     def as_row(self) -> dict:
         row = {
@@ -130,10 +134,29 @@ class FareStore:
 
             self._client = create_client(config.SUPABASE_URL, config.SUPABASE_KEY)
 
+    _has_departure_date: bool | None = None
+
+    def _supports_departure_date(self) -> bool:
+        """Probe once whether `fares.departure_date` exists, so a collector
+        keeps writing before the column is applied and starts filling it
+        the moment it is."""
+        if self._has_departure_date is None:
+            try:
+                self._client.table(config.FARES_TABLE).select("departure_date").limit(1).execute()
+                self._has_departure_date = True
+            except Exception:
+                self._has_departure_date = False
+        return self._has_departure_date
+
     def write(self, records: Iterable[FareRecord]) -> int:
-        rows = [r.as_row() for r in records]
+        recs = list(records)
+        rows = [r.as_row() for r in recs]
         if not rows:
             return 0
+        with_date = any(r.departure_date for r in recs)
+        if with_date and (self.dry_run or self._supports_departure_date()):
+            for row, r in zip(rows, recs):
+                row["departure_date"] = r.departure_date
         if self.dry_run:
             with open(self.dry_run_path, "a", encoding="utf-8") as fh:
                 for row in rows:

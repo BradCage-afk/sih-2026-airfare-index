@@ -119,7 +119,9 @@ def main() -> int:
                 continue
             written += n
             last[key] = {"price": price, "ts": now.isoformat()}
-            log("written", **ctx, fares=n, cheapest=price)
+            f0 = fares[0]
+            log("written", **ctx, fares=n, cheapest=price,
+                depart=f0.departure_date, offset_days=f0.offset_days)
         time.sleep(1.2)          # courteous even to an API we pay nothing for
 
     duration = (datetime.now(timezone.utc) - RUN_STARTED).total_seconds()

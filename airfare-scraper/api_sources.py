@@ -52,6 +52,8 @@ class ApiFare:
     flight_number: Optional[str]
     departure_time: Optional[str]
     total_fare: float
+    departure_date: Optional[str] = None     # the date actually priced
+    offset_days: int = 0                     # departure_date minus the bucket's target date
 
 
 def _request(path: str, params: dict, timeout: float = 25.0) -> dict:
@@ -168,7 +170,22 @@ def fetch_dates(origin: str, destination: str, windows: List[int],
             prev = by_date.get(dep[:10])
             if prev is None or fare.total_fare < prev.total_fare:
                 by_date[dep[:10]] = fare
-    return {w: ([by_date[t]] if t in by_date else []) for w, t in targets.items()}
+    # exact date first; otherwise the nearest date inside the bucket's
+    # tolerance, earlier winning a tie. Never a wider net than configured.
+    out: dict = {}
+    for w, t in targets.items():
+        tol = config.WINDOW_TOLERANCE_DAYS.get(w, 0)
+        target = date.fromisoformat(t)
+        best = None
+        for off in sorted(range(-tol, tol + 1), key=lambda o: (abs(o), o)):
+            d = (target + timedelta(days=off)).isoformat()
+            if d in by_date:
+                f = by_date[d]
+                best = ApiFare(f.carrier, f.flight_number, f.departure_time, f.total_fare,
+                               departure_date=d, offset_days=off)
+                break
+        out[w] = [best] if best else []
+    return out
 
 
 def records(fares: List[ApiFare], origin: str, destination: str,
@@ -176,8 +193,9 @@ def records(fares: List[ApiFare], origin: str, destination: str,
     """Adapt to the same row shape the scraped path produces."""
     from db import FareRecord
     stamped = datetime.now().astimezone().isoformat()
-    return [
-        FareRecord(
+    rows = []
+    for f in fares:
+        rec = FareRecord(
             origin=origin, destination=destination, carrier=f.carrier,
             departure_time=f.departure_time, source=source,
             advance_window_days=advance_days,
@@ -186,5 +204,6 @@ def records(fares: List[ApiFare], origin: str, destination: str,
             model_used="none (structured API)",
             scraped_at=stamped,
         )
-        for f in fares
-    ]
+        rec.departure_date = f.departure_date     # written when the column exists
+        rows.append(rec)
+    return rows

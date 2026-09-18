@@ -64,6 +64,16 @@ ROUTE_WEIGHTS: dict = {r: n / _TOTAL_VOLUME for r, n in _VOLUME.items()}
 # Advance-booking windows, in days from today.
 ADVANCE_WINDOWS: list[int] = [1, 7, 15, 30, 45]
 
+# A lead time is a BUCKET, not a calendar day: the problem statement calls
+# them lead-time buckets and CPI practice prices a specification, not a single
+# date. A licensed cache only holds a fare for a departure date someone has
+# searched, so a source that is asked for exactly today+30 throws away a
+# perfectly good today+29. The tolerance is the widest departure-date offset a
+# bucket accepts; the exact date is always preferred, then the nearest, and
+# the date actually used is recorded on the row (departure_date) and in the
+# log (offset_days). T+1 stays exact: "tomorrow" is not a window.
+WINDOW_TOLERANCE_DAYS: dict = {1: 0, 7: 1, 15: 1, 30: 2, 45: 2}
+
 # ------------------------------------------------------- weighting matrix ---
 # The index weights a cell by route AND by booking lead time, so the weight is
 # a matrix over (route x lead time) rather than a single vector.
