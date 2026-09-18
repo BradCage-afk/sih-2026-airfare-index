@@ -26,3 +26,6 @@ SIH scraper.txt
 # runtime logs and local session state
 airfare-scraper/logs/
 .claude/
+arya.txt
+speech.txt
+answer.txt

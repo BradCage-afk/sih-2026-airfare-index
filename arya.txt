@@ -1,9 +1,0 @@
-The AI agent would only be activated when we add a new website or when an existing scraper breaks. It would generate and test the scraper, which would then be stored in GitHub.
-
-After that, our scraping workers can reuse these scrapers and run them every 10 minutes, without calling the AI agent each time.
-
-If a website changes its structure, our monitoring system detects the failure and triggers the AI agent to generate an updated scraper.
-
-So essentially, instead of paying for AI continuously, we use AI only when intelligence is actually needed. This would allow APIx to scale to many more portals while keeping the operating cost much lower.
-
-make a monitoring system for this agent
