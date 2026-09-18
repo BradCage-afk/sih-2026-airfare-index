@@ -827,7 +827,7 @@ const API_SOURCES = new Set(["travelpayouts"]);
 // published segment leads; a forming segment appears when it publishes).
 // Set while a newer source is still being sorted out, so the whole page -
 // headline, heat map, spikes, trend, SPPI - stays on one instrument.
-const DISPLAY_SOURCE = "cleartrip";
+const DISPLAY_SOURCE = "travelpayouts";
 const SOURCE_LABELS = {cleartrip: "Cleartrip listing (scraped)", indigo: "IndiGo (robots-disallowed)",
                        travelpayouts: "Aviasales search cache (licensed API)"};
 const srcKeyOf = r => (SRC[r[C.s]] || {}).k || "";
