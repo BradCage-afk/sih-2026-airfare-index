@@ -85,6 +85,19 @@ BASES = ("purchaser", "producer")
 TABLE_FOR = {"purchaser": "apix_daily", "producer": "apix_producer_daily"}
 
 
+def _all_rows(query, page: int = 1000) -> list:
+    """Supabase caps one response at 1,000 rows regardless of limit(). A table
+    that grows past that would silently lose its newest rows, so page through
+    until a short page comes back."""
+    out, start = [], 0
+    while True:
+        chunk = query.range(start, start + page - 1).execute().data or []
+        out.extend(chunk)
+        if len(chunk) < page:
+            return out
+        start += page
+
+
 def min_obs_for(source: str) -> int:
     """Three observations guard a cell against one mis-extracted fare. A
     structured API row was never extracted, so one observation is the rule."""
@@ -109,7 +122,7 @@ def load_cells(client, since: str | None = None, basis: str = "purchaser",
         q = q.gte("day", since)
     if source:
         q = q.eq("source", source)
-    rows = q.execute().data
+    rows = _all_rows(q.order("day"))
     cells: dict = defaultdict(dict)
     for r in rows:
         n = int(r["n_flights"] or 0)
@@ -326,7 +339,7 @@ def _series_from(cells: dict, base_day: str | None, basis: str) -> list:
 
 def sources_present(client) -> list:
     """Sources with any priced day, in first-appearance order."""
-    rows = client.table("fares_daily").select("day,source").order("day").execute().data
+    rows = _all_rows(client.table("fares_daily").select("day,source").order("day"))
     seen: list = []
     for r in rows:
         if r.get("source") and r["source"] not in seen:
