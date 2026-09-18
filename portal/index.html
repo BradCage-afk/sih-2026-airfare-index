@@ -683,17 +683,26 @@ function adoptRoutes(daily){
    the tables carry every pair. */
 const CHART_ROUTES = 6;
 
+/* Supabase caps a single response at 1,000 rows whatever `limit` asks for,
+   and silently returns the first thousand. A table that grows past that -
+   fares_daily did on 18 Sep - would lose its NEWEST days, so anything that
+   asks for more than a page is fetched page by page until a short page. */
+const PAGE = 1000;
 async function rest(path, params){
-  const qs = new URLSearchParams(params).toString();
-  const res = await fetch(`${SUPABASE.url}/rest/v1/${path}?${qs}`, {
-    headers: {
-      apikey: SUPABASE.key,
-      Authorization: `Bearer ${SUPABASE.key}`,
-      Accept: "application/json"
-    }
-  });
-  if (!res.ok) throw new Error(`${path} → HTTP ${res.status} ${await res.text()}`.slice(0, 220));
-  return res.json();
+  const want = +params.limit || PAGE;
+  const headers = {apikey: SUPABASE.key, Authorization: `Bearer ${SUPABASE.key}`, Accept: "application/json"};
+  const out = [];
+  for (let from = 0; from < want; from += PAGE){
+    const size = Math.min(PAGE, want - from);
+    const qs = new URLSearchParams({...params, limit: size, offset: from}).toString();
+    const res = await fetch(`${SUPABASE.url}/rest/v1/${path}?${qs}`, {headers});
+    if (!res.ok) throw new Error(`${path} → HTTP ${res.status} ${await res.text()}`.slice(0, 220));
+    const page = await res.json();
+    if (!Array.isArray(page)) return page;
+    out.push(...page);
+    if (page.length < size) break;
+  }
+  return out;
 }
 
 function isoDay(d){ return d.toISOString().slice(0, 10); }
@@ -1111,9 +1120,14 @@ function latestRelease(){
   const forming = series.filter(r => !shownSources.has(r.source));
   latest.newerSegment = forming.length ? forming[forming.length - 1] : null;
   if (!latest.newerSegment){
-    // a source pinned out of the display is still worth a line
+    // a source pinned out of the display is still worth a line - and it may
+    // be the older one, which is a different sentence
     const other = sourcesPresentAll().find(e => !shownSources.has(e[0]));
-    if (other) latest.newerSegment = {source: other[0], sourceLabel: SOURCE_LABELS[other[0]] || other[0], day: other[1]};
+    if (other){
+      const firstShown = Math.min(...series.map(r => r.day));
+      latest.newerSegment = {source: other[0], sourceLabel: SOURCE_LABELS[other[0]] || other[0],
+                             day: other[1], older: other[1] < firstShown};
+    }
   }
   return {series: visible, latest};
 }
@@ -1164,7 +1178,12 @@ function drawHeadline(latest, series){
   const nsEl = document.getElementById("h-newer");
   if (nsEl){
     nsEl.hidden = !ns;
-    if (ns){
+    if (ns && ns.older){
+      const lastOther = Math.max(...D.filter(r => srcKeyOf(r) === ns.source).map(r => r[C.d]));
+      nsEl.textContent = `This segment is priced from ${latest.sourceLabel || latest.source}. The earlier ` +
+        `segment, ${ns.sourceLabel || ns.source}, ran ${dayLab(ns.day)}–${dayLab(lastOther)} until the site ` +
+        `blocked automated access. The two are separate segments and are not chain-linked.`;
+    } else if (ns){
       const start = ns.basePeriod ? ns.basePeriod[0] : ns.day;
       nsEl.textContent = `A newer segment is being collected from ${ns.sourceLabel || ns.source}, since ` +
         `${dayLab(start)}. Its reference period is still forming, so it is not shown yet; it becomes the ` +
