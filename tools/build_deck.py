@@ -296,7 +296,7 @@ textbox(s2, 0.45, 1.00, 8.45, 1.00, [
 stat = panel(s2, 9.05, 1.02, 3.80, 0.90, fill=TINTS[1], line=None)
 write(stat.text_frame, [
     ("BUILT AND RUNNING", 10.5, True, GREEN),
-    (f"{FARES // 1000:,},000+ fares \u00b7 15 city pairs \u00d7 5 lead times \u00b7 "
+    (f"{FARES // 1000:,},000+ fares \u00b7 15 city pairs \u00d7 4 lead times \u00b7 "
      "every 10 minutes \u00b7 scraped, then a licensed feed \u00b7 \u20b90 a month",
      10.5, False, INK, 4)])
 
@@ -306,7 +306,7 @@ textbox(s2, 0.60, 2.23, 4.2, 0.26, [("WHAT CHANGES FOR THE CPI", 10.5, True, BLU
 textbox(s2, 2.35, 2.55, 2.10, 0.26, [("TODAY", 11, True, GREY)])
 textbox(s2, 4.55, 2.55, 2.70, 0.26, [("WITH APIx", 11, True, GREEN)])
 CHANGES = [("Frequency",   "once a month",        "every 10 minutes"),
-           ("Coverage",    "a handful of quotes", "75 priced cells"),
+           ("Coverage",    "a handful of quotes", "60 priced cells"),
            ("Price basis", "one quoted price",    "minimum logical fare"),
            ("Delivery",    "typed into a form",   "authenticated REST API")]
 for i, (attr, today, ours) in enumerate(CHANGES):
@@ -327,7 +327,7 @@ textbox(s2, 7.70, 2.73, 5.00, 0.34, [
 
 panel(s2, 7.55, 3.20, 5.30, 0.92, fill=TINTS[4], line=None)
 textbox(s2, 7.70, 3.25, 5.00, 0.24, [("WHAT THE TERMS MEAN", 10.5, True, TEAL)])
-DEFS = [("Basket", "15 city pairs \u00d7 5 lead times = 75 cells"),
+DEFS = [("Basket", "15 city pairs \u00d7 4 lead times = 60 cells"),
         ("Price",  "minimum logical fare, no add-ons"),
         ("Weight", "seat share (passenger proxy) \u00d7 lead time"),
         ("Base",   "first 3 full-coverage days, averaged = 100")]
@@ -378,7 +378,7 @@ STEPS = [("1", "Collect", "every 10 min", "robots-gated"),
          ("2", "Extract", "13,000 \u2192 3,700", "chars per page"),
          ("3", "Validate", "38 of 40", "flights kept"),
          ("4", "Clean", "min 3 obs", "per priced cell"),
-         ("5", "Index", "75 cells", "weighted Jevons"),
+         ("5", "Index", "60 cells", "weighted Jevons"),
          ("6", "Publish", "2 endpoints", "portal + API")]
 bw, gap = 1.88, 0.22
 for i, (n, t, big, sub) in enumerate(STEPS):

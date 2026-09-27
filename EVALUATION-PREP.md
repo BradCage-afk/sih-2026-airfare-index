@@ -16,7 +16,7 @@ for Augmentation of the Consumer Price Index (CPI)
 **APIx is a daily airfare inflation index for CPI augmentation.**
 
 A collector re-prices a fixed basket of the 15 busiest domestic city pairs across
-five booking lead times, every ten minutes. A calculation engine turns those fares
+four booking lead times (the PS's T−1/7/15/30), every ten minutes. A calculation engine turns those fares
 into an index using weighted Jevons aggregation — the method Eurostat and ONS use
 for elementary aggregates — weighted by a matrix of route seat share × booking lead
 time. The result is published two ways: a statistical portal for officials, and an
@@ -685,6 +685,13 @@ airline's price moved more than the ticket, because the fixed charges dilute the
 percentage change. Sensitivity is stated: charges ±20% move the figure by ≤0.05pt.
 Served at `/api/v1/sppi`. This is the answer to "could MoSPI use this for anything
 beyond CPI?" — yes, the SPPI for air transport, from the same pipeline.
+
+**"Why four lead times — didn't you collect T+45?"** We did, until 27 September. The problem
+statement specifies four buckets — T−1, T−7, T−15, T−30 — so T+45 was dropped to match it. Its
+rows are still in the database, excluded rather than deleted, and the change is in the
+revision log (25 figures moved). We did *not* drop the routes with the most gaps: they are a
+fifth of scheduled seats, and choosing a basket by where data is easy to get is selection bias.
+The engine already excludes unpriced cells, so they cost the index nothing.
 
 **"Your lead times are T+7; the problem statement says T−7."** Same bucket, opposite
 convention: T+7 counts from the booking date, T−7 from departure. The portal caption

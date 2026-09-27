@@ -22,7 +22,7 @@ book".
 | Statistical release portal | https://apix-portal.pages.dev |
 | Export API (OpenAPI docs) | https://apix-api-n5ux.onrender.com/docs |
 | Observations collected | 168,000+ (collection blocked by the source since 15 Sep 2026 — see below) |
-| Basket | 15 city pairs × 5 booking lead times = 75 priced cells |
+| Basket | 15 city pairs × 4 booking lead times (T+1, T+7, T+15, T+30 — the PS's buckets) = 60 priced cells |
 | Cadence | scraped source every 10 minutes, robots-gated; licensed feed hourly |
 | Cost to run | ₹0 a month, on free tiers throughout |
 
@@ -152,7 +152,7 @@ collected for the CPI" — the same collection serving both, as here.
 | **2 · Extract** | Row text is chunked at 800 characters and sent to an OpenAI-compatible LLM. Strict JSON only; coupons and struck-through prices are ignored; unpublished fields stay `null`. |
 | **3 · Validate** | Pydantic enforces the schema and the plausible-fare band. Rows that fail are dropped, never repaired. Typical yield is 38 of 40. |
 | **4 · Clean** | Minimum logical fare per cell; cells below 3 observations excluded; reversed pairs folded. |
-| **5 · Index** | Weighted Jevons across the 75 cells, against the base period. |
+| **5 · Index** | Weighted Jevons across the 60 cells, against the base period. (T+45 was collected until 27 Sep 2026 and dropped to match the problem statement; its rows are excluded, not deleted.) |
 | **6 · Publish** | Statistical release portal and a versioned REST API, with method, coverage and revision history attached to every figure. |
 
 Nothing in the `fares` table is ever updated or deleted. Every observation is
