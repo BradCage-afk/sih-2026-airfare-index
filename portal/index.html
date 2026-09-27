@@ -315,6 +315,13 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
 .hm .cell{border-radius:3px;height:34px;display:flex;align-items:center;
   justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:12px;
   font-weight:600;cursor:default}
+.hm .cell.empty{background:transparent;color:var(--muted);opacity:.45;border:1px dashed var(--line)}
+.hm th.covh{font-size:10.5px;color:var(--muted);text-align:center;width:52px}
+.hm td.cov{text-align:center;padding-left:6px}
+.covpill{display:inline-block;min-width:30px;padding:2px 6px;border-radius:9px;font:600 10.5px "IBM Plex Mono",monospace;
+         background:var(--inset);color:var(--ink-2)}
+.covpill.full{background:#e3f1e8;color:#1b6b43}
+.covpill.thin{background:#fbeede;color:#9a5a16}
 .hmleg{display:flex;align-items:center;gap:0;margin-top:12px;font-size:11px;color:var(--muted)}
 .hmleg i{width:34px;height:10px;display:block}
 .hmleg span{padding:0 9px;font-family:"IBM Plex Mono",monospace}
@@ -370,7 +377,7 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
   <div class="sec">
     <h2>What this measures</h2>
     <p class="why">Air fares are collected automatically from travel portals every ten
-      minutes, across a fixed basket of the fifteen busiest domestic city pairs and five
+      minutes, across a fixed basket of the fifteen busiest domestic city pairs and four
       booking lead times. For each route and lead time the cheapest available fare is
       recorded &mdash; the price a traveller could actually have transacted at. Those
       prices are converted to a single index using the geometric (Jevons) method, weighted
@@ -540,6 +547,12 @@ const SUPABASE = {
 
 const NS = "http://www.w3.org/2000/svg";
 const D = DATA.rows, R = DATA.routes, W = DATA.windows, SRC = DATA.sources;
+{ const keep = DATA.windows.map(w => [1, 7, 15, 30].includes(w));
+  const remap = []; let j = 0; keep.forEach((k, i) => { remap[i] = k ? j++ : -1; });
+  for (let i = D.length - 1; i >= 0; i--){
+    const wi = remap[D[i][2]];
+    if (wi < 0) D.splice(i, 1); else D[i][2] = wi;
+  } }
 const C = {d:0,r:1,w:2,s:3,n:4,base:5,tax:6,udf:7,conv:8,tot:9,lo:10,hi:11,ok:12,att:13,ms:14,m:15};
 const RK = R.map(r => r.o + "–" + r.d);
 const SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6"];
@@ -653,6 +666,10 @@ const hideTip = tip => tip.classList.remove("on");
    load (D, R, W...) keeps pointing at live data. */
 let   SRC_INDEX = Object.fromEntries(SRC.map((s, i) => [s.k, i]));
 let   RT_INDEX  = Object.fromEntries(R.map((r, i) => [r.o + "-" + r.d, i]));
+// The problem statement's lead-time buckets. T+45 was collected until 27 Sep
+// 2026; its rows are ignored here as in the engine.
+const PS_WINDOWS = [1, 7, 15, 30];
+W.splice(0, W.length, ...W.filter(w => PS_WINDOWS.includes(w)));
 const W_INDEX   = Object.fromEntries(W.map((w, i) => [w, i]));
 
 /* The basket grows. Rebuild the route list from whatever the database returns,
@@ -1218,14 +1235,18 @@ function drawHeat(latest){
   const cells = cellsByDay();
   const days = [...cells.keys()].sort((a,b)=>a-b);
   const base = latest.baseMap || cells.get(latest.baseDay), cur = cells.get(latest.day);
+  // fully priced routes first, then by basket weight - so the map reads
+  // top-down from what is measured to what the source could not price today
+  const coverage = pair => W.filter(w => cur.has(`${pair}|${w}`) && base.has(`${pair}|${w}`)).length;
   const pairs = [...new Set([...cur.keys()].map(k => k.split("|")[0]))]
-    .sort((a,b) => seatWeight(b) - seatWeight(a));
+    .sort((a,b) => (coverage(b) - coverage(a)) || (seatWeight(b) - seatWeight(a)));
   const why = document.querySelector("#heat") && document.querySelector("#heat").closest(".sec").querySelector(".why");
   if (why && API_SOURCES.has(latest.source)){
     const priced = [...cur.keys()].filter(k => base.has(k)).length;
     why.textContent = `Index by city pair and booking lead time, against the reference period. ` +
-      `The current source is a licensed search cache that prices ${priced} of 75 cells; blank cells are ` +
-      `not covered by it and are left blank rather than estimated. Hover any cell for the fares behind it.`;
+      `The current source is a licensed search cache that prices ${priced} of ${pairs.length * W.length} cells. ` +
+      `Routes are ordered by how many lead times it priced today; a dimmed cell is one it holds no fare for, ` +
+      `and is left out rather than estimated. Hover any cell for the fares behind it.`;
   }
   const deltas = [];
 
@@ -1237,6 +1258,8 @@ function drawHeat(latest){
   for (const w of W){
     const th = document.createElement("th"); th.textContent = "T+" + w; head.appendChild(th);
   }
+  const cov = document.createElement("th"); cov.className = "covh"; cov.textContent = "Priced";
+  head.appendChild(cov);
   table.appendChild(head);
 
   for (const pair of pairs){
@@ -1263,15 +1286,22 @@ function drawHeat(latest){
                     `cheapest fare today ${inr0(p)} · reference ${inr0(b)}` +
                     (Math.abs(delta) < 0.5 ? "\nthe cheapest fare bucket has not moved" : "");
       } else {
-        div.style.background = "var(--inset)";
-        div.style.color = "var(--muted)";
-        div.textContent = "·";
+        div.className = "cell empty";
+        div.textContent = "–";
         div.title = API_SOURCES.has(latest.source)
-          ? "not priced by the current source - the licensed feed has no fare for this cell"
+          ? `${pair.replace("-","–")} T+${w}: not in the licensed cache today - no one searched this ` +
+            `route for this departure date - so it is left out, not estimated`
           : "too few observations to price";
       }
       td.appendChild(div); tr.appendChild(td);
     }
+    const c = coverage(pair);
+    const badge = document.createElement("td"); badge.className = "cov";
+    const pill = document.createElement("span");
+    pill.className = "covpill" + (c === W.length ? " full" : c <= W.length / 2 ? " thin" : "");
+    pill.textContent = `${c}/${W.length}`;
+    pill.title = `${c} of ${W.length} lead times priced today`;
+    badge.appendChild(pill); tr.appendChild(badge);
     table.appendChild(tr);
   }
   host.appendChild(table);

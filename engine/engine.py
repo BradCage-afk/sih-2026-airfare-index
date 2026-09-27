@@ -145,6 +145,9 @@ def load_cells(client, since: str | None = None, basis: str = "purchaser",
             if price <= 0:
                 CLEANING["fare below pass-through charges"] += 1
                 continue
+        if int(r["advance_window_days"]) not in config.ADVANCE_WINDOWS:
+            CLEANING["lead time outside the basket"] += 1
+            continue
         pair = (r["origin"], r["destination"])
         # A route the basket does not define must not enter the index, and the
         # same city pair recorded in both directions must not count twice.

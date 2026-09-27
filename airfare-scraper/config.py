@@ -62,7 +62,11 @@ ROUTE_WEIGHTS: dict = {r: n / _TOTAL_VOLUME for r, n in _VOLUME.items()}
 
 
 # Advance-booking windows, in days from today.
-ADVANCE_WINDOWS: list[int] = [1, 7, 15, 30, 45]
+# The problem statement's lead-time buckets: T-1, T-7, T-15, T-30 (we count
+# from the booking date, so T+1 ... T+30). T+45 was collected until 27 Sep
+# 2026 and was dropped to match the PS; its rows stay in the database and the
+# engine excludes them (counted in the cleaning report).
+ADVANCE_WINDOWS: list[int] = [1, 7, 15, 30]
 
 # A lead time is a BUCKET, not a calendar day: the problem statement calls
 # them lead-time buckets and CPI practice prices a specification, not a single
