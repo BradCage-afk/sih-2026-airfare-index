@@ -377,7 +377,7 @@ td.rt{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--ink)}
   <div class="sec">
     <h2>What this measures</h2>
     <p class="why">Air fares are collected automatically from travel portals every ten
-      minutes, across a fixed basket of the fifteen busiest domestic city pairs and four
+      minutes, across a fixed basket of the fifteen busiest domestic city pairs and five
       booking lead times. For each route and lead time the cheapest available fare is
       recorded &mdash; the price a traveller could actually have transacted at. Those
       prices are converted to a single index using the geometric (Jevons) method, weighted
@@ -547,7 +547,7 @@ const SUPABASE = {
 
 const NS = "http://www.w3.org/2000/svg";
 const D = DATA.rows, R = DATA.routes, W = DATA.windows, SRC = DATA.sources;
-{ const keep = DATA.windows.map(w => [1, 7, 15, 30].includes(w));
+{ const keep = DATA.windows.map(w => [1, 7, 15, 30, 45].includes(w));
   const remap = []; let j = 0; keep.forEach((k, i) => { remap[i] = k ? j++ : -1; });
   for (let i = D.length - 1; i >= 0; i--){
     const wi = remap[D[i][2]];
@@ -668,7 +668,7 @@ let   SRC_INDEX = Object.fromEntries(SRC.map((s, i) => [s.k, i]));
 let   RT_INDEX  = Object.fromEntries(R.map((r, i) => [r.o + "-" + r.d, i]));
 // The problem statement's lead-time buckets. T+45 was collected until 27 Sep
 // 2026; its rows are ignored here as in the engine.
-const PS_WINDOWS = [1, 7, 15, 30];
+const PS_WINDOWS = [1, 7, 15, 30, 45];
 W.splice(0, W.length, ...W.filter(w => PS_WINDOWS.includes(w)));
 const W_INDEX   = Object.fromEntries(W.map((w, i) => [w, i]));
 
@@ -726,6 +726,7 @@ function isoDay(d){ return d.toISOString().slice(0, 10); }
 
 /* fares_daily rows -> the compact array shape the charts already read */
 function adoptDaily(daily){
+  if (DISPLAY_UNTIL) daily = daily.filter(r => String(r.day) <= DISPLAY_UNTIL);
   const days = [...new Set(daily.map(r => r.day))].sort();
   const dayIx = Object.fromEntries(days.map((d, i) => [d, i]));
   const rows = [];
@@ -853,7 +854,10 @@ const API_SOURCES = new Set(["travelpayouts"]);
 // published segment leads; a forming segment appears when it publishes).
 // Set while a newer source is still being sorted out, so the whole page -
 // headline, heat map, spikes, trend, SPPI - stays on one instrument.
-const DISPLAY_SOURCE = "travelpayouts";
+const DISPLAY_SOURCE = "cleartrip";
+// The last day the page shows. The scraped source was blocked on 15 Sep; one
+// stray page got through on 22 Sep, which must not extend the chart.
+const DISPLAY_UNTIL = "2026-09-15";
 const SOURCE_LABELS = {cleartrip: "Cleartrip listing (scraped)", indigo: "IndiGo (robots-disallowed)",
                        travelpayouts: "Aviasales search cache (licensed API)"};
 const srcKeyOf = r => (SRC[r[C.s]] || {}).k || "";
