@@ -4,18 +4,22 @@
 # The 3-route hot basket, every 10 minutes (~2 min each; flock skips overlaps).
 # This is the collection cadence. The published index is computed daily from
 # these observations — the same way official price statistics work.
-*/10 * * * * ~/SIH/airfare-scraper/run-scheduled.sh hot
+# RETIRED 27 Sep 2026 - */10 * * * * ~/SIH/airfare-scraper/run-scheduled.sh hot
 
 # The full 15-route basket across all five booking lead times (~2 h). This is
 # the ONLY tier that collects T+7 .. T+45, so if it is skipped the heat map
 # loses four of its five columns for the whole day. It waits for the lock
 # rather than giving up, and runs twice so the lead-time columns are never
 # more than ~12 hours stale.
-0 2,14 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index
+# RETIRED 27 Sep 2026 - 0 2,14 * * *   ~/SIH/airfare-scraper/run-scheduled.sh index
 
 # Licensed feed (Travelpayouts / Aviasales cache): one-way cheapest per
 # departure date for every basket cell. Checked every ten minutes; a price is
 # recorded only when it changed, or once an hour as confirmation, so a cache
 # is never turned into fabricated observations. No browser, no lock; the
 # engine publishes on the ten-minute schedule above.
-*/10 * * * * cd ~/SIH/airfare-scraper && python3 collect_api.py >> logs/api-$(date +\%Y\%m\%d).jsonl 2>>logs/api.err
+# RETIRED 27 Sep 2026 - */10 * * * * cd ~/SIH/airfare-scraper && python3 collect_api.py >> logs/api-$(date +\%Y\%m\%d).jsonl 2>>logs/api.err
+
+# Since 27 Sep 2026: licensed feed only. Collects, recomputes both index
+# bases, scores source health, keeps the API warm. See run-api.sh.
+*/10 * * * * ~/SIH/airfare-scraper/run-api.sh

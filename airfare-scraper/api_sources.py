@@ -48,7 +48,7 @@ class ApiError(RuntimeError):
 
 @dataclass
 class ApiFare:
-    carrier: str
+    carrier: Optional[str]
     flight_number: Optional[str]
     departure_time: Optional[str]
     total_fare: float
@@ -167,6 +167,33 @@ def fetch_dates(origin: str, destination: str, windows: List[int],
                 departure_time=dep[11:16] if len(dep) >= 16 else "00:00",
                 total_fare=float(price),
             )
+            prev = by_date.get(dep[:10])
+            if prev is None or fare.total_fare < prev.total_fare:
+                by_date[dep[:10]] = fare
+
+        # Second view of the same cache: /v2/prices/month-matrix holds dates
+        # the v3 endpoint does not return (47 -> 56 cells on 27 Sep). It has no
+        # airline, so its rows go in with carrier None - the route-controlled
+        # airline comparison skips them rather than counting an "unknown"
+        # carrier. The cheaper fare for a date wins; on a tie the row that
+        # names its airline is kept. A failure here never loses the v3 data.
+        try:
+            mm = _request("/v2/prices/month-matrix", {
+                "origin": origin, "destination": destination, "month": f"{month}-01",
+                "one_way": "true", "show_to_affiliates": "false",
+                "currency": currency, "token": TRAVELPAYOUTS_TOKEN,
+            })
+        except ApiError:
+            mm = {}
+        for r in mm.get("data") or []:
+            if r.get("return_date"):
+                continue
+            dep = str(r.get("depart_date", ""))
+            price = r.get("value")
+            if len(dep) < 10 or not isinstance(price, (int, float)) or price <= 0:
+                continue
+            fare = ApiFare(carrier=None, flight_number=None, departure_time=None,
+                           total_fare=float(price))
             prev = by_date.get(dep[:10])
             if prev is None or fare.total_fare < prev.total_fare:
                 by_date[dep[:10]] = fare
